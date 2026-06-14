@@ -1,6 +1,7 @@
 import { Keyboard } from "grammy";
 import { createProduct, createSeller } from "../grpc/client.js";
 import type { BotContext } from "../types.js";
+import { isValidPrice, normalizePrice } from "../utils/validation.js";
 
 export function mainMenu() {
   return new Keyboard()

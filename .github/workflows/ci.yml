@@ -68,6 +68,11 @@ jobs:
           cache: pip
           cache-dependency-path: services/matching/pyproject.toml
 
+      - name: Install Matching Dependencies
+        if: matrix.component == 'matching'
+        working-directory: services/matching
+        run: pip install ".[dev]"
+
       - name: Generate Python Protos
         if: matrix.component == 'matching'
         run: bash scripts/gen-proto-python.sh
@@ -75,7 +80,7 @@ jobs:
       - name: Run Matching Tests
         if: matrix.component == 'matching'
         working-directory: services/matching
-        run: pip install ".[dev]" && pytest tests/ -q --tb=short
+        run: pytest tests/ -q --tb=short
 
       - name: Set Up Bun
         if: matrix.component == 'seller-bot'
