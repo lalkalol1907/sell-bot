@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package sellbot.workerlogin;
+
+option go_package = "github.com/sellbot/worker-engine/internal/gen/workerlogin;workerlogin";
+option java_package = "com.sellbot.proto.workerlogin";
+option java_multiple_files = true;
+
+service WorkerLoginService {
+  rpc StartLogin(StartLoginRequest) returns (LoginStepResponse);
+  rpc SubmitCode(SubmitCodeRequest) returns (LoginStepResponse);
+  rpc SubmitPassword(SubmitPasswordRequest) returns (LoginStepResponse);
+}
+
+message StartLoginRequest {
+  int64 owner_seller_id = 1;
+  string phone = 2;
+}
+
+message SubmitCodeRequest {
+  string login_id = 1;
+  string code = 2;
+}
+
+message SubmitPasswordRequest {
+  string login_id = 1;
+  string password = 2;
+}
+
+message LoginStepResponse {
+  string login_id = 1;
+  string status = 2;   // code_sent | password_required | success | error
+  string message = 3;
+  int64 worker_id = 4;
+}

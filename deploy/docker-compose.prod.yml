@@ -1,0 +1,103 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sellbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sellbot}
+      POSTGRES_DB: ${POSTGRES_DB:-sellbot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sellbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  nats:
+    image: nats:2-alpine
+    command: ["--jetstream", "--store_dir=/data"]
+    volumes:
+      - nats_data:/data
+    restart: unless-stopped
+
+  core:
+    image: ${CORE_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sellbot
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sellbot}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sellbot}
+      GRPC_SERVER_PORT: 50051
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+      JAVA_OPTS: -Xmx384m
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  matching:
+    image: ${MATCHING_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    environment:
+      CORE_GRPC_ADDR: core:50051
+      REDIS_URL: redis://redis:6379/0
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - core
+      - redis
+      - nats
+    restart: unless-stopped
+
+  worker-engine:
+    image: ${WORKER_ENGINE_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    volumes:
+      - worker_data:/data
+    environment:
+      TG_API_ID: ${TG_API_ID}
+      TG_API_HASH: ${TG_API_HASH}
+      SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY}
+      CORE_GRPC_ADDR: core:50051
+      NATS_URL: nats://nats:4222
+      WORKER_SESSION_PATH: /data/session.json
+      WORKER_SESSION_STRING: ${WORKER_SESSION_STRING:-}
+      WORKER_ID: ${WORKER_ID:-1}
+      OWNER_SELLER_ID: ${OWNER_SELLER_ID:-1}
+      DEV_INJECT_MESSAGE: ${DEV_INJECT_MESSAGE:-}
+      LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS:-false}
+      LOGIN_GRPC_PORT: 50053
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+    depends_on:
+      - core
+      - matching
+      - nats
+    restart: unless-stopped
+
+  seller-bot:
+    image: ${SELLER_BOT_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      CORE_GRPC_ADDR: core:50051
+      WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+      REDIS_URL: redis://redis:6379/0
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - core
+      - redis
+      - nats
+      - worker-engine
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  nats_data:
+  worker_data:

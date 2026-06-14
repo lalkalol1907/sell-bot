@@ -1,0 +1,54 @@
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Logs & coverage
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
+
+# --- Core (Kotlin / Gradle) ---
+services/core/build/
+services/core/.gradle/
+services/core/out/
+
+# --- Worker Engine (Go) ---
+services/worker-engine/bin/
+services/worker-engine/dist/
+
+# --- Matching (Python) ---
+services/matching/build/
+services/matching/dist/
+services/matching/.venv/
+services/matching/venv/
+services/matching/__pycache__/
+services/matching/**/__pycache__/
+services/matching/*.egg-info/
+services/matching/.mypy_cache/
+services/matching/.ruff_cache/
+# Generated proto stubs (run: make gen-proto-python)
+services/matching/app/generated/*
+!services/matching/app/generated/__init__.py
+
+# --- Seller Bot (Bun / TypeScript) ---
+services/seller-bot/node_modules/
+services/seller-bot/dist/
+services/seller-bot/.bun/
+
+# Telegram session files (never commit)
+*.session
+session_*

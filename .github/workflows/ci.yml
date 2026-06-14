@@ -1,0 +1,215 @@
+name: CI
+
+# push / pull_request — тесты на любых ветках и PR.
+# build + deploy + release — только при push тега v* (refs/tags/v1.0.0 и т.д.).
+# workflow_dispatch — ручной запуск test (без сборки и деплоя).
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Set Up JDK 22
+        uses: actions/setup-java@v4
+        with:
+          java-version: "22"
+          distribution: temurin
+          cache: gradle
+
+      - name: Run Core Tests
+        working-directory: services/core
+        run: ./gradlew test --no-daemon
+
+      - name: Set Up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: services/worker-engine/go.sum
+
+      - name: Generate Go Protos
+        run: bash scripts/gen-proto-go.sh
+
+      - name: Run Worker Engine Tests
+        working-directory: services/worker-engine
+        run: go mod tidy && go test ./... -count=1
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/matching/pyproject.toml
+
+      - name: Generate Python Protos
+        run: bash scripts/gen-proto-python.sh
+
+      - name: Run Matching Tests
+        working-directory: services/matching
+        run: pip install ".[dev]" && pytest tests/ -q --tb=short
+
+      - name: Set Up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Run Seller Bot Tests
+        working-directory: services/seller-bot
+        run: bun install --frozen-lockfile && bun run lint && bun test
+
+  build:
+    name: Build ${{ matrix.component }}
+    needs: test
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [core, worker-engine, matching, seller-bot]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve build context
+        id: ctx
+        run: |
+          REPO="${{ github.event.repository.name }}"
+          USER="${{ secrets.DOCKERHUB_USERNAME }}"
+          case "${{ matrix.component }}" in
+            core)
+              echo "image=${USER}/${REPO}-core" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/core/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+            worker-engine)
+              echo "image=${USER}/${REPO}-worker-engine" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/worker-engine/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+            matching)
+              echo "image=${USER}/${REPO}-matching" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/matching/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+            seller-bot)
+              echo "image=${USER}/${REPO}-seller-bot" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/seller-bot/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log In to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ctx.outputs.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.ctx.outputs.context }}
+          file: ${{ steps.ctx.outputs.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+
+  # Только push тега v*; после успешной сборки всех образов.
+  # Секреты: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_PATH, DEPLOY_DOTENV;
+  # DOCKERHUB_USERNAME + DOCKERHUB_TOKEN — для docker login на сервере.
+  deploy:
+    name: Deploy
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_DOTENV: ${{ secrets.DEPLOY_DOTENV }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          IMAGE_TAG: ${{ github.ref_name }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.DEPLOY_SSH_KEY_PASSPHRASE }}
+          envs: DEPLOY_DOTENV,DEPLOY_PATH,IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,REPO_NAME
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            printf '%s\n' "$DEPLOY_DOTENV" > .env
+            {
+              echo "IMAGE_TAG=${IMAGE_TAG}"
+              echo "CORE_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-core"
+              echo "WORKER_ENGINE_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-worker-engine"
+              echo "MATCHING_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-matching"
+              echo "SELLER_BOT_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-bot"
+            } >> .env
+            echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+            docker compose -f deploy/docker-compose.prod.yml pull
+            docker compose -f deploy/docker-compose.prod.yml up -d
+
+  # GitHub Release после успешной сборки образов (тег v* уже запушен вручную).
+  release:
+    name: Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Docker images
+
+            Tag `${{ github.ref_name }}` is published to Docker Hub:
+
+            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-core:${{ github.ref_name }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-worker-engine:${{ github.ref_name }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-matching:${{ github.ref_name }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-seller-bot:${{ github.ref_name }}`

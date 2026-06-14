@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package sellbot.catalog;
+
+option java_package = "com.sellbot.proto.catalog";
+option java_multiple_files = true;
+
+service CatalogService {
+  rpc CreateSeller(CreateSellerRequest) returns (Seller);
+  rpc GetSeller(GetSellerRequest) returns (Seller);
+  rpc GetSellerByTgId(GetSellerByTgIdRequest) returns (Seller);
+  rpc CreateProduct(CreateProductRequest) returns (Product);
+  rpc UpdateProduct(UpdateProductRequest) returns (Product);
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+}
+
+message Seller {
+  int64 id = 1;
+  int64 tg_user_id = 2;
+  string username = 3;
+  string full_name = 4;
+  string plan = 5;
+  string sensitivity = 6;
+  bool is_active = 7;
+}
+
+message Product {
+  int64 id = 1;
+  int64 seller_id = 2;
+  string title = 3;
+  string price = 4;
+  string currency = 5;
+  repeated string keywords = 6;
+  bool is_active = 7;
+}
+
+message CreateSellerRequest {
+  int64 tg_user_id = 1;
+  string username = 2;
+  string full_name = 3;
+}
+
+message GetSellerByTgIdRequest {
+  int64 tg_user_id = 1;
+}
+
+message GetSellerRequest {
+  int64 id = 1;
+}
+
+message CreateProductRequest {
+  int64 seller_id = 1;
+  string title = 2;
+  string price = 3;
+  string currency = 4;
+  repeated string keywords = 5;
+}
+
+message UpdateProductRequest {
+  int64 id = 1;
+  int64 seller_id = 2;
+  string title = 3;
+  string price = 4;
+  string currency = 5;
+  repeated string keywords = 6;
+  bool is_active = 7;
+}
+
+message ListProductsRequest {
+  int64 seller_id = 1;
+  bool active_only = 2;
+}
+
+message ListProductsResponse {
+  repeated Product products = 1;
+}
+
+message DeleteProductRequest {
+  int64 id = 1;
+  int64 seller_id = 2;
+}
+
+message DeleteProductResponse {
+  bool success = 1;
+}

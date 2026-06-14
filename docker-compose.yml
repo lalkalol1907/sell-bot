@@ -1,0 +1,123 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sellbot
+      POSTGRES_PASSWORD: sellbot
+      POSTGRES_DB: sellbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sellbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nats:
+    image: nats:2-alpine
+    command: ["--jetstream", "--store_dir=/data"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats_data:/data
+
+  core:
+    build:
+      context: .
+      dockerfile: services/core/Dockerfile
+    ports:
+      - "50051:50051"
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sellbot
+      SPRING_DATASOURCE_USERNAME: sellbot
+      SPRING_DATASOURCE_PASSWORD: sellbot
+      GRPC_SERVER_PORT: 50051
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  matching:
+    build:
+      context: .
+      dockerfile: services/matching/Dockerfile
+    ports:
+      - "50052:50052"
+      - "8000:8000"
+    environment:
+      CORE_GRPC_ADDR: core:50051
+      REDIS_URL: redis://redis:6379/0
+      NATS_URL: nats://nats:4222
+      GRPC_PORT: 50052
+    depends_on:
+      - core
+      - redis
+      - nats
+
+  worker-engine:
+    build:
+      context: .
+      dockerfile: services/worker-engine/Dockerfile
+    volumes:
+      - worker_data:/data
+    environment:
+      TG_API_ID: ${TG_API_ID:-0}
+      TG_API_HASH: ${TG_API_HASH:-}
+      SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY:-}
+      CORE_GRPC_ADDR: core:50051
+      MATCHING_GRPC_ADDR: matching:50052
+      NATS_URL: nats://nats:4222
+      WORKER_SESSION_STRING: ${WORKER_SESSION_STRING:-}
+      WORKER_SESSION_PATH: /data/session.json
+      WORKER_ID: ${WORKER_ID:-1}
+      OWNER_SELLER_ID: ${OWNER_SELLER_ID:-1}
+      DEV_INJECT_MESSAGE: ${DEV_INJECT_MESSAGE:-}
+      LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS:-true}
+      LOGIN_GRPC_PORT: 50053
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+    depends_on:
+      - core
+      - matching
+      - nats
+
+  seller-bot:
+    build:
+      context: .
+      dockerfile: services/seller-bot/Dockerfile
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      CORE_GRPC_ADDR: core:50051
+      WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      REDIS_URL: redis://redis:6379/0
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - core
+      - redis
+      - nats
+      - worker-engine
+
+volumes:
+  postgres_data:
+  nats_data:
+  worker_data:

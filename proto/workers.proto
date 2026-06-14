@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package sellbot.workers;
+
+option go_package = "github.com/sellbot/worker-engine/internal/gen/workers;workers";
+option java_package = "com.sellbot.proto.workers";
+option java_multiple_files = true;
+
+service WorkersService {
+  rpc CreateWorker(CreateWorkerRequest) returns (Worker);
+  rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse);
+  rpc GetActiveWorkers(GetActiveWorkersRequest) returns (ListWorkersResponse);
+  rpc UpdateWorkerStatus(UpdateWorkerStatusRequest) returns (Worker);
+  rpc SyncChats(SyncChatsRequest) returns (SyncChatsResponse);
+  rpc ListChats(ListChatsRequest) returns (ListChatsResponse);
+  rpc SetChatWhitelist(SetChatWhitelistRequest) returns (SetChatWhitelistResponse);
+  rpc GetWorkerSession(GetWorkerSessionRequest) returns (GetWorkerSessionResponse);
+}
+
+message Worker {
+  int64 id = 1;
+  int64 owner_seller_id = 2;
+  int64 tg_account_id = 3;
+  string phone = 4;
+  string proxy = 5;
+  string status = 6;
+}
+
+message MonitoredChat {
+  int64 id = 1;
+  int64 worker_id = 2;
+  int64 chat_id = 3;
+  string title = 4;
+  string type = 5;
+  bool is_active = 6;
+}
+
+message CreateWorkerRequest {
+  int64 owner_seller_id = 1;
+  int64 tg_account_id = 2;
+  string phone = 3;
+  bytes session_enc = 4;
+  string proxy = 5;
+}
+
+message ListWorkersRequest {
+  int64 owner_seller_id = 1;
+}
+
+message GetActiveWorkersRequest {}
+
+message ListWorkersResponse {
+  repeated Worker workers = 1;
+}
+
+message UpdateWorkerStatusRequest {
+  int64 id = 1;
+  string status = 2;
+}
+
+message SyncChatsRequest {
+  int64 worker_id = 1;
+  repeated MonitoredChat chats = 2;
+}
+
+message SyncChatsResponse {
+  int32 synced = 1;
+}
+
+message ListChatsRequest {
+  int64 worker_id = 1;
+  int64 owner_seller_id = 2;
+}
+
+message ListChatsResponse {
+  repeated MonitoredChat chats = 1;
+}
+
+message SetChatWhitelistRequest {
+  int64 worker_id = 1;
+  int64 owner_seller_id = 2;
+  repeated ChatWhitelistEntry entries = 3;
+}
+
+message ChatWhitelistEntry {
+  int64 chat_id = 1;
+  bool is_active = 2;
+}
+
+message SetChatWhitelistResponse {
+  int32 updated = 1;
+}
+
+message GetWorkerSessionRequest {
+  int64 worker_id = 1;
+}
+
+message GetWorkerSessionResponse {
+  bytes session_enc = 1;
+}
