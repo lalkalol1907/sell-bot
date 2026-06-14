@@ -1,23 +1,12 @@
 import path from "node:path";
+import { Redis } from "ioredis";
+import { loadGatewayConfig } from "./config.js";
 import { createGatewayDeps, handleLoginRoute } from "./routes/login.js";
+import { RedisRateLimitStore } from "./rate-limit.js";
 
-const port = Number(process.env.PORT ?? "8080");
-const botToken = process.env.BOT_TOKEN ?? "";
-const coreAddr = process.env.CORE_GRPC_ADDR ?? "core:50051";
-const loginAddr = process.env.WORKER_LOGIN_GRPC_ADDR ?? "worker-engine:50053";
-const internalToken = process.env.INTERNAL_GRPC_TOKEN ?? "";
-
-if (!botToken) {
-  console.error("BOT_TOKEN is required");
-  process.exit(1);
-}
-
-const deps = createGatewayDeps({
-  botToken,
-  coreAddr,
-  loginAddr,
-  internalToken,
-});
+const config = loadGatewayConfig();
+const redis = new Redis(config.redisUrl);
+const deps = createGatewayDeps(config, redis, new RedisRateLimitStore(redis));
 
 const staticRoot = path.resolve(import.meta.dir, "../web/dist");
 
@@ -37,12 +26,13 @@ async function serveStatic(pathname: string): Promise<Response | null> {
 }
 
 const server = Bun.serve({
-  port,
+  port: Number(process.env.PORT ?? "8080"),
+  hostname: "0.0.0.0",
   async fetch(req) {
     const url = new URL(req.url);
 
     if (req.method === "GET" && url.pathname === "/health") {
-      return new Response(JSON.stringify({ status: "ok" }), {
+      return new Response(JSON.stringify({ status: "ok", login_engines: config.loginEngineAddrs.length }), {
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -72,4 +62,18 @@ const server = Bun.serve({
   },
 });
 
-console.log(`login-gateway listening on :${server.port}`);
+console.log(
+  `login-gateway listening on :${server.port} (engines=${config.loginEngineAddrs.length}, redis=${config.redisUrl})`,
+);
+
+process.on("SIGINT", () => {
+  redis.disconnect();
+  server.stop(true);
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  redis.disconnect();
+  server.stop(true);
+  process.exit(0);
+});

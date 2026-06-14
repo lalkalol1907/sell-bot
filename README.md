@@ -344,6 +344,9 @@ sell-bot/
 | `WEBHOOK_SECRET` | seller-bot | `X-Telegram-Bot-Api-Secret-Token` (обязателен при `webhook`) |
 | `WEBHOOK_PATH` | seller-bot | Путь на HTTP-сервере (по умолчанию `/telegram/webhook`) |
 | `HTTP_PORT` | seller-bot | HTTP: health, metrics, webhook (по умолчанию `8080`) |
+| `REDIS_URL` | login-gateway, seller-bot | Общий Redis для rate limit / FSM / login routes |
+| `WORKER_LOGIN_GRPC_ADDR` | login-gateway | Один или несколько `host:port` через запятую |
+| `LOGIN_ROUTE_TTL_SEC` | login-gateway | TTL привязки `login_id` → worker-engine (сек) |
 | `INTERNAL_GRPC_TOKEN` | core, worker-engine, login-gateway | Auth internal gRPC (metadata) |
 | `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
 | `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
@@ -375,6 +378,22 @@ seller-bot:
     WEBHOOK_PATH: /telegram/webhook
     WEBHOOK_SECRET: <random>
     HTTP_PORT: 8080
+```
+
+### Core и login-gateway: горизонтальный скейл
+
+**Core** — несколько реплик безопасны:
+- Outbox `notifications` забирается через `FOR UPDATE SKIP LOCKED` (статус `processing`)
+- Зависшие `processing` возвращаются в `pending` через `stale-minutes`
+
+**login-gateway** — несколько реплик безопасны:
+- Rate limit в **Redis** (общий для всех pod'ов)
+- При старте login сохраняется `login_id → worker-engine` в Redis
+- Последующие code/password/status идут на тот же engine
+
+`WORKER_LOGIN_GRPC_ADDR` поддерживает список через запятую:
+```env
+WORKER_LOGIN_GRPC_ADDR=worker-engine-0:50053,worker-engine-1:50053
 ```
 
 ---

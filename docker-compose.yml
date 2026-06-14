@@ -140,10 +140,12 @@ services:
       CORE_GRPC_ADDR: core:50051
       WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      REDIS_URL: redis://redis:6379/0
       PORT: 8080
     depends_on:
       - core
       - worker-engine
+      - redis
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"

@@ -1,7 +1,6 @@
 import type { LoginStep } from "../grpc/client.js";
 import {
   createCatalogClient,
-  createLoginClient,
   getLoginStatus,
   getSellerByTgId,
   startPhoneLogin,
@@ -9,26 +8,35 @@ import {
   submitCode,
   submitPassword,
 } from "../grpc/client.js";
+import {
+  clearLoginRoute,
+  pinLoginRoute,
+  resolveLoginRoute,
+} from "../login-routing.js";
+import { LoginEnginePool } from "../grpc/login-pool.js";
 import { getInitDataFromRequest, parseInitData } from "../middleware/auth.js";
-import { checkRateLimit } from "../rate-limit.js";
-
-export type GatewayConfig = {
-  botToken: string;
-  coreAddr: string;
-  loginAddr: string;
-  internalToken: string;
-};
+import { checkRateLimit, type RateLimitStore } from "../rate-limit.js";
+import type { GatewayConfig } from "../config.js";
+import type { Redis } from "ioredis";
 
 export type GatewayDeps = {
   catalogClient: ReturnType<typeof createCatalogClient>;
-  loginClient: ReturnType<typeof createLoginClient>;
+  loginPool: LoginEnginePool;
+  redis: Redis;
+  rateLimit: RateLimitStore;
   config: GatewayConfig;
 };
 
-export function createGatewayDeps(config: GatewayConfig): GatewayDeps {
+export function createGatewayDeps(
+  config: GatewayConfig,
+  redis: Redis,
+  rateLimit: RateLimitStore,
+): GatewayDeps {
   return {
     catalogClient: createCatalogClient(config.coreAddr),
-    loginClient: createLoginClient(config.loginAddr),
+    loginPool: new LoginEnginePool(config.loginEngineAddrs),
+    redis,
+    rateLimit,
     config,
   };
 }
@@ -74,6 +82,39 @@ function toResponse(step: LoginStep) {
   };
 }
 
+async function startLoginOnEngine(
+  deps: GatewayDeps,
+  sellerId: number,
+  startFn: (client: ReturnType<LoginEnginePool["clientFor"]>) => Promise<LoginStep>,
+): Promise<LoginStep> {
+  const engineAddr = deps.loginPool.pickForNewSession(sellerId);
+  const client = deps.loginPool.clientFor(engineAddr);
+  const step = await startFn(client);
+  if (step.login_id) {
+    await pinLoginRoute(deps.redis, step.login_id, engineAddr, deps.config.loginRouteTtlSec);
+  }
+  return step;
+}
+
+async function withPinnedLoginClient<T>(
+  deps: GatewayDeps,
+  loginId: string,
+  fn: (client: ReturnType<LoginEnginePool["clientFor"]>) => Promise<T>,
+): Promise<T> {
+  const engineAddr = await resolveLoginRoute(deps.redis, loginId);
+  if (!engineAddr) {
+    throw new LoginRouteNotFoundError(loginId);
+  }
+  return fn(deps.loginPool.clientFor(engineAddr));
+}
+
+export class LoginRouteNotFoundError extends Error {
+  constructor(loginId: string) {
+    super(`login route not found for ${loginId}`);
+    this.name = "LoginRouteNotFoundError";
+  }
+}
+
 export async function handleLoginRoute(
   deps: GatewayDeps,
   req: Request,
@@ -88,10 +129,8 @@ export async function handleLoginRoute(
   if (req.method === "POST" && pathname === "/api/login/qr/start") {
     const resolved = await resolveSeller(deps, req);
     if (resolved instanceof Response) return resolved;
-    const step = await startQRLogin(
-      deps.loginClient,
-      resolved.sellerId,
-      deps.config.internalToken,
+    const step = await startLoginOnEngine(deps, resolved.sellerId, (client) =>
+      startQRLogin(client, resolved.sellerId, deps.config.internalToken),
     );
     return json(toResponse(step));
   }
@@ -103,7 +142,7 @@ export async function handleLoginRoute(
     const user = parseInitData(initData, deps.config.botToken);
     if (!user) return unauthorized();
 
-    if (!checkRateLimit(`phone:${user.id}`, 5, 60_000)) {
+    if (!(await checkRateLimit(deps.rateLimit, `phone:${user.id}`, 5, 60_000))) {
       return json({ error: "rate limit exceeded" }, 429);
     }
 
@@ -118,11 +157,13 @@ export async function handleLoginRoute(
       return badRequest("invalid phone");
     }
 
-    const step = await startPhoneLogin(
-      deps.loginClient,
-      resolved.sellerId,
-      phone.startsWith("+") ? phone : `+${phone}`,
-      deps.config.internalToken,
+    const step = await startLoginOnEngine(deps, resolved.sellerId, (client) =>
+      startPhoneLogin(
+        client,
+        resolved.sellerId,
+        phone.startsWith("+") ? phone : `+${phone}`,
+        deps.config.internalToken,
+      ),
     );
     return json(toResponse(step));
   }
@@ -134,7 +175,7 @@ export async function handleLoginRoute(
     const initData = getInitDataFromRequest(req);
     const user = parseInitData(initData, deps.config.botToken);
     if (!user) return unauthorized();
-    if (!checkRateLimit(`code:${user.id}`, 10, 60_000)) {
+    if (!(await checkRateLimit(deps.rateLimit, `code:${user.id}`, 10, 60_000))) {
       return json({ error: "rate limit exceeded" }, 429);
     }
 
@@ -147,13 +188,20 @@ export async function handleLoginRoute(
     const code = body.code?.replace(/\s/g, "");
     if (!code) return badRequest("code required");
 
-    const step = await submitCode(
-      deps.loginClient,
-      codeMatch[1],
-      code,
-      deps.config.internalToken,
-    );
-    return json(toResponse(step));
+    try {
+      const step = await withPinnedLoginClient(deps, codeMatch[1], (client) =>
+        submitCode(client, codeMatch[1], code, deps.config.internalToken),
+      );
+      if (step.status === "success") {
+        await clearLoginRoute(deps.redis, codeMatch[1]);
+      }
+      return json(toResponse(step));
+    } catch (err) {
+      if (err instanceof LoginRouteNotFoundError) {
+        return json({ error: "login session expired, start again" }, 404);
+      }
+      throw err;
+    }
   }
 
   const passwordMatch = pathname.match(/^\/api\/login\/([^/]+)\/password$/);
@@ -169,13 +217,20 @@ export async function handleLoginRoute(
     }
     if (!body.password) return badRequest("password required");
 
-    const step = await submitPassword(
-      deps.loginClient,
-      passwordMatch[1],
-      body.password,
-      deps.config.internalToken,
-    );
-    return json(toResponse(step));
+    try {
+      const step = await withPinnedLoginClient(deps, passwordMatch[1], (client) =>
+        submitPassword(client, passwordMatch[1], body.password!, deps.config.internalToken),
+      );
+      if (step.status === "success") {
+        await clearLoginRoute(deps.redis, passwordMatch[1]);
+      }
+      return json(toResponse(step));
+    } catch (err) {
+      if (err instanceof LoginRouteNotFoundError) {
+        return json({ error: "login session expired, start again" }, 404);
+      }
+      throw err;
+    }
   }
 
   const statusMatch = pathname.match(/^\/api\/login\/([^/]+)\/status$/);
@@ -183,12 +238,20 @@ export async function handleLoginRoute(
     const resolved = await resolveSeller(deps, req);
     if (resolved instanceof Response) return resolved;
 
-    const step = await getLoginStatus(
-      deps.loginClient,
-      statusMatch[1],
-      deps.config.internalToken,
-    );
-    return json(toResponse(step));
+    try {
+      const step = await withPinnedLoginClient(deps, statusMatch[1], (client) =>
+        getLoginStatus(client, statusMatch[1], deps.config.internalToken),
+      );
+      if (step.status === "success" || step.status === "error") {
+        await clearLoginRoute(deps.redis, statusMatch[1]);
+      }
+      return json(toResponse(step));
+    } catch (err) {
+      if (err instanceof LoginRouteNotFoundError) {
+        return json({ error: "login session expired, start again" }, 404);
+      }
+      throw err;
+    }
   }
 
   return null;

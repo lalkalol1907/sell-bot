@@ -42,6 +42,8 @@ sellbot:
     url: ${NATS_URL:nats://nats:4222}
   notifications:
     dispatch-interval-ms: 5000
+    batch-size: 50
+    stale-minutes: 5
 
 logging:
   level:

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.sellbot.core.domain.LeadEntity
 import com.sellbot.core.domain.NotificationEntity
 import com.sellbot.core.domain.SellerEntity
+import com.sellbot.core.repository.NotificationOutboxRepository
 import com.sellbot.core.repository.NotificationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class NotificationService(
     private val notificationRepository: NotificationRepository,
+    private val notificationOutboxRepository: NotificationOutboxRepository,
     private val objectMapper: ObjectMapper,
 ) {
     @Transactional
@@ -49,13 +51,17 @@ class NotificationService(
         )
     }
 
-    fun listPending(): List<NotificationEntity> =
-        notificationRepository.findTop50ByDeliveryStatusOrderByCreatedAtAsc("pending")
+    fun claimPendingBatch(limit: Int): List<NotificationEntity> =
+        notificationOutboxRepository.claimPendingBatch(limit)
+
+    fun recoverStaleProcessing(staleMinutes: Long): Int =
+        notificationOutboxRepository.recoverStaleProcessing(staleMinutes)
 
     @Transactional
     fun markSent(notification: NotificationEntity) {
         notification.deliveryStatus = "sent"
         notification.sentAt = java.time.Instant.now()
+        notification.claimedAt = null
         notification.lastError = null
         notificationRepository.save(notification)
     }
@@ -64,8 +70,11 @@ class NotificationService(
     fun markFailed(notification: NotificationEntity, error: String) {
         notification.attempts += 1
         notification.lastError = error.take(500)
+        notification.claimedAt = null
         if (notification.attempts >= 10) {
             notification.deliveryStatus = "failed"
+        } else {
+            notification.deliveryStatus = "pending"
         }
         notificationRepository.save(notification)
     }

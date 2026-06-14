@@ -44,6 +44,9 @@ class NotificationEntity(
     @Column(name = "sent_at")
     var sentAt: Instant? = null,
 
+    @Column(name = "claimed_at")
+    var claimedAt: Instant? = null,
+
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
 )

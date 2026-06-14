@@ -1,13 +1,28 @@
-const buckets = new Map<string, { count: number; resetAt: number }>();
+import type { Redis } from "ioredis";
 
-export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const bucket = buckets.get(key);
-  if (!bucket || now > bucket.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+export type RateLimitStore = {
+  increment(key: string, windowMs: number): Promise<number>;
+};
+
+export class RedisRateLimitStore implements RateLimitStore {
+  constructor(private readonly redis: Redis) {}
+
+  async increment(key: string, windowMs: number): Promise<number> {
+    const redisKey = `rl:${key}`;
+    const count = await this.redis.incr(redisKey);
+    if (count === 1) {
+      await this.redis.pexpire(redisKey, windowMs);
+    }
+    return count;
   }
-  if (bucket.count >= limit) return false;
-  bucket.count += 1;
-  return true;
+}
+
+export async function checkRateLimit(
+  store: RateLimitStore,
+  key: string,
+  limit: number,
+  windowMs: number,
+): Promise<boolean> {
+  const count = await store.increment(key, windowMs);
+  return count <= limit;
 }
