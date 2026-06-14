@@ -15,6 +15,7 @@ import { incLeadsDelivered } from "../metrics.js";
 const sc = StringCodec();
 const STREAM_NAME = "SELLBOT";
 const CONSUMER_NAME = "seller-bot-leads";
+const QUEUE_GROUP = "seller-bot-leads";
 const SUBJECT = "lead.created";
 
 function leadKeyboard(leadId: number) {
@@ -42,6 +43,7 @@ async function ensureConsumer(jsm: JetStreamManager) {
   } catch {
     await jsm.consumers.add(STREAM_NAME, {
       durable_name: CONSUMER_NAME,
+      deliver_group: QUEUE_GROUP,
       filter_subject: SUBJECT,
       deliver_policy: DeliverPolicy.All,
       ack_policy: AckPolicy.Explicit,

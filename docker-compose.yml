@@ -155,14 +155,19 @@ services:
       context: .
       dockerfile: services/seller-bot/Dockerfile
     ports:
-      - "9091:9090"
+      - "9091:8080"
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-}
       CORE_GRPC_ADDR: core:50051
       LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
-      METRICS_PORT: 9090
+      BOT_TRANSPORT: ${BOT_TRANSPORT:-polling}
+      HTTP_PORT: 8080
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBHOOK_PATH: ${WEBHOOK_PATH:-/telegram/webhook}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      WEBHOOK_REGISTER_ON_STARTUP: ${WEBHOOK_REGISTER_ON_STARTUP:-true}
     depends_on:
       - core
       - redis
@@ -172,7 +177,7 @@ services:
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"
-      - "prometheus.port=9090"
+      - "prometheus.port=8080"
       - "prometheus.path=/metrics"
 
   prometheus:

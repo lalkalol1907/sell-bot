@@ -339,12 +339,43 @@ sell-bot/
 |------------|--------|------------|
 | `BOT_TOKEN` | seller-bot, login-gateway | Telegram Bot API + валидация initData |
 | `LOGIN_WEB_URL` | seller-bot | URL кнопки WebApp |
+| `BOT_TRANSPORT` | seller-bot | `polling` (dev, 1 реплика) или `webhook` (prod, scale) |
+| `WEBHOOK_URL` | seller-bot | Публичный URL webhook (обязателен при `webhook`) |
+| `WEBHOOK_SECRET` | seller-bot | `X-Telegram-Bot-Api-Secret-Token` (обязателен при `webhook`) |
+| `WEBHOOK_PATH` | seller-bot | Путь на HTTP-сервере (по умолчанию `/telegram/webhook`) |
+| `HTTP_PORT` | seller-bot | HTTP: health, metrics, webhook (по умолчанию `8080`) |
 | `INTERNAL_GRPC_TOKEN` | core, worker-engine, login-gateway | Auth internal gRPC (metadata) |
 | `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
 | `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
 | `CORE_GRPC_ADDR` | все gRPC-клиенты | Адрес Core |
 | `NATS_URL` | core, matching, seller-bot, worker-engine | JetStream |
 | `MIN_MESSAGE_CHARS` / `MAX_MESSAGE_CHARS` | matching | Фильтр спама по длине |
+
+### seller-bot: polling vs webhook
+
+| Режим | Env | Реплики | Когда |
+|-------|-----|---------|-------|
+| **polling** | `BOT_TRANSPORT=polling` | **1** | локальная разработка |
+| **webhook** | `BOT_TRANSPORT=webhook` + `WEBHOOK_URL` + `WEBHOOK_SECRET` | **N** | продакшен за LB/ingress |
+
+В webhook-режиме:
+- Telegram шлёт updates на `WEBHOOK_URL` → балансировщик → любая реплика seller-bot
+- FSM-сессии в **Redis** — общие для всех реплик
+- NATS consumers (`lead.created`, `worker.status`) с **deliver_group** — очередь между репликами
+- `setWebhook` идемпотентен; при scale можно оставить `WEBHOOK_REGISTER_ON_STARTUP=true` на всех pod'ах
+
+Пример prod:
+```yaml
+seller-bot:
+  deploy:
+    replicas: 3
+  environment:
+    BOT_TRANSPORT: webhook
+    WEBHOOK_URL: https://bot.example.com/telegram/webhook
+    WEBHOOK_PATH: /telegram/webhook
+    WEBHOOK_SECRET: <random>
+    HTTP_PORT: 8080
+```
 
 ---
 

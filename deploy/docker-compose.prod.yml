@@ -103,6 +103,12 @@ services:
       LOGIN_WEB_URL: ${LOGIN_WEB_URL}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
+      BOT_TRANSPORT: ${BOT_TRANSPORT:-webhook}
+      HTTP_PORT: 8080
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      WEBHOOK_PATH: ${WEBHOOK_PATH:-/telegram/webhook}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      WEBHOOK_REGISTER_ON_STARTUP: ${WEBHOOK_REGISTER_ON_STARTUP:-true}
     depends_on:
       - core
       - redis

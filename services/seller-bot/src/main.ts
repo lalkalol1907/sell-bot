@@ -1,20 +1,56 @@
+import { loadConfig } from "./config.js";
 import { createBot } from "./index.js";
-import { startMetricsServer } from "./metrics.js";
+import type { Bot } from "grammy";
+import { registerWebhook, startHttpServer, startPolling } from "./transport.js";
+import type { BotContext } from "./types.js";
 
-const token = process.env.BOT_TOKEN;
-if (!token) {
-  console.error("BOT_TOKEN is required");
-  process.exit(1);
+let shuttingDown = false;
+
+async function shutdown(
+  server: ReturnType<typeof Bun.serve>,
+  bot: Bot<BotContext>,
+  transport: "polling" | "webhook",
+  signal: string,
+) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`shutting down (${signal})...`);
+  server.stop(true);
+  if (transport === "polling") {
+    await bot.stop();
+  }
+  process.exit(0);
 }
 
-const coreAddr = process.env.CORE_GRPC_ADDR ?? "core:50051";
-const natsUrl = process.env.NATS_URL ?? "nats://nats:4222";
-const redisUrl = process.env.REDIS_URL ?? "redis://redis:6379/0";
-const loginWebUrl = process.env.LOGIN_WEB_URL ?? "";
-const metricsPort = Number(process.env.METRICS_PORT ?? "9090");
+async function main() {
+  const config = loadConfig();
+  const bot = await createBot(
+    config.token,
+    config.coreAddr,
+    config.natsUrl,
+    config.redisUrl,
+    config.loginWebUrl,
+  );
 
-startMetricsServer(metricsPort);
+  const server = startHttpServer(bot, config);
 
-const bot = await createBot(token, coreAddr, natsUrl, redisUrl, loginWebUrl);
-console.log("seller-bot starting...");
-bot.start();
+  if (config.transport === "webhook") {
+    if (config.webhookRegisterOnStartup) {
+      await registerWebhook(bot, config);
+    } else {
+      console.log("WEBHOOK_REGISTER_ON_STARTUP=false, skipping setWebhook");
+    }
+    console.log("webhook mode: horizontally scalable behind load balancer");
+  } else {
+    console.warn("polling mode: run a single seller-bot replica");
+    await startPolling(bot);
+  }
+
+  process.on("SIGINT", () => void shutdown(server, bot, config.transport, "SIGINT"));
+  process.on("SIGTERM", () => void shutdown(server, bot, config.transport, "SIGTERM"));
+}
+
+main().catch((err) => {
+  console.error("seller-bot failed to start", err);
+  process.exit(1);
+});

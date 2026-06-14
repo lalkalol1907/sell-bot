@@ -30,6 +30,7 @@ import {
 } from "./handlers/workers.js";
 import { handleWorkerAddResult, handleWorkerAddStart } from "./handlers/worker-add.js";
 import type { BotContext, SessionData } from "./types.js";
+import { incBotUpdates } from "./metrics.js";
 
 export type { SessionData, BotContext };
 
@@ -42,6 +43,11 @@ export async function createBot(
 ) {
   const bot = new Bot<BotContext>(token);
   const redis = new Redis(redisUrl);
+
+  bot.use(async (_ctx, next) => {
+    incBotUpdates();
+    await next();
+  });
 
   bot.use(
     session({
