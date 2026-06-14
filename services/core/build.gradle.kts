@@ -14,7 +14,7 @@ version = "0.1.0"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(24)
     }
 }
 
@@ -37,10 +37,28 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:3.25.5")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.mockito", module = "mockito-core")
+        exclude(group = "org.mockito", module = "mockito-junit-jupiter")
+    }
+    testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.18.0")
+    testImplementation("net.bytebuddy:byte-buddy:1.15.11")
+    testImplementation("net.bytebuddy:byte-buddy-agent:1.15.11")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        force(
+            "org.mockito:mockito-core:5.18.0",
+            "org.mockito:mockito-junit-jupiter:5.18.0",
+            "net.bytebuddy:byte-buddy:1.15.11",
+            "net.bytebuddy:byte-buddy-agent:1.15.11",
+        )
+    }
 }
 
 protobuf {
@@ -82,6 +100,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    jvmArgs(
+        "-XX:+EnableDynamicAgentLoading",
+        "-Dnet.bytebuddy.experimental=true",
+    )
 }
 
 tasks.bootJar {

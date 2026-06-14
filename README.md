@@ -66,6 +66,8 @@ make test
 
 ## Локальная разработка
 
+Требования для Core: **JDK 24** (Temurin).
+
 ```bash
 # Proto stubs (обязательно перед go/py сборкой)
 make gen-proto
