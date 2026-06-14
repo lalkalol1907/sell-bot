@@ -100,6 +100,22 @@ services:
       - matching
       - nats
 
+  login-gateway:
+    build:
+      context: .
+      dockerfile: services/login-gateway/Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      CORE_GRPC_ADDR: core:50051
+      WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      PORT: 8080
+    depends_on:
+      - core
+      - worker-engine
+
   seller-bot:
     build:
       context: .
@@ -107,8 +123,7 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-}
       CORE_GRPC_ADDR: core:50051
-      WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
-      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
     depends_on:
@@ -116,6 +131,7 @@ services:
       - redis
       - nats
       - worker-engine
+      - login-gateway
 
 volumes:
   postgres_data:

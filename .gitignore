@@ -44,11 +44,20 @@ services/matching/.ruff_cache/
 services/matching/app/generated/*
 !services/matching/app/generated/__init__.py
 
+# --- Node / Bun (TypeScript) ---
+node_modules/
+**/node_modules/
+
 # --- Seller Bot (Bun / TypeScript) ---
-services/seller-bot/node_modules/
 services/seller-bot/dist/
 services/seller-bot/.bun/
 
 # Telegram session files (never commit)
 *.session
 session_*
+
+# --- Login Gateway (Bun / TypeScript) ---
+services/login-gateway/dist/
+services/login-gateway/.bun/
+services/login-gateway/web/dist/
+services/login-gateway/web/.bun/

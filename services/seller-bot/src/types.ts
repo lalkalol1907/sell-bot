@@ -5,8 +5,6 @@ export type SessionData = {
   flow?: string;
   productTitle?: string;
   productPrice?: string;
-  loginId?: string;
-  workerPhone?: string;
 };
 
 export type BotContext = Context & { session: SessionData };

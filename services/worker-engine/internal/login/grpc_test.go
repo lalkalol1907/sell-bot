@@ -45,3 +45,33 @@ func TestGRPCServerAllowsMatchingToken(t *testing.T) {
 		t.Fatal("should not reject valid token")
 	}
 }
+
+func TestGRPCServerSubmitCodeRequiresAuth(t *testing.T) {
+	mgr := login.NewManager(0, "", "", nil)
+	srv := login.NewGRPCServer(mgr, "secret")
+
+	resp, err := srv.SubmitCode(context.Background(), &workerloginpb.SubmitCodeRequest{
+		LoginId: "x",
+		Code:    "12345",
+	})
+	if err != nil {
+		t.Fatalf("SubmitCode returned error: %v", err)
+	}
+	if resp.Message != "unauthorized" {
+		t.Fatalf("expected unauthorized, got %q", resp.Message)
+	}
+}
+
+func TestGRPCServerGetLoginStatusNotFound(t *testing.T) {
+	mgr := login.NewManager(0, "", "", nil)
+	srv := login.NewGRPCServer(mgr, "secret")
+	ctx := grpcauth.IncomingContext(context.Background(), "secret")
+
+	resp, err := srv.GetLoginStatus(ctx, &workerloginpb.GetLoginStatusRequest{LoginId: "missing"})
+	if err != nil {
+		t.Fatalf("GetLoginStatus returned error: %v", err)
+	}
+	if resp.Status != login.StatusError {
+		t.Fatalf("expected error status, got %q", resp.Status)
+	}
+}

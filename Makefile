@@ -14,6 +14,8 @@ gen-proto-python:
 build-local: gen-proto
 	cd services/core && ./gradlew bootJar -x test --no-daemon
 	cd services/worker-engine && go build -o worker-engine ./cmd/engine
+	cd services/login-gateway/web && bun install && bun run build
+	cd services/login-gateway && bun run lint
 	cd services/seller-bot && bun run lint
 
 build:
@@ -23,6 +25,7 @@ test: gen-proto
 	cd services/core && ./gradlew test --no-daemon
 	cd services/worker-engine && go test ./... -count=1
 	cd services/matching && pip3 install ".[dev]" && pytest tests/ -q
+	cd services/login-gateway && bun install && bun test
 	cd services/seller-bot && bun run lint && bun test
 
 up:

@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [core, worker-engine, matching, seller-bot]
+        component: [core, worker-engine, matching, seller-bot, login-gateway]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,6 +93,17 @@ jobs:
         working-directory: services/seller-bot
         run: bun install --frozen-lockfile && bun run lint && bun test
 
+      - name: Set Up Bun
+        if: matrix.component == 'login-gateway'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Run Login Gateway Tests
+        if: matrix.component == 'login-gateway'
+        working-directory: services/login-gateway
+        run: bun install && bun test
+
   build:
     name: Build ${{ matrix.component }}
     needs: test
@@ -101,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [core, worker-engine, matching, seller-bot]
+        component: [core, worker-engine, matching, seller-bot, login-gateway]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -133,6 +144,11 @@ jobs:
               echo "image=${USER}/${REPO}-seller-bot" >> "$GITHUB_OUTPUT"
               echo "context=." >> "$GITHUB_OUTPUT"
               echo "dockerfile=services/seller-bot/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+            login-gateway)
+              echo "image=${USER}/${REPO}-login-gateway" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/login-gateway/Dockerfile" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -201,6 +217,7 @@ jobs:
               echo "WORKER_ENGINE_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-worker-engine"
               echo "MATCHING_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-matching"
               echo "SELLER_BOT_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-bot"
+              echo "LOGIN_GATEWAY_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-login-gateway"
             } >> .env
             echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
             docker compose -f deploy/docker-compose.prod.yml pull
@@ -233,3 +250,4 @@ jobs:
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-worker-engine:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-matching:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-seller-bot:${{ github.ref_name }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-login-gateway:${{ github.ref_name }}`

@@ -1,34 +1,233 @@
 # sell-bot
 
-Telegram-система для продавцов: воркеры слушают чаты, Matching находит заявки, бот шлёт лиды.
+Telegram-система для продавцов: userbot-воркеры слушают чаты, Matching находит заявки на покупку, seller-bot уведомляет продавца. Подключение воркеров — через Telegram Mini App (QR или телефон), без OTP в чате бота.
 
 ## Стек
 
-| Сервис | Язык |
-|--------|------|
-| Core | Kotlin + Spring Boot + gRPC + Flyway (JDK 24) |
-| Worker Engine | Go 1.26 (gotd MTProto) |
-| Matching | Python 3.14 + FastAPI + rapidfuzz |
-| Seller Bot | TypeScript + grammY + **Bun 1.3.14** |
+| Сервис | Язык | Роль |
+|--------|------|------|
+| **Core** | Kotlin + Spring Boot + gRPC + Flyway (JDK 24) | Каталог, воркеры, лиды, сессии (PostgreSQL) |
+| **Worker Engine** | Go 1.26 (gotd MTProto) | Слушатели чатов, MTProto login (gRPC) |
+| **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
+| **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
+| **Login Gateway** | TypeScript + Bun | Mini App UI + HTTP BFF (публичный HTTPS) |
+
+Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.
+
+---
+
+## Архитектура
+
+### Общая схема
+
+```
+                         ┌─────────────────────────────────────┐
+                         │         Продавец (Telegram)         │
+                         └──────────────┬──────────────────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    │                   │                   │
+                    ▼                   ▼                   │
+            ┌───────────────┐   ┌───────────────┐          │
+            │  seller-bot   │   │   Mini App    │          │
+            │  (grammY)     │──►│  (WebApp UI)  │          │
+            └───────┬───────┘   └───────┬───────┘          │
+                    │                   │ HTTPS REST       │
+                    │ gRPC              ▼                   │
+                    │           ┌───────────────┐          │
+                    │           │ login-gateway │          │
+                    │           │  (Bun BFF)    │          │
+                    │           └───┬───────┬───┘          │
+                    │               │       │              │
+                    │         gRPC  │       │ gRPC         │
+                    │    catalog    │       │ worker_login │
+                    │               │       │              │
+                    ▼               ▼       ▼              │
+            ┌───────────────────────────────────┐          │
+            │              core (Kotlin)         │          │
+            │         gRPC :50051 + Flyway       │          │
+            └───────────────────┬───────────────┘          │
+                                │                          │
+                                ▼                          │
+                         ┌────────────┐                    │
+                         │ PostgreSQL │                    │
+                         └────────────┘                    │
+                                                            │
+    ┌───────────────┐         NATS          ┌────────────┴───┐
+    │ worker-engine │ ───publish──────────► │    matching    │
+    │  (Go/gotd)    │ ◄──subscribe───────── │   (Python)     │
+    └───────┬───────┘                       └───────┬────────┘
+            │                                       │
+            │ MTProto                               │ gRPC + Redis
+            ▼                                       ▼
+    ┌───────────────┐                       ┌───────────────┐
+    │   Telegram    │                       │     core      │
+    │  (чаты, QR)   │                       └───────────────┘
+
+    seller-bot ──NATS subscribe──► lead.created
+    seller-bot ──Redis──► сессии FSM
+```
+
+### Поток лидов
+
+```
+ Telegram чат          worker-engine          NATS           matching            core           seller-bot         Продавец
+      │                     │                  │                │                 │                 │                │
+      │  новое сообщение    │                  │                │                 │                 │                │
+      │────────────────────►│                  │                │                 │                 │                │
+      │                     │  whitelist       │                │                 │                 │                │
+      │                     │  message.captured│                │                 │                 │                │
+      │                     │─────────────────►│                │                 │                 │                │
+      │                     │                  │  consume       │                 │                 │                │
+      │                     │                  │───────────────►│                 │                 │                │
+      │                     │                  │                │ get_seller      │                 │                │
+      │                     │                  │                │ list_products   │                 │                │
+      │                     │                  │                │────────────────►│                 │                │
+      │                     │                  │                │ match + dedup   │                 │                │
+      │                     │                  │                │ create_lead     │                 │                │
+      │                     │                  │                │────────────────►│                 │                │
+      │                     │                  │  lead.created  │                 │                 │                │
+      │                     │                  │◄───────────────│                 │                 │                │
+      │                     │                  │                │                 │  subscribe      │                │
+      │                     │                  │─────────────────────────────────────────────────►│                │
+      │                     │                  │                │                 │  карточка лида  │                │
+      │                     │                  │                │                 │────────────────────────────────►│
+```
+
+1. **worker-engine** слушает выбранные чаты (MTProto userbot).
+2. Сообщение публикуется в NATS (`message.captured`).
+3. **matching** сопоставляет текст с каталогом продавца, дедуплицирует, создаёт лид в Core.
+4. Событие `lead.created` → **seller-bot** шлёт карточку продавцу.
+
+### Поток подключения воркера (Mini App)
+
+OTP и 2FA **не проходят через чат бота** — только через WebApp или QR в официальном Telegram.
+
+```
+ Продавец        seller-bot       Mini App      login-gateway    worker-engine       core        Telegram
+     │                │               │               │                │              │              │
+     │ Добавить       │               │               │                │              │              │
+     │ воркера        │               │               │                │              │              │
+     │───────────────►│               │               │                │              │              │
+     │                │ кнопка WebApp │               │                │              │              │
+     │◄───────────────│               │               │                │              │              │
+     │ открыть форму  │               │               │                │              │              │
+     │───────────────────────────────►│               │                │              │              │
+     │                │               │ POST /session │                │              │              │
+     │                │               │──────────────►│ GetSellerByTgId│              │              │
+     │                │               │               │───────────────►│              │              │
+     │                │               │               │                │              │              │
+     │  ─── вариант QR ───            │               │                │              │              │
+     │                │               │ POST /qr/start│                │              │              │
+     │                │               │──────────────►│ StartQRLogin   │              │              │
+     │                │               │               │───────────────►│ qrlogin.Auth │              │
+     │                │               │               │                │─────────────►│              │
+     │                │               │◄─ qr_url ─────│                │              │              │
+     │ сканировать QR │               │               │                │              │              │
+     │─────────────────────────────────────────────────────────────────────────────────────────────►│
+     │                │               │ GET /status   │                │              │              │
+     │                │               │──────────────►│ GetLoginStatus │              │              │
+     │                │               │               │───────────────►│              │              │
+     │                │               │               │                │              │              │
+     │  ─── вариант Телефон ───       │               │                │              │              │
+     │                │               │ POST /phone   │                │              │              │
+     │                │               │──────────────►│ StartLogin     │              │              │
+     │                │               │               │───────────────►│ SendCode     │              │
+     │                │               │               │                │─────────────►│              │
+     │                │               │ POST /code    │                │              │              │
+     │                │               │──────────────►│ SubmitCode     │              │              │
+     │                │               │ POST /password│                │              │              │
+     │                │               │──────────────►│ SubmitPassword │              │              │
+     │                │               │               │                │              │              │
+     │                │               │               │ CreateWorker   │              │              │
+     │                │               │               │───────────────►│─────────────►│              │
+     │                │               │ sendData OK   │                │              │              │
+     │                │◄──────────────│               │                │              │              │
+     │◄───────────────│ воркер OK     │               │                │              │              │
+```
+
+**Границы ответственности:**
+
+| Сервис | Сеть | Что делает |
+|--------|------|------------|
+| **login-gateway** | Публичный HTTPS | Static Mini App, REST API, валидация `initData` |
+| **worker-engine** | Только internal | MTProto login, listener-воркеры, gRPC `:50053` |
+| **seller-bot** | Telegram Bot API | Точка входа (кнопка WebApp), приём результата |
+
+Внутренний gRPC защищён metadata `x-internal-grpc-token` (`INTERNAL_GRPC_TOKEN`).
+
+### Proto / gRPC контракты
+
+| Файл | Сервисы |
+|------|---------|
+| `proto/catalog.proto` | Core — продавцы, каталог |
+| `proto/workers.proto` | Core — воркеры, чаты, сессии |
+| `proto/leads.proto` | Core — лиды, статистика |
+| `proto/matching.proto` | Matching — ProcessMessage |
+| `proto/worker_login.proto` | Worker Engine — phone/QR login, poll статуса |
+
+---
+
+## Порты (локальный docker compose)
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| Core gRPC | `50051` | gRPC API |
+| Core HTTP | `8080` | Actuator health |
+| Matching gRPC | `50052` | gRPC (опционально) |
+| Matching HTTP | `8000` | `/health` |
+| Login Gateway | `8081` | Mini App + REST API |
+| Worker Engine login gRPC | `50053` | internal only (не проброшен в prod) |
+| PostgreSQL | `5432` | |
+| Redis | `6379` | |
+| NATS | `4222` | |
+
+---
 
 ## Быстрый старт
 
 ```bash
 cp .env.example .env
-# BOT_TOKEN, TG_API_ID, TG_API_HASH
+# Обязательно: BOT_TOKEN, TG_API_ID, TG_API_HASH, SESSION_ENCRYPTION_KEY, INTERNAL_GRPC_TOKEN
 
 docker compose up -d --build
 ```
 
-Сервисы:
-- Core gRPC `:50051`, health `http://localhost:8080/actuator/health`
-- Matching `http://localhost:8000/health`
+Проверка:
+- Core: `http://localhost:8080/actuator/health`
+- Matching: `http://localhost:8000/health`
+- Login Gateway: `http://localhost:8081/health`
+
+---
+
+## Добавление воркера (Mini App)
+
+1. Задайте в `.env`: `TG_API_ID`, `TG_API_HASH`, `SESSION_ENCRYPTION_KEY`, `INTERNAL_GRPC_TOKEN`
+2. `LOGIN_WEB_URL` — URL login-gateway (см. TLS ниже)
+3. В боте: **Воркеры** → **Добавить воркера** → **Открыть подключение воркера**
+4. В Mini App:
+   - **QR** — сканировать в официальном Telegram (Настройки → Устройства)
+   - **Телефон** — код и 2FA вводятся в форме WebApp
+5. **Воркеры** → выбрать воркера → включить чаты в whitelist
+
+### LOGIN_WEB_URL и TLS
+
+Telegram WebApp требует HTTPS в проде.
+
+1. Поддомен, например `login.example.com`
+2. Reverse proxy (Caddy/nginx) → `login-gateway:8080`
+3. BotFather → разрешить домен WebApp
+4. `.env`: `LOGIN_WEB_URL=https://login.example.com`
+
+Локально: `LOGIN_WEB_URL=http://localhost:8081` (вне Telegram) или ngrok/cloudflared на `8081`.
+
+---
 
 ## E2E демо (без MTProto)
 
-1. Запустить стек, открыть бота → `/start`
+1. Запустить стек, в боте → `/start`
 2. `/add_product` → iPhone 16 → 79990 → RUB
-3. В `.env` задать:
+3. В `.env`:
    ```
    DEV_INJECT_MESSAGE=куплю айфон 16
    OWNER_SELLER_ID=1
@@ -37,15 +236,7 @@ docker compose up -d --build
 4. `docker compose restart worker-engine`
 5. Бот пришлёт уведомление о лиде
 
-## Добавление воркера (MTProto)
-
-1. Задайте `TG_API_ID`, `TG_API_HASH`, `SESSION_ENCRYPTION_KEY` в `.env`
-2. В боте: **Воркеры** → **Добавить воркера** (или `/add_worker`)
-3. Введите телефон → код из Telegram → пароль 2FA (если есть)
-4. **Воркеры** → выберите воркера → включите чаты в whitelist
-5. Worker-engine подхватит сессию из БД и начнёт слушать выбранные чаты
-
-Поток лидов: `worker-engine` → NATS `message.captured` → Matching → Core → NATS `lead.created` → Seller Bot.
+---
 
 ## Тесты
 
@@ -53,72 +244,109 @@ docker compose up -d --build
 make test
 ```
 
-Покрытие по сервисам:
-
 | Сервис | Фреймворк | Что тестируется |
 |--------|-----------|-----------------|
-| **Matching** | pytest (34 теста) | normalize, intent, matcher, dedup, process_message, /health |
-| **Core** | JUnit 5 + Mockito (17 тестов) | CatalogService, LeadsService, WorkersService |
-| **Worker Engine** | go test | crypto, listener, config, sessionstore, publisher, login |
-| **Seller Bot** | bun test (15 тестов) | phone, validation, lead formatting, telegram links |
+| Matching | pytest | normalize, intent, matcher, dedup, process_message |
+| Core | JUnit 5 + Mockito | CatalogService, LeadsService, WorkersService, InternalGrpcAuth |
+| Worker Engine | go test | crypto, listener, login (phone + QR gRPC), grpcauth |
+| Seller Bot | bun test | utils, worker-add web_app_data |
+| Login Gateway | bun test | Telegram initData validation |
 
-Перед тестами Go/Python нужны proto-стабы: `make gen-proto` (включено в `make test`).
+Перед тестами Go/Python: `make gen-proto` (включено в `make test`).
+
+---
 
 ## Локальная разработка
 
-Требования для Core: **JDK 24** (Temurin).
+Требования: **JDK 24** (Core), **Go 1.26**, **Bun 1.3.14**, **Python 3.14**.
 
 ```bash
-# Proto stubs (обязательно перед go/py сборкой)
 make gen-proto
 
-# Core (Java proto stubs + jar)
+# Core
 cd services/core && ./gradlew generateProto bootJar -x test
 
 # Worker Engine
 cd services/worker-engine && go build -o worker-engine ./cmd/engine
 
+# Login Gateway (API + Mini App)
+cd services/login-gateway/web && bun install && bun run build
+cd services/login-gateway && bun install && bun run dev
+
 # Seller Bot
 cd services/seller-bot && bun install && bun run dev
 
-# Matching tests
-cd services/matching && pip install . pytest && pytest tests/
+# Matching
+cd services/matching && pip install ".[dev]" && pytest tests/
 ```
 
-## Структура
+---
+
+## Структура репозитория
 
 ```
 sell-bot/
-├── proto/
+├── proto/                    # gRPC контракты
+├── scripts/                  # gen-proto-go.sh, gen-proto-python.sh
 ├── services/
-│   ├── core/
-│   ├── worker-engine/
-│   ├── matching/
-│   └── seller-bot/
+│   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway
+│   ├── worker-engine/        # Go: listeners + login.Manager (gRPC)
+│   ├── matching/             # Python: matcher pipeline
+│   ├── seller-bot/           # grammY бот продавца
+│   └── login-gateway/        # Bun BFF + web/ (Vite React Mini App)
 ├── deploy/
-└── docker-compose.yml
+│   └── docker-compose.prod.yml
+├── docker-compose.yml
+├── Makefile
+└── .env.example
 ```
+
+---
+
+## Переменные окружения
+
+Ключевые (полный список — `.env.example`):
+
+| Переменная | Сервис | Назначение |
+|------------|--------|------------|
+| `BOT_TOKEN` | seller-bot, login-gateway | Telegram Bot API + валидация initData |
+| `LOGIN_WEB_URL` | seller-bot | URL кнопки WebApp |
+| `INTERNAL_GRPC_TOKEN` | core, worker-engine, login-gateway | Auth internal gRPC (metadata) |
+| `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
+| `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
+| `CORE_GRPC_ADDR` | все gRPC-клиенты | Адрес Core |
+
+---
 
 ## Деплой (VPS)
 
-Как в MujahidMusicV4: тесты на каждый push/PR, сборка и деплой — только по тегу `v*`.
+Как в MujahidMusicV4: тесты на push/PR, сборка и деплой — только по тегу `v*`.
 
-1. Настрой GitHub Secrets:
-   - `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
-   - `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`
-   - `DEPLOY_DOTENV` — полный `.env` для продакшена (BOT_TOKEN, TG_API_ID, …)
-   - опционально: `DEPLOY_SSH_KEY_PASSPHRASE`
+**GitHub Secrets:**
+- `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
+- `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`
+- `DEPLOY_DOTENV` — полный `.env` для продакшена
 
-2. Релиз:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+**Релиз:**
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-3. CI: test → build (4 образа в Docker Hub) → deploy (SSH) → GitHub Release
+CI: test → build (5 образов) → deploy (SSH) → GitHub Release
 
-Образы: `{DOCKERHUB_USERNAME}/{repo}-core`, `-worker-engine`, `-matching`, `-seller-bot`
+**Docker Hub образы:**
+- `{user}/{repo}-core`
+- `{user}/{repo}-worker-engine`
+- `{user}/{repo}-matching`
+- `{user}/{repo}-seller-bot`
+- `{user}/{repo}-login-gateway`
 
-На сервере: `docker compose -f deploy/docker-compose.prod.yml up -d`
+На сервере:
+```bash
+docker compose -f deploy/docker-compose.prod.yml up -d
+```
 
-Подробный план: `../gb-plan.md`
+`login-gateway` в prod не пробрасывает порт наружу — только через reverse proxy с TLS.
+
+Подробный продуктовый план: [`../gb-plan.md`](../gb-plan.md)

@@ -20,8 +20,10 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	WorkerLoginService_StartLogin_FullMethodName     = "/sellbot.workerlogin.WorkerLoginService/StartLogin"
+	WorkerLoginService_StartQRLogin_FullMethodName   = "/sellbot.workerlogin.WorkerLoginService/StartQRLogin"
 	WorkerLoginService_SubmitCode_FullMethodName     = "/sellbot.workerlogin.WorkerLoginService/SubmitCode"
 	WorkerLoginService_SubmitPassword_FullMethodName = "/sellbot.workerlogin.WorkerLoginService/SubmitPassword"
+	WorkerLoginService_GetLoginStatus_FullMethodName = "/sellbot.workerlogin.WorkerLoginService/GetLoginStatus"
 )
 
 // WorkerLoginServiceClient is the client API for WorkerLoginService service.
@@ -29,8 +31,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerLoginServiceClient interface {
 	StartLogin(ctx context.Context, in *StartLoginRequest, opts ...grpc.CallOption) (*LoginStepResponse, error)
+	StartQRLogin(ctx context.Context, in *StartQRLoginRequest, opts ...grpc.CallOption) (*LoginStepResponse, error)
 	SubmitCode(ctx context.Context, in *SubmitCodeRequest, opts ...grpc.CallOption) (*LoginStepResponse, error)
 	SubmitPassword(ctx context.Context, in *SubmitPasswordRequest, opts ...grpc.CallOption) (*LoginStepResponse, error)
+	GetLoginStatus(ctx context.Context, in *GetLoginStatusRequest, opts ...grpc.CallOption) (*LoginStepResponse, error)
 }
 
 type workerLoginServiceClient struct {
@@ -45,6 +49,16 @@ func (c *workerLoginServiceClient) StartLogin(ctx context.Context, in *StartLogi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginStepResponse)
 	err := c.cc.Invoke(ctx, WorkerLoginService_StartLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workerLoginServiceClient) StartQRLogin(ctx context.Context, in *StartQRLoginRequest, opts ...grpc.CallOption) (*LoginStepResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginStepResponse)
+	err := c.cc.Invoke(ctx, WorkerLoginService_StartQRLogin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +85,25 @@ func (c *workerLoginServiceClient) SubmitPassword(ctx context.Context, in *Submi
 	return out, nil
 }
 
+func (c *workerLoginServiceClient) GetLoginStatus(ctx context.Context, in *GetLoginStatusRequest, opts ...grpc.CallOption) (*LoginStepResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginStepResponse)
+	err := c.cc.Invoke(ctx, WorkerLoginService_GetLoginStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkerLoginServiceServer is the server API for WorkerLoginService service.
 // All implementations must embed UnimplementedWorkerLoginServiceServer
 // for forward compatibility.
 type WorkerLoginServiceServer interface {
 	StartLogin(context.Context, *StartLoginRequest) (*LoginStepResponse, error)
+	StartQRLogin(context.Context, *StartQRLoginRequest) (*LoginStepResponse, error)
 	SubmitCode(context.Context, *SubmitCodeRequest) (*LoginStepResponse, error)
 	SubmitPassword(context.Context, *SubmitPasswordRequest) (*LoginStepResponse, error)
+	GetLoginStatus(context.Context, *GetLoginStatusRequest) (*LoginStepResponse, error)
 	mustEmbedUnimplementedWorkerLoginServiceServer()
 }
 
@@ -91,11 +117,17 @@ type UnimplementedWorkerLoginServiceServer struct{}
 func (UnimplementedWorkerLoginServiceServer) StartLogin(context.Context, *StartLoginRequest) (*LoginStepResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartLogin not implemented")
 }
+func (UnimplementedWorkerLoginServiceServer) StartQRLogin(context.Context, *StartQRLoginRequest) (*LoginStepResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartQRLogin not implemented")
+}
 func (UnimplementedWorkerLoginServiceServer) SubmitCode(context.Context, *SubmitCodeRequest) (*LoginStepResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitCode not implemented")
 }
 func (UnimplementedWorkerLoginServiceServer) SubmitPassword(context.Context, *SubmitPasswordRequest) (*LoginStepResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitPassword not implemented")
+}
+func (UnimplementedWorkerLoginServiceServer) GetLoginStatus(context.Context, *GetLoginStatusRequest) (*LoginStepResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLoginStatus not implemented")
 }
 func (UnimplementedWorkerLoginServiceServer) mustEmbedUnimplementedWorkerLoginServiceServer() {}
 func (UnimplementedWorkerLoginServiceServer) testEmbeddedByValue()                            {}
@@ -136,6 +168,24 @@ func _WorkerLoginService_StartLogin_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkerLoginService_StartQRLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartQRLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerLoginServiceServer).StartQRLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkerLoginService_StartQRLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerLoginServiceServer).StartQRLogin(ctx, req.(*StartQRLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WorkerLoginService_SubmitCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitCodeRequest)
 	if err := dec(in); err != nil {
@@ -172,6 +222,24 @@ func _WorkerLoginService_SubmitPassword_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkerLoginService_GetLoginStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLoginStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerLoginServiceServer).GetLoginStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkerLoginService_GetLoginStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerLoginServiceServer).GetLoginStatus(ctx, req.(*GetLoginStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkerLoginService_ServiceDesc is the grpc.ServiceDesc for WorkerLoginService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -184,12 +252,20 @@ var WorkerLoginService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _WorkerLoginService_StartLogin_Handler,
 		},
 		{
+			MethodName: "StartQRLogin",
+			Handler:    _WorkerLoginService_StartQRLogin_Handler,
+		},
+		{
 			MethodName: "SubmitCode",
 			Handler:    _WorkerLoginService_SubmitCode_Handler,
 		},
 		{
 			MethodName: "SubmitPassword",
 			Handler:    _WorkerLoginService_SubmitPassword_Handler,
+		},
+		{
+			MethodName: "GetLoginStatus",
+			Handler:    _WorkerLoginService_GetLoginStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

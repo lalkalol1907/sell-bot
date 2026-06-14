@@ -12,6 +12,7 @@ import (
 
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
+	"github.com/gotd/td/telegram/auth/qrlogin"
 	"github.com/gotd/td/tg"
 
 	"github.com/sellbot/worker-engine/internal/core"
@@ -20,10 +21,16 @@ import (
 )
 
 const (
+	StatusQRReady          = "qr_ready"
 	StatusCodeSent         = "code_sent"
 	StatusPasswordRequired = "password_required"
 	StatusSuccess          = "success"
 	StatusError            = "error"
+)
+
+const (
+	modePhone = "phone"
+	modeQR    = "qr"
 )
 
 var (
@@ -32,36 +39,41 @@ var (
 )
 
 type Step struct {
-	LoginID  string
-	Status   string
-	Message  string
-	WorkerID int64
+	LoginID      string
+	Status       string
+	Message      string
+	WorkerID     int64
+	QrURL        string
+	QrExpiresAt  int64
 }
 
 type Manager struct {
-	apiID    int
-	apiHash  string
-	encKey   string
-	core     *core.Client
-	mu       sync.Mutex
-	pending  map[string]*pendingLogin
-	ttl      time.Duration
+	apiID   int
+	apiHash string
+	encKey  string
+	core    *core.Client
+	mu      sync.Mutex
+	pending map[string]*pendingLogin
+	ttl     time.Duration
 }
 
 type pendingLogin struct {
 	id            string
 	ownerSellerID int64
+	mode          string
 	phone         string
 	storage       *sessionstore.MemoryStorage
 	createdAt     time.Time
 
-	mu       sync.Mutex
-	status   string
-	message  string
-	workerID int64
-	err      error
-	done     chan struct{}
-	statusCh chan struct{}
+	mu          sync.Mutex
+	status      string
+	message     string
+	workerID    int64
+	qrURL       string
+	qrExpiresAt int64
+	err         error
+	done        chan struct{}
+	statusCh    chan struct{}
 
 	codeCh     chan string
 	passwordCh chan string
@@ -80,15 +92,22 @@ func NewManager(apiID int, apiHash, encKey string, coreClient *core.Client) *Man
 	return m
 }
 
-func (m *Manager) StartLogin(ctx context.Context, ownerSellerID int64, phone string) (Step, error) {
+func (m *Manager) validateConfig() error {
 	if m.apiID == 0 || m.apiHash == "" {
-		return Step{}, fmt.Errorf("TG_API_ID and TG_API_HASH required")
+		return fmt.Errorf("TG_API_ID and TG_API_HASH required")
 	}
 	if m.encKey == "" {
-		return Step{}, fmt.Errorf("SESSION_ENCRYPTION_KEY required")
+		return fmt.Errorf("SESSION_ENCRYPTION_KEY required")
 	}
 	if m.core == nil {
-		return Step{}, fmt.Errorf("core client unavailable")
+		return fmt.Errorf("core client unavailable")
+	}
+	return nil
+}
+
+func (m *Manager) StartLogin(ctx context.Context, ownerSellerID int64, phone string) (Step, error) {
+	if err := m.validateConfig(); err != nil {
+		return Step{}, err
 	}
 
 	id, err := newLoginID()
@@ -96,42 +115,49 @@ func (m *Manager) StartLogin(ctx context.Context, ownerSellerID int64, phone str
 		return Step{}, err
 	}
 
-	pl := &pendingLogin{
-		id:            id,
-		ownerSellerID: ownerSellerID,
-		phone:         phone,
-		storage:       &sessionstore.MemoryStorage{},
-		createdAt:     time.Now(),
-		status:        StatusCodeSent,
-		message:       "Отправляем код…",
-		done:          make(chan struct{}),
-		statusCh:      make(chan struct{}, 1),
-		codeCh:        make(chan string, 1),
-		passwordCh:    make(chan string, 1),
+	pl := m.newPending(id, ownerSellerID, modePhone, phone)
+	pl.setStatus(StatusCodeSent, "Отправляем код…")
+
+	m.register(pl)
+	go m.runPhoneLogin(context.Background(), pl)
+
+	return m.waitInitial(ctx, pl, 45*time.Second, Step{LoginID: id, Status: StatusCodeSent, Message: "Код отправлен в Telegram"})
+}
+
+func (m *Manager) StartQRLogin(ctx context.Context, ownerSellerID int64) (Step, error) {
+	if err := m.validateConfig(); err != nil {
+		return Step{}, err
 	}
 
-	m.mu.Lock()
-	m.pending[id] = pl
-	m.mu.Unlock()
-
-	go m.runLogin(context.Background(), pl)
-
-	select {
-	case <-pl.done:
-		return pl.step(), pl.err
-	case <-pl.statusCh:
-		return pl.step(), nil
-	case <-time.After(45 * time.Second):
-		return Step{LoginID: id, Status: StatusCodeSent, Message: "Код отправлен в Telegram"}, nil
-	case <-ctx.Done():
-		return Step{}, ctx.Err()
+	id, err := newLoginID()
+	if err != nil {
+		return Step{}, err
 	}
+
+	pl := m.newPending(id, ownerSellerID, modeQR, "")
+	pl.setStatus(StatusQRReady, "Генерируем QR…")
+
+	m.register(pl)
+	go m.runQRLogin(context.Background(), pl)
+
+	return m.waitInitial(ctx, pl, 30*time.Second, Step{LoginID: id, Status: StatusQRReady, Message: "Отсканируйте QR в Telegram"})
+}
+
+func (m *Manager) GetLoginStatus(loginID string) (Step, error) {
+	pl, err := m.get(loginID)
+	if err != nil {
+		return Step{}, err
+	}
+	return pl.step(), nil
 }
 
 func (m *Manager) SubmitCode(ctx context.Context, loginID, code string) (Step, error) {
 	pl, err := m.get(loginID)
 	if err != nil {
 		return Step{}, err
+	}
+	if pl.mode != modePhone {
+		return Step{}, fmt.Errorf("login %s is not phone mode", loginID)
 	}
 
 	select {
@@ -148,6 +174,9 @@ func (m *Manager) SubmitPassword(ctx context.Context, loginID, password string) 
 	if err != nil {
 		return Step{}, err
 	}
+	if pl.mode != modePhone {
+		return Step{}, fmt.Errorf("login %s is not phone mode", loginID)
+	}
 
 	select {
 	case pl.passwordCh <- password:
@@ -158,6 +187,44 @@ func (m *Manager) SubmitPassword(ctx context.Context, loginID, password string) 
 	return m.waitStep(ctx, pl)
 }
 
+func (m *Manager) newPending(id string, ownerSellerID int64, mode, phone string) *pendingLogin {
+	return &pendingLogin{
+		id:            id,
+		ownerSellerID: ownerSellerID,
+		mode:          mode,
+		phone:         phone,
+		storage:       &sessionstore.MemoryStorage{},
+		createdAt:     time.Now(),
+		done:          make(chan struct{}),
+		statusCh:      make(chan struct{}, 1),
+		codeCh:        make(chan string, 1),
+		passwordCh:    make(chan string, 1),
+	}
+}
+
+func (m *Manager) register(pl *pendingLogin) {
+	m.mu.Lock()
+	m.pending[pl.id] = pl
+	m.mu.Unlock()
+}
+
+func (m *Manager) waitInitial(ctx context.Context, pl *pendingLogin, timeout time.Duration, fallback Step) (Step, error) {
+	select {
+	case <-pl.done:
+		return pl.step(), pl.err
+	case <-pl.statusCh:
+		return pl.step(), nil
+	case <-time.After(timeout):
+		step := pl.step()
+		if step.Status == "" {
+			return fallback, nil
+		}
+		return step, nil
+	case <-ctx.Done():
+		return Step{}, ctx.Err()
+	}
+}
+
 func (m *Manager) waitStep(ctx context.Context, pl *pendingLogin) (Step, error) {
 	select {
 	case <-pl.done:
@@ -166,6 +233,8 @@ func (m *Manager) waitStep(ctx context.Context, pl *pendingLogin) (Step, error) 
 			return step, pl.err
 		}
 		return step, nil
+	case <-pl.statusCh:
+		return pl.step(), nil
 	case <-time.After(60 * time.Second):
 		return pl.step(), nil
 	case <-ctx.Done():
@@ -187,23 +256,44 @@ func (m *Manager) get(loginID string) (*pendingLogin, error) {
 	return pl, nil
 }
 
-func (m *Manager) runLogin(ctx context.Context, pl *pendingLogin) {
+func (m *Manager) runPhoneLogin(ctx context.Context, pl *pendingLogin) {
 	defer close(pl.done)
-	defer func() {
-		m.mu.Lock()
-		delete(m.pending, pl.id)
-		m.mu.Unlock()
-	}()
 
-	err := m.authenticate(ctx, pl)
+	err := m.authenticatePhone(ctx, pl)
 	if err != nil {
 		pl.setError(err)
-		log.Printf("login %s failed: %v", pl.id, err)
-		return
+		log.Printf("phone login %s failed: %v", pl.id, err)
 	}
 }
 
-func (m *Manager) authenticate(ctx context.Context, pl *pendingLogin) error {
+func (m *Manager) runQRLogin(ctx context.Context, pl *pendingLogin) {
+	defer close(pl.done)
+
+	dispatcher := tg.NewUpdateDispatcher()
+	loggedIn := qrlogin.OnLoginToken(dispatcher)
+
+	client := telegram.NewClient(m.apiID, m.apiHash, telegram.Options{
+		SessionStorage: pl.storage,
+		UpdateHandler:  dispatcher,
+	})
+
+	err := client.Run(ctx, func(ctx context.Context) error {
+		show := func(ctx context.Context, token qrlogin.Token) error {
+			pl.setQR(token.URL(), token.Expires().Unix())
+			return nil
+		}
+		if _, err := client.QR().Auth(ctx, loggedIn, show); err != nil {
+			return fmt.Errorf("qr auth: %w", err)
+		}
+		return m.finalizeSession(ctx, pl, client)
+	})
+	if err != nil {
+		pl.setError(err)
+		log.Printf("qr login %s failed: %v", pl.id, err)
+	}
+}
+
+func (m *Manager) authenticatePhone(ctx context.Context, pl *pendingLogin) error {
 	client := telegram.NewClient(m.apiID, m.apiHash, telegram.Options{
 		SessionStorage: pl.storage,
 	})
@@ -241,29 +331,44 @@ func (m *Manager) authenticate(ctx context.Context, pl *pendingLogin) error {
 			return fmt.Errorf("sign in: %w", signInErr)
 		}
 
-		self, err := client.Self(ctx)
-		if err != nil {
-			return fmt.Errorf("self: %w", err)
-		}
-
-		sessionData := pl.storage.Data
-		if len(sessionData) == 0 {
-			return fmt.Errorf("empty session after login")
-		}
-
-		enc, err := crypto.EncryptSession(m.encKey, sessionData)
-		if err != nil {
-			return fmt.Errorf("encrypt session: %w", err)
-		}
-
-		worker, err := m.core.CreateWorker(ctx, pl.ownerSellerID, pl.phone, self.ID, enc)
-		if err != nil {
-			return fmt.Errorf("create worker: %w", err)
-		}
-
-		pl.setSuccess(worker.Id, fmt.Sprintf("Воркер #%d подключён (@%s)", worker.Id, self.Username))
-		return nil
+		return m.finalizeSession(ctx, pl, client)
 	})
+}
+
+func (m *Manager) finalizeSession(ctx context.Context, pl *pendingLogin, client *telegram.Client) error {
+	self, err := client.Self(ctx)
+	if err != nil {
+		return fmt.Errorf("self: %w", err)
+	}
+
+	sessionData := pl.storage.Data
+	if len(sessionData) == 0 {
+		return fmt.Errorf("empty session after login")
+	}
+
+	enc, err := crypto.EncryptSession(m.encKey, sessionData)
+	if err != nil {
+		return fmt.Errorf("encrypt session: %w", err)
+	}
+
+	phone := pl.phone
+	if phone == "" {
+		phone = self.Phone
+	}
+
+	worker, err := m.core.CreateWorker(ctx, pl.ownerSellerID, phone, self.ID, enc)
+	if err != nil {
+		return fmt.Errorf("create worker: %w", err)
+	}
+
+	username := self.Username
+	if username != "" {
+		username = "@" + username
+	} else {
+		username = fmt.Sprintf("id:%d", self.ID)
+	}
+	pl.setSuccess(worker.Id, fmt.Sprintf("Воркер #%d подключён (%s)", worker.Id, username))
+	return nil
 }
 
 func (pl *pendingLogin) waitCode(ctx context.Context) (string, error) {
@@ -307,12 +412,17 @@ func (pl *pendingLogin) setStatus(status, message string) {
 	pl.status = status
 	pl.message = message
 	pl.mu.Unlock()
-	if status == StatusCodeSent || status == StatusPasswordRequired {
-		select {
-		case pl.statusCh <- struct{}{}:
-		default:
-		}
-	}
+	pl.notifyStatus()
+}
+
+func (pl *pendingLogin) setQR(url string, expiresAt int64) {
+	pl.mu.Lock()
+	pl.qrURL = url
+	pl.qrExpiresAt = expiresAt
+	pl.status = StatusQRReady
+	pl.message = "Отсканируйте QR в официальном Telegram"
+	pl.mu.Unlock()
+	pl.notifyStatus()
 }
 
 func (pl *pendingLogin) setSuccess(workerID int64, message string) {
@@ -321,10 +431,7 @@ func (pl *pendingLogin) setSuccess(workerID int64, message string) {
 	pl.message = message
 	pl.workerID = workerID
 	pl.mu.Unlock()
-	select {
-	case pl.statusCh <- struct{}{}:
-	default:
-	}
+	pl.notifyStatus()
 }
 
 func (pl *pendingLogin) setError(err error) {
@@ -333,16 +440,26 @@ func (pl *pendingLogin) setError(err error) {
 	pl.message = err.Error()
 	pl.err = err
 	pl.mu.Unlock()
+	pl.notifyStatus()
+}
+
+func (pl *pendingLogin) notifyStatus() {
+	select {
+	case pl.statusCh <- struct{}{}:
+	default:
+	}
 }
 
 func (pl *pendingLogin) step() Step {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
 	return Step{
-		LoginID:  pl.id,
-		Status:   pl.status,
-		Message:  pl.message,
-		WorkerID: pl.workerID,
+		LoginID:     pl.id,
+		Status:      pl.status,
+		Message:     pl.message,
+		WorkerID:    pl.workerID,
+		QrURL:       pl.qrURL,
+		QrExpiresAt: pl.qrExpiresAt,
 	}
 }
 

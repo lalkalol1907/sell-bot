@@ -8,13 +8,19 @@ option java_multiple_files = true;
 
 service WorkerLoginService {
   rpc StartLogin(StartLoginRequest) returns (LoginStepResponse);
+  rpc StartQRLogin(StartQRLoginRequest) returns (LoginStepResponse);
   rpc SubmitCode(SubmitCodeRequest) returns (LoginStepResponse);
   rpc SubmitPassword(SubmitPasswordRequest) returns (LoginStepResponse);
+  rpc GetLoginStatus(GetLoginStatusRequest) returns (LoginStepResponse);
 }
 
 message StartLoginRequest {
   int64 owner_seller_id = 1;
   string phone = 2;
+}
+
+message StartQRLoginRequest {
+  int64 owner_seller_id = 1;
 }
 
 message SubmitCodeRequest {
@@ -27,9 +33,15 @@ message SubmitPasswordRequest {
   string password = 2;
 }
 
+message GetLoginStatusRequest {
+  string login_id = 1;
+}
+
 message LoginStepResponse {
   string login_id = 1;
-  string status = 2;   // code_sent | password_required | success | error
+  string status = 2;   // qr_ready | code_sent | password_required | success | error
   string message = 3;
   int64 worker_id = 4;
+  string qr_url = 5;
+  int64 qr_expires_at = 6;
 }

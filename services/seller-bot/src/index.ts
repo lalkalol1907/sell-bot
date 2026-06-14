@@ -5,7 +5,6 @@ import {
   createCatalogClient,
   createLeadsClient,
   createWorkersClient,
-  createWorkerLoginClient,
   updateLeadStatus,
 } from "./grpc/client.js";
 import { subscribeLeadCreated } from "./events/lead-created.js";
@@ -18,7 +17,7 @@ import {
   handleWorkerChats,
   handleWorkersList,
 } from "./handlers/workers.js";
-import { handleWorkerAddFlow, handleWorkerAddStart } from "./handlers/worker-add.js";
+import { handleWorkerAddResult, handleWorkerAddStart } from "./handlers/worker-add.js";
 import type { BotContext, SessionData } from "./types.js";
 
 export type { SessionData, BotContext };
@@ -28,8 +27,7 @@ export async function createBot(
   coreAddr: string,
   natsUrl: string,
   redisUrl: string,
-  workerLoginAddr: string,
-  internalGrpcToken = "",
+  loginWebUrl: string,
 ) {
   const bot = new Bot<BotContext>(token);
   const redis = new Redis(redisUrl);
@@ -44,7 +42,6 @@ export async function createBot(
   const catalogClient = createCatalogClient(coreAddr);
   const leadsClient = createLeadsClient(coreAddr);
   const workersClient = createWorkersClient(coreAddr);
-  const loginClient = createWorkerLoginClient(workerLoginAddr);
 
   bot.command("start", async (ctx) => {
     await handleStart(ctx, catalogClient);
@@ -69,17 +66,23 @@ export async function createBot(
     await handleWorkersList(ctx, workersClient);
   });
 
-  bot.command("add_worker", handleWorkerAddStart);
-  bot.hears("Добавить воркера", handleWorkerAddStart);
+  bot.command("add_worker", async (ctx) => {
+    await handleWorkerAddStart(ctx, loginWebUrl);
+  });
+  bot.hears("Добавить воркера", async (ctx) => {
+    await handleWorkerAddStart(ctx, loginWebUrl);
+  });
+
+  bot.on("message:web_app_data", async (ctx) => {
+    const data = ctx.message?.web_app_data?.data;
+    if (data) {
+      await handleWorkerAddResult(ctx, data);
+    }
+  });
 
   bot.on("message:text", async (ctx) => {
     if (ctx.session.flow?.startsWith("add_product")) {
       await handleCatalogFlow(ctx, catalogClient);
-      return;
-    }
-    if (ctx.session.flow?.startsWith("worker_add")) {
-      await handleWorkerAddFlow(ctx, loginClient, internalGrpcToken);
-      return;
     }
   });
 
@@ -107,7 +110,7 @@ export async function createBot(
 
     if (data === "worker:add") {
       await ctx.answerCallbackQuery();
-      await handleWorkerAddStart(ctx);
+      await handleWorkerAddStart(ctx, loginWebUrl);
       return;
     }
 
