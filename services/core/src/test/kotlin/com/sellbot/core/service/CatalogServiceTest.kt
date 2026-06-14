@@ -30,6 +30,9 @@ class CatalogServiceTest {
     @Mock
     lateinit var productRepository: ProductRepository
 
+    @Mock
+    lateinit var spamLearningService: SpamLearningService
+
     @InjectMocks
     lateinit var catalogService: CatalogService
 

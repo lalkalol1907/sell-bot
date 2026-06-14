@@ -282,11 +282,39 @@ cd services/matching && pip install ".[dev]" && pytest tests/
 
 ---
 
+## Мониторинг (Grafana stack)
+
+В `docker-compose.yml` включён полный стек из `monitoring/`:
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| **Grafana** | 3000 | Дашборды (host, docker, sellbot) |
+| **Prometheus** | 9090 | Метрики сервисов и blackbox-проверки |
+| **Loki** | 3100 | Хранение логов |
+| **Promtail** | — | Сбор логов Docker-контейнеров |
+| **node-exporter** | 9100 | Метрики хоста |
+| **cadvisor** | 8082 | Метрики контейнеров |
+| **blackbox-exporter** | 9115 | HTTP health-пробы |
+
+Дашборды лежат в `monitoring/grafana/provisioning/dashboards/json/`:
+- `host.json` — CPU/RAM/диск хоста
+- `docker.json` — контейнеры Docker
+- `sellbot.json` — лиды, спам-фильтр, уведомления
+
+Логин Grafana: `admin` / `admin` (или `GRAFANA_ADMIN_*` из `monitoring/.env.example`).
+
+Переменные спам-фильтра matching:
+- `MIN_MESSAGE_CHARS` (по умолчанию 8)
+- `MAX_MESSAGE_CHARS` (по умолчанию 2000)
+
+---
+
 ## Структура репозитория
 
 ```
 sell-bot/
 ├── proto/                    # gRPC контракты
+├── monitoring/               # Prometheus, Loki, Grafana, дашборды
 ├── scripts/                  # gen-proto-go.sh, gen-proto-python.sh
 ├── services/
 │   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway
@@ -315,6 +343,8 @@ sell-bot/
 | `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
 | `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
 | `CORE_GRPC_ADDR` | все gRPC-клиенты | Адрес Core |
+| `NATS_URL` | core, matching, seller-bot, worker-engine | JetStream |
+| `MIN_MESSAGE_CHARS` / `MAX_MESSAGE_CHARS` | matching | Фильтр спама по длине |
 
 ---
 

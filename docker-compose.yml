@@ -14,6 +14,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    labels:
+      - "project=sell-bot"
 
   redis:
     image: redis:7-alpine
@@ -24,6 +26,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    labels:
+      - "project=sell-bot"
 
   nats:
     image: nats:2-alpine
@@ -33,6 +37,8 @@ services:
       - "8222:8222"
     volumes:
       - nats_data:/data
+    labels:
+      - "project=sell-bot"
 
   core:
     build:
@@ -47,15 +53,23 @@ services:
       SPRING_DATASOURCE_PASSWORD: sellbot
       GRPC_SERVER_PORT: 50051
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      NATS_URL: nats://nats:4222
     depends_on:
       db:
         condition: service_healthy
+      nats:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
+    labels:
+      - "project=sell-bot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8080"
+      - "prometheus.path=/actuator/prometheus"
 
   matching:
     build:
@@ -69,15 +83,24 @@ services:
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
       GRPC_PORT: 50052
+      MIN_MESSAGE_CHARS: ${MIN_MESSAGE_CHARS:-8}
+      MAX_MESSAGE_CHARS: ${MAX_MESSAGE_CHARS:-2000}
     depends_on:
       - core
       - redis
       - nats
+    labels:
+      - "project=sell-bot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8000"
+      - "prometheus.path=/metrics"
 
   worker-engine:
     build:
       context: .
       dockerfile: services/worker-engine/Dockerfile
+    ports:
+      - "9102:9102"
     volumes:
       - worker_data:/data
     environment:
@@ -95,10 +118,16 @@ services:
       LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS:-true}
       LOGIN_GRPC_PORT: 50053
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
+      METRICS_ADDR: :9102
     depends_on:
       - core
       - matching
       - nats
+    labels:
+      - "project=sell-bot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=9102"
+      - "prometheus.path=/metrics"
 
   login-gateway:
     build:
@@ -115,25 +144,151 @@ services:
     depends_on:
       - core
       - worker-engine
+    labels:
+      - "project=sell-bot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=8080"
+      - "prometheus.path=/metrics"
 
   seller-bot:
     build:
       context: .
       dockerfile: services/seller-bot/Dockerfile
+    ports:
+      - "9091:9090"
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-}
       CORE_GRPC_ADDR: core:50051
       LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
+      METRICS_PORT: 9090
     depends_on:
       - core
       - redis
       - nats
       - worker-engine
       - login-gateway
+    labels:
+      - "project=sell-bot"
+      - "prometheus.scrape=true"
+      - "prometheus.port=9090"
+      - "prometheus.path=/metrics"
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "9090:9090"
+    labels:
+      - "project=sell-bot"
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+    labels:
+      - "project=sell-bot"
+
+  loki:
+    image: grafana/loki:3.0.0
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    labels:
+      - "project=sell-bot"
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    labels:
+      - "project=sell-bot"
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|var/lib/docker/.+)($$|/)
+      - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    labels:
+      - "project=sell-bot"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.57.0
+    restart: unless-stopped
+    privileged: true
+    command:
+      - --docker_only=true
+      - --store_container_labels=true
+      - --housekeeping_interval=10s
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    ports:
+      - "8082:8080"
+    labels:
+      - "project=sell-bot"
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    ports:
+      - "9115:9115"
+    labels:
+      - "project=sell-bot"
 
 volumes:
   postgres_data:
   nats_data:
   worker_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

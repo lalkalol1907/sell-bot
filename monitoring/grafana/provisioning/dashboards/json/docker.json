@@ -1,0 +1,473 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Обзор",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Контейнеров",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "count(count by (id) (container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "CPU (все контейнеры)",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "RAM (все контейнеры)",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Сеть RX",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(container_network_receive_bytes_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "Ресурсы по контейнерам",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CPU по контейнеру",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container) (label_replace(\n  label_replace(\n    label_replace(\n      label_replace(\n        sum by (id, name, container_label_com_docker_compose_service, container_label_scraper_name) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}[5m])),\n        \"container\", \"$1\", \"id\", \".*(?:docker-|docker/)([a-f0-9]{12}).*\"\n      ),\n      \"container\", \"$1\", \"container_label_com_docker_compose_service\", \"(.+)\"\n    ),\n    \"container\", \"$1\", \"container_label_scraper_name\", \"(.+)\"\n  ),\n  \"container\", \"$1\", \"name\", \"/?(.+)\"\n))",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Память по контейнеру",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container) (label_replace(\n  label_replace(\n    label_replace(\n      label_replace(\n        sum by (id, name, container_label_com_docker_compose_service, container_label_scraper_name) (container_memory_working_set_bytes{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}),\n        \"container\", \"$1\", \"id\", \".*(?:docker-|docker/)([a-f0-9]{12}).*\"\n      ),\n      \"container\", \"$1\", \"container_label_com_docker_compose_service\", \"(.+)\"\n    ),\n    \"container\", \"$1\", \"container_label_scraper_name\", \"(.+)\"\n  ),\n  \"container\", \"$1\", \"name\", \"/?(.+)\"\n))",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Сеть RX по контейнеру",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container) (label_replace(\n  label_replace(\n    label_replace(\n      label_replace(\n        sum by (id, name, container_label_com_docker_compose_service, container_label_scraper_name) (rate(container_network_receive_bytes_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}[5m])),\n        \"container\", \"$1\", \"id\", \".*(?:docker-|docker/)([a-f0-9]{12}).*\"\n      ),\n      \"container\", \"$1\", \"container_label_com_docker_compose_service\", \"(.+)\"\n    ),\n    \"container\", \"$1\", \"container_label_scraper_name\", \"(.+)\"\n  ),\n  \"container\", \"$1\", \"name\", \"/?(.+)\"\n))",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Сеть TX по контейнеру",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container) (label_replace(\n  label_replace(\n    label_replace(\n      label_replace(\n        sum by (id, name, container_label_com_docker_compose_service, container_label_scraper_name) (rate(container_network_transmit_bytes_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*|/docker/.*\",image!~\".*/cadvisor.*\",image!~\".*/prom/prometheus.*\",image!~\".*/grafana/grafana.*\",image!~\".*/grafana/loki.*\",image!~\".*/grafana/promtail.*\",image!~\".*/node-exporter.*\",image!~\".*/blackbox.exporter.*\"}[5m])),\n        \"container\", \"$1\", \"id\", \".*(?:docker-|docker/)([a-f0-9]{12}).*\"\n      ),\n      \"container\", \"$1\", \"container_label_com_docker_compose_service\", \"(.+)\"\n    ),\n    \"container\", \"$1\", \"container_label_scraper_name\", \"(.+)\"\n  ),\n  \"container\", \"$1\", \"name\", \"/?(.+)\"\n))",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Логи контейнеров",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 12,
+      "type": "logs",
+      "title": "Docker logs",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"docker\"} |~ `(?i)(error|warn|fatal|panic)`",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "docker",
+    "cadvisor"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Docker",
+  "uid": "docker-containers",
+  "version": 1
+}

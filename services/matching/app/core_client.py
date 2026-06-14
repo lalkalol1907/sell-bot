@@ -35,6 +35,7 @@ class CoreClient:
             "id": seller.id,
             "tg_user_id": seller.tg_user_id,
             "sensitivity": seller.sensitivity or "precise",
+            "spam_phrases": list(seller.spam_phrases),
         }
 
     def list_products(self, seller_id: int, active_only: bool = True) -> list[dict]:
@@ -64,6 +65,8 @@ class CoreClient:
             intent_score=payload.get("intent_score", 0.0),
             score=payload.get("score", 0.0),
             level=payload["level"],
+            product_title=payload.get("product_title", ""),
+            chat_title=payload.get("chat_title", ""),
         )
         lead = self._leads.CreateLead(req)
         return lead.id

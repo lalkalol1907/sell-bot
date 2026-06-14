@@ -15,6 +15,7 @@ import com.sellbot.proto.catalog.ListProductsResponse
 import com.sellbot.proto.catalog.Product
 import com.sellbot.proto.catalog.Seller
 import com.sellbot.proto.catalog.UpdateProductRequest
+import com.sellbot.proto.catalog.UpdateSellerRequest
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import net.devh.boot.grpc.server.service.GrpcService
@@ -32,7 +33,7 @@ class CatalogGrpcService(
                 username = request.username.ifBlank { null },
                 fullName = request.fullName.ifBlank { null },
             )
-            responseObserver.onNext(seller.toProto())
+            responseObserver.onNext(seller.toProto(emptyList()))
             responseObserver.onCompleted()
         } catch (e: Exception) {
             responseObserver.onError(Status.INTERNAL.withDescription(e.message).asRuntimeException())
@@ -45,17 +46,27 @@ class CatalogGrpcService(
             responseObserver.onError(Status.NOT_FOUND.asRuntimeException())
             return
         }
-        responseObserver.onNext(seller.toProto())
+        responseObserver.onNext(seller.toProto(catalogService.getSpamPhrases(seller.id!!)))
         responseObserver.onCompleted()
     }
 
     override fun getSeller(request: GetSellerRequest, responseObserver: StreamObserver<Seller>) {
         try {
             val seller = catalogService.getSeller(request.id)
-            responseObserver.onNext(seller.toProto())
+            responseObserver.onNext(seller.toProto(catalogService.getSpamPhrases(seller.id!!)))
             responseObserver.onCompleted()
         } catch (e: Exception) {
             responseObserver.onError(Status.NOT_FOUND.withDescription(e.message).asRuntimeException())
+        }
+    }
+
+    override fun updateSeller(request: UpdateSellerRequest, responseObserver: StreamObserver<Seller>) {
+        try {
+            val seller = catalogService.updateSellerSensitivity(request.id, request.sensitivity)
+            responseObserver.onNext(seller.toProto(catalogService.getSpamPhrases(seller.id!!)))
+            responseObserver.onCompleted()
+        } catch (e: Exception) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.message).asRuntimeException())
         }
     }
 
@@ -108,7 +119,7 @@ class CatalogGrpcService(
         responseObserver.onCompleted()
     }
 
-    private fun SellerEntity.toProto(): Seller = Seller.newBuilder()
+    private fun SellerEntity.toProto(spamPhrases: List<String> = emptyList()): Seller = Seller.newBuilder()
         .setId(id!!)
         .setTgUserId(tgUserId)
         .setUsername(username ?: "")
@@ -116,6 +127,7 @@ class CatalogGrpcService(
         .setPlan(plan)
         .setSensitivity(sensitivity)
         .setIsActive(isActive)
+        .addAllSpamPhrases(spamPhrases)
         .build()
 
     private fun ProductEntity.toProto(): Product = Product.newBuilder()

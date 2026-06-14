@@ -24,6 +24,7 @@ export type Seller = {
   tg_user_id: string;
   username: string;
   full_name: string;
+  sensitivity: string;
 };
 
 export type Product = {
@@ -32,6 +33,7 @@ export type Product = {
   price: string;
   currency: string;
   is_active: boolean;
+  keywords?: string[];
 };
 
 export type Lead = {
@@ -104,6 +106,51 @@ export function listProducts(client: any, sellerId: number): Promise<Product[]> 
   return promisify<{ products: Product[] }>((cb) =>
     client.ListProducts({ seller_id: sellerId, active_only: false }, cb),
   ).then((r) => r.products ?? []);
+}
+
+export function getSeller(client: any, sellerId: number): Promise<Seller> {
+  return promisify((cb) => client.GetSeller({ id: sellerId }, cb));
+}
+
+export function updateSeller(client: any, sellerId: number, sensitivity: string): Promise<Seller> {
+  return promisify((cb) => client.UpdateSeller({ id: sellerId, sensitivity }, cb));
+}
+
+export function updateProduct(
+  client: any,
+  input: {
+    id: number;
+    seller_id: number;
+    title: string;
+    price: string;
+    currency: string;
+    keywords: string[];
+    is_active: boolean;
+  },
+): Promise<Product> {
+  return promisify((cb) => client.UpdateProduct(input, cb));
+}
+
+export function deleteProduct(client: any, productId: number, sellerId: number): Promise<boolean> {
+  return promisify<{ success: boolean }>((cb) =>
+    client.DeleteProduct({ id: productId, seller_id: sellerId }, cb),
+  ).then((r) => r.success ?? false);
+}
+
+export function toggleProduct(
+  client: any,
+  product: Product,
+  sellerId: number,
+): Promise<Product> {
+  return updateProduct(client, {
+    id: Number(product.id),
+    seller_id: sellerId,
+    title: product.title,
+    price: product.price,
+    currency: product.currency,
+    keywords: product.keywords ?? [],
+    is_active: !product.is_active,
+  });
 }
 
 export function updateLeadStatus(

@@ -92,7 +92,15 @@ func (m *Manager) startWorker(parent context.Context, rt listener.Runtime) {
 		if err := workerListener.Run(workerCtx, rt); err != nil {
 			log.Printf("worker %d stopped: %v", rt.WorkerID, err)
 			if listener.IsAuthError(err) {
-				_ = m.core.UpdateWorkerStatus(context.Background(), rt.WorkerID, "auth_required")
+				if updateErr := m.core.UpdateWorkerStatus(context.Background(), rt.WorkerID, "auth_required"); updateErr != nil {
+					log.Printf("worker %d: failed to update status: %v", rt.WorkerID, updateErr)
+				} else {
+					_ = m.nats.PublishWorkerStatus(publisher.WorkerStatusEvent{
+						WorkerID:      rt.WorkerID,
+						OwnerSellerID: rt.OwnerSellerID,
+						Status:        "auth_required",
+					})
+				}
 			}
 		}
 	}()

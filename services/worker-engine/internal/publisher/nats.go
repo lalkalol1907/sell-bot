@@ -20,8 +20,16 @@ type CapturedMessage struct {
 	RawText        string `json:"raw_text"`
 }
 
+type WorkerStatusEvent struct {
+	WorkerID       int64  `json:"worker_id"`
+	OwnerSellerID  int64  `json:"owner_seller_id"`
+	Status         string `json:"status"`
+	Phone          string `json:"phone,omitempty"`
+}
+
 type NATS struct {
 	nc *nats.Conn
+	js nats.JetStreamContext
 }
 
 func Connect(url string) (*NATS, error) {
@@ -29,11 +37,40 @@ func Connect(url string) (*NATS, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &NATS{nc: nc}, nil
+	js, err := nc.JetStream()
+	if err != nil {
+		nc.Close()
+		return nil, err
+	}
+	n := &NATS{nc: nc, js: js}
+	if err := n.ensureStream(); err != nil {
+		nc.Close()
+		return nil, err
+	}
+	return n, nil
+}
+
+func (n *NATS) ensureStream() error {
+	_, err := n.js.StreamInfo("SELLBOT")
+	if err == nil {
+		return nil
+	}
+	_, err = n.js.AddStream(&nats.StreamConfig{
+		Name:     "SELLBOT",
+		Subjects: []string{"lead.created", "worker.status", "message.captured"},
+		Storage:  nats.FileStorage,
+		MaxAge:   7 * 24 * time.Hour,
+	})
+	return err
 }
 
 func (n *NATS) Close() {
 	n.nc.Close()
+}
+
+func (n *NATS) publish(subject string, data []byte) error {
+	_, err := n.js.Publish(subject, data)
+	return err
 }
 
 func (n *NATS) PublishCaptured(msg CapturedMessage) error {
@@ -41,7 +78,15 @@ func (n *NATS) PublishCaptured(msg CapturedMessage) error {
 	if err != nil {
 		return err
 	}
-	return n.nc.Publish("message.captured", data)
+	return n.publish("message.captured", data)
+}
+
+func (n *NATS) PublishWorkerStatus(evt WorkerStatusEvent) error {
+	data, err := json.Marshal(evt)
+	if err != nil {
+		return err
+	}
+	return n.publish("worker.status", data)
 }
 
 func (n *NATS) PublishDevMessage(sellerID, workerID int64, raw string, chatID, authorID int64, chatTitle, authorUsername string) error {

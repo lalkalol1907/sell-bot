@@ -12,6 +12,7 @@ import java.math.BigDecimal
 class CatalogService(
     private val sellerRepository: SellerRepository,
     private val productRepository: ProductRepository,
+    private val spamLearningService: SpamLearningService,
 ) {
     @Transactional
     fun createOrGetSeller(tgUserId: Long, username: String?, fullName: String?): SellerEntity {
@@ -31,6 +32,18 @@ class CatalogService(
 
     fun getSeller(id: Long): SellerEntity =
         sellerRepository.findById(id).orElseThrow { IllegalArgumentException("Seller not found: $id") }
+
+    @Transactional
+    fun updateSellerSensitivity(id: Long, sensitivity: String): SellerEntity {
+        val seller = getSeller(id)
+        val allowed = setOf("precise", "balanced", "aggressive")
+        require(sensitivity in allowed) { "Invalid sensitivity: $sensitivity" }
+        seller.sensitivity = sensitivity
+        return sellerRepository.save(seller)
+    }
+
+    fun getSpamPhrases(sellerId: Long): List<String> =
+        spamLearningService.listPhrases(sellerId)
 
     @Transactional
     fun createProduct(

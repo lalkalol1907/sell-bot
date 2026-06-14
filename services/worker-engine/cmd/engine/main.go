@@ -12,6 +12,7 @@ import (
 	"github.com/sellbot/worker-engine/internal/core"
 	"github.com/sellbot/worker-engine/internal/login"
 	"github.com/sellbot/worker-engine/internal/manager"
+	"github.com/sellbot/worker-engine/internal/metrics"
 	"github.com/sellbot/worker-engine/internal/publisher"
 	workerloginpb "github.com/sellbot/worker-engine/internal/gen/workerlogin"
 	"google.golang.org/grpc"
@@ -36,6 +37,8 @@ func startLoginGRPC(port string, srv workerloginpb.WorkerLoginServiceServer) {
 func main() {
 	cfg := config.Load()
 	log.Printf("worker-engine starting (core=%s)", cfg.CoreGRPCAddr)
+
+	metrics.StartServer(envOr("METRICS_ADDR", ":9102"))
 
 	natsPub, err := publisher.Connect(cfg.NatsURL)
 	if err != nil {

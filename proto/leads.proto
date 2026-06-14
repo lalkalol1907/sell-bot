@@ -44,6 +44,8 @@ message CreateLeadRequest {
   double intent_score = 11;
   double score = 12;
   string level = 13;
+  string product_title = 14;
+  string chat_title = 15;
 }
 
 message UpdateLeadStatusRequest {

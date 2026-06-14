@@ -34,6 +34,12 @@ class LeadsServiceTest {
     @Mock
     lateinit var workerRepository: WorkerRepository
 
+    @Mock
+    lateinit var notificationService: NotificationService
+
+    @Mock
+    lateinit var spamLearningService: SpamLearningService
+
     @InjectMocks
     lateinit var leadsService: LeadsService
 
@@ -69,6 +75,7 @@ class LeadsServiceTest {
         assertEquals(42L, lead.id)
         assertEquals("куплю айфон", lead.rawText)
         verify(leadRepository).save(any())
+        verify(notificationService).enqueueLeadNotification(any(), eq(seller), any(), any())
     }
 
     @Test

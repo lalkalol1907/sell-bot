@@ -69,7 +69,7 @@ def match_message(text: str, products: list[dict], sensitivity: str = "precise")
     combined = best_score * 0.6 + max(intent, 0) * 0.4
     if intent >= 0.8:
         level = "confirmed"
-    elif intent >= 0.4 or sensitivity == "aggressive":
+    elif intent >= 0.4 or sensitivity in ("aggressive", "balanced"):
         level = "probable"
     else:
         return MatchResult(False, "", combined, best_score, intent, best)

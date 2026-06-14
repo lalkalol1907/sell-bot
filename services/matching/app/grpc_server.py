@@ -5,11 +5,13 @@ import threading
 from concurrent import futures
 
 import grpc
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 from app.core_client import get_core_client
 from app.dedup import DedupStore
 from app.matcher import match_message
+from app.spam_filter import check_spam
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("matching")
@@ -17,10 +19,13 @@ logger = logging.getLogger("matching")
 app = FastAPI(title="sellbot-matching")
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
-NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 GRPC_PORT = int(os.getenv("GRPC_PORT", "50052"))
 
 dedup = DedupStore(REDIS_URL)
+
+MESSAGES_TOTAL = Counter("matching_messages_total", "Messages processed", ["result"])
+SPAM_FILTERED = Counter("matching_spam_filtered_total", "Messages filtered as spam", ["reason"])
+LEADS_CREATED = Counter("matching_leads_created_total", "Leads created")
 
 
 @app.get("/health")
@@ -28,21 +33,9 @@ def health():
     return {"status": "ok"}
 
 
-def _publish_lead_created(payload: dict) -> None:
-    import nats
-
-    last_exc: Exception | None = None
-    for attempt in range(1, 4):
-        try:
-            nc = nats.connect(NATS_URL)
-            nc.publish("lead.created", json.dumps(payload).encode())
-            nc.flush()
-            nc.close()
-            return
-        except Exception as exc:
-            last_exc = exc
-            logger.warning("nats publish attempt %d failed: %s", attempt, exc)
-    raise RuntimeError("nats publish failed after 3 attempts") from last_exc
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 def process_message(
@@ -58,14 +51,25 @@ def process_message(
     core = get_core_client()
     seller = core.get_seller(seller_id)
     sensitivity = seller.get("sensitivity", "precise")
+    spam_phrases = seller.get("spam_phrases", [])
+
+    spam_reason = check_spam(raw_text, spam_phrases)
+    if spam_reason:
+        SPAM_FILTERED.labels(reason=spam_reason).inc()
+        MESSAGES_TOTAL.labels(result="spam_filtered").inc()
+        logger.info("spam filtered seller=%s reason=%s", seller_id, spam_reason)
+        return {"matched": False, "reason": f"spam_{spam_reason}"}
+
     products = core.list_products(seller_id, active_only=True)
 
     result = match_message(raw_text, products, sensitivity)
     if not result.matched or result.product is None:
+        MESSAGES_TOTAL.labels(result="no_match").inc()
         return {"matched": False}
 
     if not dedup.try_reserve(chat_id, author_id, result.product.product_id):
         logger.info("duplicate lead skipped chat=%s author=%s", chat_id, author_id)
+        MESSAGES_TOTAL.labels(result="duplicate").inc()
         return {"matched": False, "reason": "duplicate"}
 
     lead_payload = {
@@ -82,6 +86,8 @@ def process_message(
         "intent_score": result.intent,
         "score": result.score,
         "level": result.level,
+        "product_title": result.product.title,
+        "chat_title": chat_title,
     }
     try:
         lead_id = core.create_lead(lead_payload)
@@ -89,26 +95,9 @@ def process_message(
         dedup.release(chat_id, author_id, result.product.product_id)
         raise
 
-    event = {
-        **lead_payload,
-        "lead_id": lead_id,
-        "tg_user_id": seller["tg_user_id"],
-        "product_title": result.product.title,
-        "chat_title": chat_title,
-    }
-    try:
-        _publish_lead_created(event)
-    except Exception as exc:
-        logger.error("lead %d created but notification failed: %s", lead_id, exc)
-        return {
-            "matched": True,
-            "lead_id": lead_id,
-            "product_id": result.product.product_id,
-            "product_title": result.product.title,
-            "score": result.score,
-            "level": result.level,
-            "notify_failed": True,
-        }
+    LEADS_CREATED.inc()
+    MESSAGES_TOTAL.labels(result="lead").inc()
+    logger.info("lead %d created for seller %d", lead_id, seller_id)
 
     return {
         "matched": True,

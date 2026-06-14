@@ -9,6 +9,7 @@ service CatalogService {
   rpc CreateSeller(CreateSellerRequest) returns (Seller);
   rpc GetSeller(GetSellerRequest) returns (Seller);
   rpc GetSellerByTgId(GetSellerByTgIdRequest) returns (Seller);
+  rpc UpdateSeller(UpdateSellerRequest) returns (Seller);
   rpc CreateProduct(CreateProductRequest) returns (Product);
   rpc UpdateProduct(UpdateProductRequest) returns (Product);
   rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
@@ -23,6 +24,12 @@ message Seller {
   string plan = 5;
   string sensitivity = 6;
   bool is_active = 7;
+  repeated string spam_phrases = 8;
+}
+
+message UpdateSellerRequest {
+  int64 id = 1;
+  string sensitivity = 2;
 }
 
 message Product {

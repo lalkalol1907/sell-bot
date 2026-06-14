@@ -38,6 +38,8 @@ class LeadsGrpcService(
                     intentScore = BigDecimal.valueOf(request.intentScore),
                     score = BigDecimal.valueOf(request.score),
                     level = request.level,
+                    productTitle = request.productTitle,
+                    chatTitle = request.chatTitle,
                 )
             )
             responseObserver.onNext(lead.toProto())

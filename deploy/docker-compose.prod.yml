@@ -33,6 +33,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sellbot}
       GRPC_SERVER_PORT: 50051
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+      NATS_URL: nats://nats:4222
       JAVA_OPTS: -Xmx384m
     depends_on:
       db:

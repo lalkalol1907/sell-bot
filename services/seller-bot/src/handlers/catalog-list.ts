@@ -1,5 +1,6 @@
 import type { BotContext } from "../types.js";
 import { listProducts } from "../grpc/client.js";
+import { handleCatalogMenu } from "./catalog-manage.js";
 
 export async function handleCatalogList(ctx: BotContext, catalogClient: any) {
   const sellerId = ctx.session.sellerId;
@@ -9,14 +10,5 @@ export async function handleCatalogList(ctx: BotContext, catalogClient: any) {
   }
 
   const products = await listProducts(catalogClient, sellerId);
-  if (products.length === 0) {
-    await ctx.reply("Каталог пуст. Добавьте товар: /add_product");
-    return;
-  }
-
-  const lines = products.map(
-    (p) =>
-      `${p.is_active ? "✅" : "⏸"} ${p.title} — ${p.price} ${p.currency} (id: ${p.id})`,
-  );
-  await ctx.reply(["Ваш каталог:", "", ...lines].join("\n"));
+  await handleCatalogMenu(ctx, catalogClient, products);
 }

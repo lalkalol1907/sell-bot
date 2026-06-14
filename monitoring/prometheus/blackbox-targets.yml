@@ -1,0 +1,10 @@
+- targets:
+    - http://grafana:3000/api/health
+    - http://prometheus:9090/-/healthy
+    - http://loki:3100/ready
+    - http://core:8080/actuator/health
+    - http://matching:8000/health
+    - http://login-gateway:8080/health
+    - http://seller-bot:9090/health
+  labels:
+    project: sellbot

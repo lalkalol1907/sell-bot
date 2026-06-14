@@ -47,6 +47,13 @@ const server = Bun.serve({
       });
     }
 
+    if (req.method === "GET" && url.pathname === "/metrics") {
+      return new Response(
+        "# HELP login_gateway_up Login gateway is running\n# TYPE login_gateway_up gauge\nlogin_gateway_up 1\n",
+        { headers: { "Content-Type": "text/plain; version=0.0.4" } },
+      );
+    }
+
     if (url.pathname.startsWith("/api/")) {
       try {
         const apiResponse = await handleLoginRoute(deps, req, url.pathname);

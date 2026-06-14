@@ -1,4 +1,5 @@
 import { createBot } from "./index.js";
+import { startMetricsServer } from "./metrics.js";
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -10,6 +11,9 @@ const coreAddr = process.env.CORE_GRPC_ADDR ?? "core:50051";
 const natsUrl = process.env.NATS_URL ?? "nats://nats:4222";
 const redisUrl = process.env.REDIS_URL ?? "redis://redis:6379/0";
 const loginWebUrl = process.env.LOGIN_WEB_URL ?? "";
+const metricsPort = Number(process.env.METRICS_PORT ?? "9090");
+
+startMetricsServer(metricsPort);
 
 const bot = await createBot(token, coreAddr, natsUrl, redisUrl, loginWebUrl);
 console.log("seller-bot starting...");

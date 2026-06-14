@@ -24,6 +24,8 @@ data class CreateLeadInput(
     val intentScore: BigDecimal,
     val score: BigDecimal,
     val level: String,
+    val productTitle: String = "",
+    val chatTitle: String = "",
 )
 
 data class LeadStatsResult(
@@ -40,6 +42,8 @@ class LeadsService(
     private val catalogService: CatalogService,
     private val productRepository: ProductRepository,
     private val workerRepository: WorkerRepository,
+    private val notificationService: NotificationService,
+    private val spamLearningService: SpamLearningService,
 ) {
     @Transactional
     fun createLead(input: CreateLeadInput): LeadEntity {
@@ -63,7 +67,14 @@ class LeadsService(
                 score = input.score,
                 level = input.level,
             )
-        )
+        ).also { lead ->
+            notificationService.enqueueLeadNotification(
+                lead = lead,
+                seller = seller,
+                productTitle = input.productTitle.ifBlank { product?.title ?: "" },
+                chatTitle = input.chatTitle,
+            )
+        }
     }
 
     @Transactional
@@ -71,7 +82,11 @@ class LeadsService(
         val lead = leadRepository.findByIdAndSellerId(id, sellerId)
             ?: throw IllegalArgumentException("Lead not found: $id")
         lead.status = status
-        return leadRepository.save(lead)
+        val saved = leadRepository.save(lead)
+        if (status == "spam") {
+            spamLearningService.learnFromLead(saved)
+        }
+        return saved
     }
 
     fun listLeads(sellerId: Long, status: String?, limit: Int, offset: Int): Pair<List<LeadEntity>, Int> {
