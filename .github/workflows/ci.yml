@@ -17,16 +17,22 @@ permissions:
 
 jobs:
   test:
-    name: Test
+    name: Test ${{ matrix.component }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [core, worker-engine, matching, seller-bot]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install protoc
+        if: matrix.component != 'core' && matrix.component != 'seller-bot'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Set Up JDK 22
+        if: matrix.component == 'core'
         uses: actions/setup-java@v4
         with:
           java-version: "22"
@@ -34,23 +40,28 @@ jobs:
           cache: gradle
 
       - name: Run Core Tests
+        if: matrix.component == 'core'
         working-directory: services/core
         run: ./gradlew test --no-daemon
 
       - name: Set Up Go
+        if: matrix.component == 'worker-engine'
         uses: actions/setup-go@v5
         with:
           go-version: "1.23"
           cache-dependency-path: services/worker-engine/go.sum
 
       - name: Generate Go Protos
+        if: matrix.component == 'worker-engine'
         run: bash scripts/gen-proto-go.sh
 
       - name: Run Worker Engine Tests
+        if: matrix.component == 'worker-engine'
         working-directory: services/worker-engine
         run: go mod tidy && go test ./... -count=1
 
       - name: Set Up Python
+        if: matrix.component == 'matching'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -58,18 +69,22 @@ jobs:
           cache-dependency-path: services/matching/pyproject.toml
 
       - name: Generate Python Protos
+        if: matrix.component == 'matching'
         run: bash scripts/gen-proto-python.sh
 
       - name: Run Matching Tests
+        if: matrix.component == 'matching'
         working-directory: services/matching
         run: pip install ".[dev]" && pytest tests/ -q --tb=short
 
       - name: Set Up Bun
+        if: matrix.component == 'seller-bot'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.14"
 
       - name: Run Seller Bot Tests
+        if: matrix.component == 'seller-bot'
         working-directory: services/seller-bot
         run: bun install --frozen-lockfile && bun run lint && bun test
 
