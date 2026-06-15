@@ -329,18 +329,51 @@ cd services/matching && pip install ".[dev]" && pytest tests/ -m "not integratio
 
 **Варианты (память / цвет):** если в сообщении указаны объём или цвет, `product_gate` понижает similarity товарам без этих атрибутов или с несовпадением (`VARIANT_*_MULT` в `.env`). В каталоге можно задать `storage_gb` и `color` у товара или положить их в `title`/`keywords` (например `iPhone 16 Pro 256GB Black`).
 
-Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов). В CI гоняются только fast-кейсы (`pytest -m "not integration"`); semantic/Qdrant и обучение intent — локально.
+Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов). В CI гоняются только fast-кейсы (`pytest -m "not integration"`).
+
+**Модели (ONNX + S3):** runtime использует `fastembed` без PyTorch. Веса не запекаются в образ — публикуются в S3-compatible storage и подтягиваются при старте.
 
 ```bash
 cd services/matching
+pip install ".[dev,train]"
+
+# обучить intent (локально)
+python scripts/train_intent.py --no-embeddings
+
+# собрать bundle + parity-check + upload (читает MODELS_S3_* из .env)
+make publish-models MODELS_VERSION=2026.06.15-1
+
+# только собрать локально
+make publish-models-local MODELS_VERSION=dev-1
+
+# или напрямую:
+./scripts/publish_models.sh 2026.06.15-1
+
+# вручную через python (env уже в shell)
+export MODELS_S3_ENDPOINT=https://your-s3-endpoint
+export MODELS_S3_BUCKET=your-bucket
+export MODELS_S3_PREFIX=sellbot
+export MODELS_S3_ACCESS_KEY=...
+export MODELS_S3_SECRET_KEY=...
+python scripts/publish_models.py --version 2026.06.15-1
 pytest tests/ -m "not integration" -q
-python scripts/eval_recognition.py          # локально, с моделью
-pytest tests/ -m integration -q             # Qdrant + semantic golden + train smoke
 ```
 
-Добавить кейс при багрепорте: запись в `recognition_cases.yaml` → `pytest tests/test_recognition_golden.py -k <id>`.
+| Env | Описание |
+|-----|----------|
+| `MODELS_SKIP_S3` | `true` — не качать из S3 (local dev) |
+| `MODELS_S3_ENDPOINT` | URL S3-compatible API |
+| `MODELS_S3_BUCKET` / `MODELS_S3_PREFIX` | bucket и префикс |
+| `MODELS_S3_VERSION` | пин версии; пусто → `latest.json` |
+| `MODELS_LOCAL_DIR` | volume для кэша (`/data/models`) |
+| `EMBEDDING_MODEL_DIR` | выставляется bootstrap после sync |
 
-Переобучение intent: `python scripts/train_intent.py` / `python scripts/retrain_intent.py`.
+При смене версии embedding bundle — **reindex Qdrant** (lazy reindex в indexer подхватит по catalog hash).
+
+```bash
+pytest tests/ -m integration -q   # parity / Qdrant — локально
+python scripts/eval_recognition.py
+```
 
 ---
 

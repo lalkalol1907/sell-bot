@@ -21,10 +21,13 @@ NLP_V2_INTENT_ML = _bool("NLP_V2_INTENT_ML", True)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
-EMBEDDING_MODEL = os.getenv(
-    "EMBEDDING_MODEL",
+
+EMBEDDING_MODEL_NAME = os.getenv(
+    "EMBEDDING_MODEL_NAME",
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
 )
+EMBEDDING_MODEL_DIR = os.getenv("EMBEDDING_MODEL_DIR", "")
+MODELS_LOCAL_DIR = os.getenv("MODELS_LOCAL_DIR", str(models_dir()))
 
 FUZZY_MIN_SCORE = float(os.getenv("FUZZY_MIN_SCORE", "0.85"))
 SEMANTIC_MIN_SCORE = float(os.getenv("SEMANTIC_MIN_SCORE", "0.72"))

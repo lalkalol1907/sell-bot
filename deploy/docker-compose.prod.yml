@@ -63,7 +63,17 @@ services:
       NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC:-true}
       NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML:-true}
       NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE:-false}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      MODELS_LOCAL_DIR: /data/models
+      MODELS_SKIP_S3: ${MODELS_SKIP_S3:-false}
+      MODELS_S3_ENDPOINT: ${MODELS_S3_ENDPOINT:-}
+      MODELS_S3_BUCKET: ${MODELS_S3_BUCKET:-}
+      MODELS_S3_PREFIX: ${MODELS_S3_PREFIX:-}
+      MODELS_S3_VERSION: ${MODELS_S3_VERSION:-}
+      MODELS_S3_REGION: ${MODELS_S3_REGION:-}
+      MODELS_S3_ACCESS_KEY: ${MODELS_S3_ACCESS_KEY:-}
+      MODELS_S3_SECRET_KEY: ${MODELS_S3_SECRET_KEY:-}
+    volumes:
+      - matching_models:/data/models
     depends_on:
       - core
       - redis
@@ -173,5 +183,6 @@ volumes:
   nats_data:
   worker_data:
   qdrant_data:
+  matching_models:
   caddy-data:
   caddy-config:

@@ -1,7 +1,3 @@
-FROM python:3.14-slim AS model-cache
-RUN pip install --no-cache-dir sentence-transformers
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
-
 FROM python:3.14-slim AS builder
 WORKDIR /build
 RUN apt-get update && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
@@ -24,8 +20,8 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /build/services/matching/app ./app
 COPY --from=builder /build/services/matching/data ./data
-COPY --from=builder /build/services/matching/models ./models
-COPY --from=model-cache /root/.cache/huggingface /root/.cache/huggingface
 ENV PYTHONPATH=/app
+ENV MODELS_LOCAL_DIR=/data/models
+VOLUME /data/models
 EXPOSE 50052 8000
 CMD ["python", "-m", "app.main"]

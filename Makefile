@@ -1,4 +1,4 @@
-.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs
+.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs publish-models publish-models-local
 
 gen-proto: gen-proto-python gen-proto-go gen-proto-java
 
@@ -36,6 +36,15 @@ down:
 
 logs:
 	docker compose logs -f --tail=100
+
+# MODELS_S3_* from .env; optional PUBLISH_ARGS=--skip-parity
+publish-models:
+	@test -n "$(MODELS_VERSION)" || (echo "Usage: make publish-models MODELS_VERSION=2026.06.15-1" >&2 && exit 1)
+	cd services/matching && pip3 install -q ".[train]" && ./scripts/publish_models.sh $(MODELS_VERSION) $(PUBLISH_ARGS)
+
+publish-models-local:
+	@test -n "$(MODELS_VERSION)" || (echo "Usage: make publish-models-local MODELS_VERSION=dev-1" >&2 && exit 1)
+	cd services/matching && pip3 install -q ".[train]" && ./scripts/publish_models.sh --local-only $(MODELS_VERSION) $(PUBLISH_ARGS)
 
 demo-lead:
 	@echo "Inject test message (set DEV_INJECT_MESSAGE in .env first)"
