@@ -11,7 +11,7 @@ Telegram-система для продавцов: userbot-воркеры слу
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
 | **HTTP Gateway** | Bun 1.3.14 + Hono + gRPC | REST API: seller dashboard + login Mini App |
-| **Login Mini App** | Vite + React + nginx | Статика Mini App, прокси `/api/` → http-gateway |
+| **Login Mini App** | HTML/CSS/JS + nginx | Статика Mini App, прокси `/api/` → http-gateway |
 | **Seller Dashboard** | Vite + React + nginx | Веб-кабинет продавца, прокси `/api/` → http-gateway |
 
 Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.

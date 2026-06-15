@@ -4,10 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <title>Подключение воркера</title>
+    <link rel="stylesheet" href="styles.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="app initializing">
+      <h1>Подключение воркера</h1>
+      <p class="subtitle">Аккаунт-слушатель для мониторинга чатов</p>
+
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="qr">QR-код</button>
+        <button type="button" class="tab" data-tab="phone">Телефон</button>
+      </div>
+
+      <p id="error" class="error hidden"></p>
+      <p id="success" class="success hidden"></p>
+      <p id="loading" class="hint">Загрузка…</p>
+
+      <div id="panel-qr" class="panel hidden">
+        <p class="hint">
+          На телефоне с аккаунтом-воркером: Настройки → Устройства → Подключить устройство →
+          Сканировать QR.
+        </p>
+        <button type="button" id="btn-start-qr" class="primary">Сгенерировать QR</button>
+        <div id="qr-box" class="qr-box hidden">
+          <img id="qr-image" alt="QR login" width="220" height="220" />
+          <p id="qr-hint" class="hint"></p>
+        </div>
+      </div>
+
+      <div id="panel-phone" class="panel hidden">
+        <div id="phone-start">
+          <input id="phone-input" placeholder="+79991234567" inputmode="tel" autocomplete="tel" />
+          <button type="button" id="btn-start-phone" class="primary" disabled>Отправить код</button>
+        </div>
+        <div id="phone-code" class="hidden">
+          <p id="code-hint" class="hint">Введите код из Telegram</p>
+          <input id="code-input" placeholder="Код из Telegram" inputmode="numeric" autocomplete="one-time-code" />
+          <button type="button" id="btn-submit-code" class="primary" disabled>Подтвердить код</button>
+        </div>
+        <div id="phone-password" class="hidden">
+          <p id="password-hint" class="hint"></p>
+          <input id="password-input" type="password" placeholder="Пароль 2FA" autocomplete="current-password" />
+          <button type="button" id="btn-submit-password" class="primary" disabled>Подтвердить пароль</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
   </body>
 </html>

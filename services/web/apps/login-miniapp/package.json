@@ -1,24 +1,8 @@
 {
   "name": "@sellbot/login-miniapp",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@twa-dev/sdk": "^8.0.2",
-    "qrcode": "^1.5.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/qrcode": "^1.5.5",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3",
-    "vite": "^6.0.0"
+    "dev": "bun run dev-server.mjs",
+    "build": "true"
   }
 }

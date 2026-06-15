@@ -9,6 +9,19 @@ body {
   color: var(--tg-theme-text-color, #111);
 }
 
+.app.initializing h1,
+.app.initializing .subtitle,
+.app.initializing .tabs,
+.app.initializing .panel,
+.app.initializing .error,
+.app.initializing .success {
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .app {
   padding: 16px;
   max-width: 480px;
