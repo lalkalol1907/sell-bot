@@ -1,24 +1,18 @@
-FROM ruby:3.3-slim AS base
-WORKDIR /build
+FROM oven/bun:1.3.14-alpine AS base
+WORKDIR /app
 
-RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    build-essential curl protobuf-compiler libyaml-dev git && \
-    rm -rf /var/lib/apt/lists/*
+FROM base AS install
+COPY services/http-gateway/.npmrc services/http-gateway/package.json services/http-gateway/bun.lock ./
+RUN bun install --frozen-lockfile
 
-COPY proto /build/proto
-COPY scripts/gen-proto-ruby.sh /build/scripts/gen-proto-ruby.sh
-COPY services/http-gateway/Gemfile services/http-gateway/Gemfile.lock* /build/services/http-gateway/
+FROM base AS release
+COPY proto ./proto
+COPY --from=install /app/node_modules ./node_modules
+COPY services/http-gateway/.npmrc services/http-gateway/package.json services/http-gateway/bun.lock services/http-gateway/tsconfig.json ./
+COPY services/http-gateway/src ./src
 
-WORKDIR /build/services/http-gateway
-RUN bundle install
-
-RUN chmod +x /build/scripts/gen-proto-ruby.sh && /build/scripts/gen-proto-ruby.sh
-
-COPY services/http-gateway/ /build/services/http-gateway/
-
-ENV RAILS_ENV=production
+ENV NODE_ENV=production
 ENV PORT=3000
-WORKDIR /build/services/http-gateway
 EXPOSE 3000
 
-CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+CMD ["bun", "run", "src/main.ts"]

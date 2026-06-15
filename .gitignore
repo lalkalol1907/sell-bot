@@ -60,8 +60,5 @@ session_*
 services/web/node_modules/
 services/web/apps/*/dist/
 
-# --- HTTP Gateway (Rails / Ruby) ---
-services/http-gateway/log/
-services/http-gateway/tmp/
-services/http-gateway/vendor/bundle/
-services/http-gateway/.bundle/
+# --- HTTP Gateway (Bun / TypeScript) ---
+services/http-gateway/node_modules/

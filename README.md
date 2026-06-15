@@ -10,7 +10,7 @@ Telegram-система для продавцов: userbot-воркеры слу
 | **Worker Engine** | Go 1.26 (gotd MTProto) | Слушатели чатов, MTProto login (gRPC) |
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
-| **HTTP Gateway** | Ruby on Rails 8 (API-only) | REST API: seller dashboard + login Mini App |
+| **HTTP Gateway** | Bun 1.3.14 + Hono + gRPC | REST API: seller dashboard + login Mini App |
 | **Login Mini App** | Vite + React + nginx | Статика Mini App, прокси `/api/` → http-gateway |
 | **Seller Dashboard** | Vite + React + nginx | Веб-кабинет продавца, прокси `/api/` → http-gateway |
 
@@ -38,7 +38,7 @@ Telegram-система для продавцов: userbot-воркеры слу
                     │ gRPC              ▼                   │
                     │           ┌───────────────┐          │
                     │           │ http-gateway  │          │
-                    │           │  (Rails API)  │          │
+                    │           │  (Bun + Hono) │          │
                     │           └───┬───────┬───┘          │
                     │               │       │              │
                     │         gRPC  │       │ gRPC         │
@@ -261,7 +261,7 @@ make test
 | Core | JUnit 5 + Mockito | CatalogService, LeadsService, WorkersService, InternalGrpcAuth |
 | Worker Engine | go test | crypto, listener, login (phone + QR gRPC), grpcauth |
 | Seller Bot | bun test | utils, worker-add web_app_data |
-| HTTP Gateway | RSpec | Telegram initData, login routing |
+| HTTP Gateway | bun test | Telegram initData, login routing |
 
 Перед тестами Go/Python: `make gen-proto` (включено в `make test`).
 
@@ -286,7 +286,7 @@ bun run dev:miniapp    # :5173/miniapp/
 bun run dev:dashboard  # :5174/dashboard/
 
 # HTTP Gateway
-cd services/http-gateway && bundle install && bundle exec rails s -p 3000
+cd services/http-gateway && bun install && bun run dev
 
 # Seller Bot
 cd services/seller-bot && bun install && bun run dev
@@ -336,7 +336,7 @@ sell-bot/
 │   ├── worker-engine/        # Go: listeners + login.Manager (gRPC)
 │   ├── matching/             # Python: matcher pipeline
 │   ├── seller-bot/           # grammY бот продавца
-│   ├── http-gateway/         # Rails API (seller + login endpoints)
+│   ├── http-gateway/         # Bun API (seller + login endpoints)
 │   └── web/                  # Bun monorepo: apps/login-miniapp, apps/seller-dashboard
 ├── deploy/
 │   └── docker-compose.prod.yml

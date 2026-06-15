@@ -31,10 +31,6 @@ jobs:
         if: matrix.component != 'core' && matrix.component != 'seller-bot' && matrix.component != 'http-gateway'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
-      - name: Install build deps for http-gateway
-        if: matrix.component == 'http-gateway'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libyaml-dev build-essential
-
       - name: Set Up JDK 24
         if: matrix.component == 'core'
         uses: actions/setup-java@v4
@@ -87,7 +83,7 @@ jobs:
         run: pytest tests/ -q --tb=short
 
       - name: Set Up Bun
-        if: matrix.component == 'seller-bot'
+        if: matrix.component == 'seller-bot' || matrix.component == 'http-gateway'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.14"
@@ -97,22 +93,10 @@ jobs:
         working-directory: services/seller-bot
         run: bun install --frozen-lockfile && bun run lint && bun test
 
-      - name: Set Up Ruby
-        if: matrix.component == 'http-gateway'
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
-          working-directory: services/http-gateway
-
-      - name: Generate Ruby Protos
-        if: matrix.component == 'http-gateway'
-        run: bash scripts/gen-proto-ruby.sh
-
       - name: Run HTTP Gateway Tests
         if: matrix.component == 'http-gateway'
         working-directory: services/http-gateway
-        run: bundle exec rspec
+        run: bun install --frozen-lockfile && bun run lint && bun test
 
   build:
     name: Build ${{ matrix.component }}

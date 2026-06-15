@@ -92,7 +92,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      RAILS_ENV: production
+      NODE_ENV: production
       PORT: 3000
     depends_on:
       - core

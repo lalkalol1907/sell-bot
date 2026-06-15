@@ -166,7 +166,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:8082}
-      RAILS_ENV: production
+      NODE_ENV: production
       PORT: 3000
     depends_on:
       - core
