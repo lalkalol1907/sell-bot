@@ -88,6 +88,18 @@ def _build_features(text: str, vectorizer, feature_type: str):
 def intent_score_heuristic(text: str) -> IntentResult:
     tokens = set(text.split())
 
+    strong_buy_phrases = (
+        "ищу купить",
+        "хочу купить",
+        "буду купить",
+        "нужно купить",
+        "ищу куплю",
+        "нет, ищу",
+        "нет ищу",
+    )
+    if any(phrase in text for phrase in strong_buy_phrases):
+        return IntentResult("buy", 0.9)
+
     if tokens & NEGATIVE or "в наличии" in text:
         return IntentResult("sell", -1.0)
     if any(marker in text for marker in ("не работает", "не включается", "не ловит", "не коннект")):

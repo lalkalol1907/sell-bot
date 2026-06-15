@@ -69,7 +69,9 @@ def run_case(case: RecognitionCase) -> dict[str, Any]:
         "NLP_V2_SEMANTIC": case.nlp_v2_semantic,
         "NLP_V2_NORMALIZE": case.nlp_v2_normalize,
     }
-    if case.nlp_v2_enabled is not True:
+    if case.nlp_v2_enabled is True:
+        env_keys["NLP_V2_INTENT_ML"] = True
+    elif case.nlp_v2_enabled is not True:
         env_keys["NLP_V2_INTENT_ML"] = False
     saved = {k: os.environ.get(k) for k in env_keys}
     try:

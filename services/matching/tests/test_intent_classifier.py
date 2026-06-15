@@ -26,3 +26,10 @@ class TestIntentClassifier:
         result = classify_intent("есть айфон?")
         assert result.label == "buy"
         assert result.score == 0.55
+
+    def test_heuristic_negated_sell_with_buy(self, reload_modules):
+        from app.nlp.intent_classifier import classify_intent
+
+        result = classify_intent("есть кто продаёт шестнадцатый? нет, ищу купить")
+        assert result.label == "buy"
+        assert result.score == 0.9
