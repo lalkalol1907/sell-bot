@@ -1,0 +1,27 @@
+{
+    email {$ACME_EMAIL}
+}
+
+{$LOGIN_DOMAIN} {
+    encode zstd gzip
+
+    reverse_proxy {
+        dynamic a login-miniapp 80
+    }
+}
+
+{$APP_DOMAIN} {
+    encode zstd gzip
+
+    reverse_proxy {
+        dynamic a seller-dashboard 80
+    }
+}
+
+{$BOT_DOMAIN} {
+    encode zstd gzip
+
+    reverse_proxy {
+        dynamic a seller-bot 8080
+    }
+}

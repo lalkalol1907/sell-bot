@@ -1,0 +1,70 @@
+{"message": "куплю айфон 16", "product_title": "iPhone 16", "match": 1, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "ищу iphone 16 pro", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "нужен samsung s24", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "хочу macbook pro", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "беру airpods pro", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "где достать шестнадцатый про?", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "ищу шестнадцатую прошку", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "где взять галакси эс 24", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "ищу макбук на m3", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "нужны беспроводные эйрподсы про", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "где найти плейстейшн пять", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "ищу планшет эйр от эпл", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "достать пятнадцатую модель", "product_title": "iPhone 15", "match": 1, "keywords": ["iphone 15", "айфон 15", "пятнадцатый"], "eval_scope": "skip"}
+{"message": "есть у кого 16 про на 256?", "product_title": "iPhone 16 Pro 256GB", "match": 1, "keywords": ["iphone 16 pro 256", "айфон 16 про 256", "16 про 256"], "storage_gb": 256, "eval_scope": "variant"}
+{"message": "подскажите шестнадцатый про 256", "product_title": "iPhone 16 Pro 256GB", "match": 1, "keywords": ["iphone 16 pro 256", "айфон 16 про 256", "16 про 256"], "storage_gb": 256, "eval_scope": "variant"}
+{"message": "куплю iphone 16 pro 256 черный", "product_title": "iPhone 16 Pro 256GB Black", "match": 1, "keywords": ["iphone 16 pro 256 black", "iphone 16 pro 256", "16 про 256 черный"], "storage_gb": 256, "color": "black", "eval_scope": "variant"}
+{"message": "куплю iphone 16 pro 128 белый", "product_title": "iPhone 16 Pro 128GB White", "match": 1, "keywords": ["iphone 16 pro 128 white", "iphone 16 pro 128", "16 про 128 белый"], "storage_gb": 128, "color": "white", "eval_scope": "variant"}
+{"message": "нужен galaxy s24 256 синий", "product_title": "Samsung Galaxy S24 256GB Blue", "match": 1, "keywords": ["samsung s24 256", "galaxy s24 256", "galaxy s24 256 blue", "s24 256 синий"], "storage_gb": 256, "color": "blue", "eval_scope": "variant"}
+{"message": "хочу ipad air 256", "product_title": "iPad Air 256GB", "match": 1, "keywords": ["ipad air 256", "айпад эйр 256"], "storage_gb": 256, "eval_scope": "variant"}
+{"message": "ищу 16 про 512 natural titanium", "product_title": "iPhone 16 Pro 512GB Natural Titanium", "match": 1, "keywords": ["16 про 512 natural", "iphone 16 pro 512 natural titanium", "512 natural titanium"], "storage_gb": 512, "color": "natural", "eval_scope": "variant"}
+{"message": "есть у кого 16 про на 256?", "product_title": "iPhone 16 Pro", "match": 0, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "variant"}
+{"message": "куплю iphone 16 pro 256", "product_title": "iPhone 16 Pro 128GB White", "match": 0, "keywords": ["iphone 16 pro 128 white", "iphone 16 pro 128", "16 про 128 белый"], "storage_gb": 128, "color": "white", "eval_scope": "variant"}
+{"message": "куплю iphone 16 pro 256 черный", "product_title": "iPhone 16 Pro", "match": 0, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "variant"}
+{"message": "куплю iphone 16 pro 256 черный", "product_title": "iPhone 16 Pro 128GB White", "match": 0, "keywords": ["iphone 16 pro 128 white", "iphone 16 pro 128", "16 про 128 белый"], "storage_gb": 128, "color": "white", "eval_scope": "variant"}
+{"message": "нужен galaxy s24 256 синий", "product_title": "Samsung Galaxy S24", "match": 0, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "variant"}
+{"message": "хочу ipad air 256", "product_title": "iPad Air", "match": 0, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "variant"}
+{"message": "ищу 16 про 512 natural titanium", "product_title": "iPhone 16 Pro 256GB", "match": 0, "keywords": ["iphone 16 pro 256", "айфон 16 про 256", "16 про 256"], "storage_gb": 256, "eval_scope": "variant"}
+{"message": "погода сегодня отличная", "product_title": "iPhone 16", "match": 0, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "продаю айфон 16", "product_title": "iPhone 16", "match": 0, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "у меня айфон тормозит", "product_title": "iPhone 16", "match": 0, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "куплю ps5", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "нужен ipad air", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "ищу galaxy s24", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "куплю макбук про m3", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "где купить эйрподс", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "хочу пятнадцатый айфон", "product_title": "iPhone 15", "match": 1, "keywords": ["iphone 15", "айфон 15", "пятнадцатый"], "eval_scope": "skip"}
+{"message": "нужен ноутбук про m3", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "ищу наушники эйрподс", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "где купить эс двадцать четыре", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "привет всем", "product_title": "iPhone 16", "match": 0, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "матч вчера", "product_title": "Samsung Galaxy S24", "match": 0, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "продам macbook", "product_title": "MacBook Pro M3", "match": 0, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "тормозит macbook pro", "product_title": "MacBook Pro M3", "match": 0, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "куплю iphone шестнадцатый", "product_title": "iPhone 16", "match": 1, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "нужен galaxy", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "ищу ps5 slim", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "достать airpods", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "помогите с айпадом", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "сколько стоит iphone 16", "product_title": "iPhone 16", "match": 1, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "почём айфон 16 про", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "заказать samsung galaxy", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "интересует macbook", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "возьму ps5", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "приобрету ipad", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "кто знает где ps5", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "срочно нужен самсунг", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "есть macbook pro?", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "где найти ps5", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "есть айпад эйр", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "у кого есть 16 про", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "помогите найти iphone 15", "product_title": "iPhone 15", "match": 1, "keywords": ["iphone 15", "айфон 15", "пятнадцатый"], "eval_scope": "skip"}
+{"message": "можно ли найти s24", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}
+{"message": "есть у кого airpods", "product_title": "AirPods Pro 2", "match": 1, "keywords": ["airpods pro", "эйрподс", "эйрподсы про"], "eval_scope": "skip"}
+{"message": "где достать прошку 16", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "есть кто продаёт шестнадцатый нет ищу купить", "product_title": "iPhone 16", "match": 1, "keywords": ["айфон 16", "iphone 16"], "eval_scope": "skip"}
+{"message": "нужна шестнадцатая модель про", "product_title": "iPhone 16 Pro", "match": 1, "keywords": ["iphone 16 pro", "айфон 16 про", "16 про"], "eval_scope": "skip"}
+{"message": "ищу б/у macbook", "product_title": "MacBook Pro M3", "match": 1, "keywords": ["macbook pro", "макбук про", "macbook m3"], "eval_scope": "skip"}
+{"message": "нужен ipad для рисования", "product_title": "iPad Air", "match": 1, "keywords": ["ipad air", "айпад эйр", "планшет эйр"], "eval_scope": "skip"}
+{"message": "беру ps5 с дисководом", "product_title": "PlayStation 5", "match": 1, "keywords": ["ps5", "плейстейшн 5", "playstation 5"], "eval_scope": "skip"}
+{"message": "интересует galaxy s24 ultra", "product_title": "Samsung Galaxy S24", "match": 1, "keywords": ["samsung s24", "самсунг s24", "galaxy s24", "эс 24"], "eval_scope": "skip"}

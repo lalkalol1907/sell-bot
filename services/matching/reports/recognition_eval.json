@@ -1,0 +1,9 @@
+{
+  "cases": 94,
+  "recall_buy": 1.0,
+  "precision_matched": 1.0,
+  "sell_false_positives": 0,
+  "discussion_fp_precise": 0.0,
+  "failures": [],
+  "passed": true
+}

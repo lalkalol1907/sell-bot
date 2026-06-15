@@ -1,0 +1,8 @@
+{
+  "semantic_min_score": 0.72,
+  "balanced_shift": 0.0,
+  "aggressive_shift": -0.03,
+  "precise_shift": 0.03,
+  "pairs_evaluated": 58,
+  "note": "v2 default calibration; run with encoder+Qdrant for data-driven ROC"
+}

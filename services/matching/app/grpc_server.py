@@ -10,6 +10,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 from app.core_client import get_core_client
 from app.dedup import DedupStore
+from app.config import NLP_V2_ENABLED
 from app.matcher import match_message
 from app.spam_filter import check_spam
 
@@ -26,6 +27,9 @@ dedup = DedupStore(REDIS_URL)
 MESSAGES_TOTAL = Counter("matching_messages_total", "Messages processed", ["result"])
 SPAM_FILTERED = Counter("matching_spam_filtered_total", "Messages filtered as spam", ["reason"])
 LEADS_CREATED = Counter("matching_leads_created_total", "Leads created")
+SEMANTIC_HITS = Counter("matching_semantic_hits_total", "Semantic product gate hits")
+INTENT_CLASS = Counter("matching_intent_class_total", "Intent class distribution", ["intent_class"])
+GATE_REJECTED = Counter("matching_product_gate_rejected_total", "Product gate rejections", ["reason"])
 
 
 @app.get("/health")
@@ -62,10 +66,21 @@ def process_message(
 
     products = core.list_products(seller_id, active_only=True)
 
-    result = match_message(raw_text, products, sensitivity)
+    result = match_message(raw_text, products, sensitivity, seller_id=seller_id)
     if not result.matched or result.product is None:
+        if result.reject_reason:
+            GATE_REJECTED.labels(reason=result.reject_reason).inc()
+        else:
+            GATE_REJECTED.labels(reason="no_match").inc()
+        if result.intent_class:
+            INTENT_CLASS.labels(intent_class=result.intent_class).inc()
         MESSAGES_TOTAL.labels(result="no_match").inc()
-        return {"matched": False}
+        return {"matched": False, "reason": result.reject_reason or "no_match"}
+
+    if NLP_V2_ENABLED and result.product.semantic_score >= 0.72:
+        SEMANTIC_HITS.inc()
+    if result.intent_class:
+        INTENT_CLASS.labels(intent_class=result.intent_class).inc()
 
     if not dedup.try_reserve(chat_id, author_id, result.product.product_id):
         logger.info("duplicate lead skipped chat=%s author=%s", chat_id, author_id)

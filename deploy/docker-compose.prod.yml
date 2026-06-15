@@ -18,6 +18,12 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
 
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
   nats:
     image: nats:2-alpine
     command: ["--jetstream", "--store_dir=/data"]
@@ -52,10 +58,17 @@ services:
       CORE_GRPC_ADDR: core:50051
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
+      QDRANT_URL: http://qdrant:6333
+      NLP_V2_ENABLED: ${NLP_V2_ENABLED:-false}
+      NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC:-true}
+      NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML:-true}
+      NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE:-false}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
     depends_on:
       - core
       - redis
       - nats
+      - qdrant
     restart: unless-stopped
 
   worker-engine:
@@ -102,16 +115,12 @@ services:
 
   login-miniapp:
     image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG:-latest}
-    ports:
-      - "8081:80"
     depends_on:
       - http-gateway
     restart: unless-stopped
 
   seller-dashboard:
     image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG:-latest}
-    ports:
-      - "8082:80"
     depends_on:
       - http-gateway
     restart: unless-stopped
@@ -139,7 +148,30 @@ services:
       - login-miniapp
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      LOGIN_DOMAIN: ${LOGIN_DOMAIN}
+      APP_DOMAIN: ${APP_DOMAIN}
+      BOT_DOMAIN: ${BOT_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - login-miniapp
+      - seller-dashboard
+      - seller-bot
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   nats_data:
   worker_data:
+  qdrant_data:
+  caddy-data:
+  caddy-config:

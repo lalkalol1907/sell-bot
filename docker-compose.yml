@@ -29,6 +29,15 @@ services:
     labels:
       - "project=sell-bot"
 
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    labels:
+      - "project=sell-bot"
+
   nats:
     image: nats:2-alpine
     command: ["--jetstream", "--store_dir=/data"]
@@ -83,12 +92,19 @@ services:
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
       GRPC_PORT: 50052
+      QDRANT_URL: http://qdrant:6333
+      NLP_V2_ENABLED: ${NLP_V2_ENABLED:-false}
+      NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC:-true}
+      NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML:-true}
+      NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE:-false}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
       MIN_MESSAGE_CHARS: ${MIN_MESSAGE_CHARS:-8}
       MAX_MESSAGE_CHARS: ${MAX_MESSAGE_CHARS:-2000}
     depends_on:
       - core
       - redis
       - nats
+      - qdrant
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"
@@ -323,6 +339,7 @@ volumes:
   postgres_data:
   nats_data:
   worker_data:
+  qdrant_data:
   prometheus_data:
   grafana_data:
   loki_data:

@@ -93,12 +93,12 @@ docker compose -f deploy/docker-compose.prod.yml up -d login-miniapp seller-dash
 docker run -d -p 443:80 \
   -e ... \
   sellbot-login-miniapp:latest
-# Caddy/nginx → login.example.com → контейнер
+# Caddy (в deploy/docker-compose.prod.yml) → login.example.com → login-miniapp:80
 
 # Сервер 2: только dashboard
 docker run -d -p 443:80 \
   sellbot-seller-dashboard:latest
-# Caddy/nginx → app.example.com → контейнер
+# Caddy (в deploy/docker-compose.prod.yml) → app.example.com → seller-dashboard:80
 ```
 
 **Вариант C — обновить только один фронт:**

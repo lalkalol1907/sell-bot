@@ -223,12 +223,33 @@ docker compose up -d --build
 
 Telegram WebApp требует HTTPS в проде.
 
-1. Поддомен, например `login.example.com`
-2. Reverse proxy (Caddy/nginx) → `login-miniapp:80` (путь `/miniapp/`)
-3. BotFather → разрешить домен WebApp
-4. `.env`: `LOGIN_WEB_URL=https://login.example.com/miniapp/`
+Prod-стек включает **Caddy** (`deploy/docker/caddy/Caddyfile`) — auto-TLS через Let's Encrypt и балансировку входящего трафика:
 
-Для seller dashboard — отдельный поддомен или путь, reverse proxy → `seller-dashboard:80` (`/dashboard/`).
+| Домен (`*.env`) | Куда проксирует | Назначение |
+|-----------------|-----------------|------------|
+| `LOGIN_DOMAIN` | `login-miniapp:80` (dynamic LB) | Mini App (`/miniapp/`) + `/api/` |
+| `APP_DOMAIN` | `seller-dashboard:80` (dynamic LB) | Dashboard (`/dashboard/`) + `/api/` |
+| `BOT_DOMAIN` | `seller-bot:8080` (dynamic LB) | Webhook Telegram + health/metrics |
+
+1. Три поддомена, например `login.example.com`, `app.example.com`, `bot.example.com`
+2. DNS A/AAAA каждого домена → VPS; порты **80** и **443** открыты
+3. В `.env`: `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `ACME_EMAIL`
+4. BotFather → разрешить домен WebApp для `LOGIN_DOMAIN`
+5. `.env`:
+   ```env
+   LOGIN_WEB_URL=https://login.example.com/miniapp/
+   CORS_ORIGINS=https://login.example.com,https://app.example.com
+   BOT_TRANSPORT=webhook
+   WEBHOOK_URL=https://bot.example.com/telegram/webhook
+   ```
+
+Масштабирование за Caddy (Docker DNS → все реплики сервиса):
+```bash
+docker compose -f deploy/docker-compose.prod.yml up -d \
+  --scale login-miniapp=2 \
+  --scale seller-dashboard=2 \
+  --scale seller-bot=3
+```
 
 Локально: `LOGIN_WEB_URL=http://localhost:8081/miniapp/` (вне Telegram) или ngrok/cloudflared на `8081`.
 
@@ -292,8 +313,33 @@ cd services/http-gateway && bun install && bun run dev
 cd services/seller-bot && bun install && bun run dev
 
 # Matching
-cd services/matching && pip install ".[dev]" && pytest tests/
+cd services/matching && pip install ".[dev]" && pytest tests/ -m "not integration"
 ```
+
+### NLP v2 (matching)
+
+Пайплайн распознавания: `normalize_v2` → `product_gate` (fuzzy + semantic/Qdrant) → `intent_classifier` (ML + эвристики) → scoring.
+
+| Flag | Default | Описание |
+|------|---------|----------|
+| `NLP_V2_ENABLED` | `false` | Master switch v2 pipeline |
+| `NLP_V2_SEMANTIC` | `true` | Qdrant semantic match |
+| `NLP_V2_INTENT_ML` | `true` | ML intent head |
+| `NLP_V2_NORMALIZE` | `false` | pymorphy3 + razdel normalize |
+
+**Варианты (память / цвет):** если в сообщении указаны объём или цвет, `product_gate` понижает similarity товарам без этих атрибутов или с несовпадением (`VARIANT_*_MULT` в `.env`). В каталоге можно задать `storage_gb` и `color` у товара или положить их в `title`/`keywords` (например `iPhone 16 Pro 256GB Black`).
+
+Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов).
+
+```bash
+cd services/matching
+python scripts/eval_recognition.py
+pytest tests/test_recognition_golden.py -q
+```
+
+Добавить кейс при багрепорте: запись в `recognition_cases.yaml` → `pytest tests/test_recognition_golden.py -k <id>`.
+
+Переобучение intent: `python scripts/train_intent.py` / `python scripts/retrain_intent.py`.
 
 ---
 
@@ -447,6 +493,8 @@ CI: test → build (7 образов) → deploy (SSH) → GitHub Release
 ```bash
 docker compose -f deploy/docker-compose.prod.yml up -d
 ```
+
+**Caddy** слушает `:80`/`:443`, выпускает TLS-сертификаты и проксирует на фронты и webhook (см. `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN` в `.env.example`).
 
 `http-gateway` в prod не пробрасывает порт наружу — только через nginx фронтов с TLS.
 

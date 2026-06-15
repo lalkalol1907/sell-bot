@@ -1,0 +1,1305 @@
+- id: explicit_buy_01
+  text: куплю айфон 16
+  products:
+  - &id002
+    id: 1
+    title: iPhone 16
+    keywords:
+    - айфон 16
+    - iphone 16
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 1
+    intent_class: buy
+- id: explicit_buy_02
+  text: ищу iphone 16 pro
+  products:
+  - &id001
+    id: 2
+    title: iPhone 16 Pro
+    keywords:
+    - iphone 16 pro
+    - айфон 16 про
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 2
+    intent_class: buy
+- id: explicit_buy_03
+  text: нужен самсунг s24
+  products:
+  - &id003
+    id: 4
+    title: Samsung Galaxy S24
+    keywords:
+    - samsung s24
+    - самсунг s24
+    - galaxy s24
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 4
+    intent_class: buy
+- id: explicit_buy_04
+  text: хочу macbook pro m3
+  products:
+  - &id004
+    id: 5
+    title: MacBook Pro M3
+    keywords:
+    - macbook pro
+    - макбук про
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 5
+    intent_class: buy
+- id: explicit_buy_05
+  text: беру airpods pro 2
+  products:
+  - &id005
+    id: 6
+    title: AirPods Pro 2
+    keywords:
+    - airpods pro
+    - эйрподс
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 6
+    intent_class: buy
+- id: explicit_buy_06
+  text: возьму ps5
+  products:
+  - &id006
+    id: 7
+    title: PlayStation 5
+    keywords:
+    - ps5
+    - плейстейшн 5
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 7
+    intent_class: buy
+- id: explicit_buy_07
+  text: приобрету ipad air
+  products:
+  - &id007
+    id: 8
+    title: iPad Air
+    keywords:
+    - ipad air
+    - айпад эйр
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 8
+    intent_class: buy
+- id: explicit_buy_08
+  text: купить айфон 15 срочно
+  products:
+  - &id009
+    id: 3
+    title: iPhone 15
+    keywords:
+    - iphone 15
+    - айфон 15
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 3
+    intent_class: buy
+- id: explicit_buy_09
+  text: нужна прошка 16 про
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 2
+    intent_class: buy
+- id: explicit_buy_10
+  text: сколько стоит iphone 16?
+  products:
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 1
+    intent_class: buy
+- id: explicit_buy_11
+  text: почём айфон 16 про
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 2
+    intent_class: buy
+- id: explicit_buy_12
+  text: заказать samsung galaxy s24
+  products:
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 4
+    intent_class: buy
+- id: explicit_buy_13
+  text: интересует macbook pro
+  products:
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 5
+    intent_class: buy
+- id: explicit_buy_14
+  text: куплю эйрподс про
+  products:
+  - *id005
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 6
+    intent_class: buy
+- id: explicit_buy_15
+  text: нужно ps5 дисковая
+  products:
+  - *id006
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 7
+    intent_class: buy
+- id: explicit_buy_16
+  text: хочу айпад эйр 256
+  products:
+  - id: 8
+    title: iPad Air 256GB
+    keywords:
+    - ipad air 256
+    - айпад эйр 256
+    storage_gb: 256
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 8
+    intent_class: buy
+- id: implicit_buy_01
+  text: есть у кого 16 про на 256?
+  products:
+  - &id008
+    id: 2
+    title: iPhone 16 Pro 256GB
+    keywords:
+    - iphone 16 pro 256
+    - айфон 16 про 256
+    storage_gb: 256
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+- id: implicit_buy_04
+  text: подскажите где взять s24
+  products:
+  - *id003
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 4
+- id: implicit_buy_05
+  text: есть macbook pro m3?
+  products:
+  - *id004
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 5
+- id: implicit_buy_07
+  text: где найти ps5?
+  products:
+  - *id006
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 7
+- id: implicit_buy_08
+  text: есть айпад эйр?
+  products:
+  - *id007
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 8
+- id: implicit_buy_09
+  text: у кого есть 16 про 256гб
+  products:
+  - *id008
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+- id: implicit_buy_10
+  text: помогите найти iphone 15
+  products:
+  - *id009
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 3
+- id: implicit_buy_12
+  text: есть у кого макбук про?
+  products:
+  - *id004
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 5
+- id: implicit_buy_14
+  text: кто знает где ps5 взять
+  products:
+  - *id006
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 7
+- id: implicit_buy_15
+  text: подскажите по айпад эйр
+  products:
+  - *id007
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 8
+- id: implicit_buy_21
+  text: помогите с айпадом эйр
+  products:
+  - *id007
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 8
+- id: implicit_buy_02
+  text: где достать шестнадцатый про?
+  products:
+  - *id001
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_03
+  text: кто может подсказать где купить айфон 16?
+  products:
+  - *id002
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 1
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_06
+  text: достать airpods pro можно?
+  products:
+  - *id005
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 6
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_11
+  text: срочно нужен самсунг s24
+  products:
+  - *id003
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 4
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_13
+  text: где купить эйрподс?
+  products:
+  - *id005
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 6
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_16
+  text: ищу 16-ку для себя
+  products:
+  - *id002
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 1
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_17
+  text: где достать прошку 16?
+  products:
+  - *id001
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_18
+  text: можно ли найти s24 ultra
+  products:
+  - *id003
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 4
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_19
+  text: есть у кого airpods?
+  products:
+  - *id005
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 6
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: implicit_buy_20
+  text: ищу ps5 slim
+  products:
+  - *id006
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 7
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: sell_reject_01
+  text: продаю айфон 16, состояние отличное
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_02
+  text: продам iphone 16 pro 256
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_03
+  text: отдам samsung s24 недорого
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_04
+  text: продаю macbook pro m3
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_05
+  text: продам airpods pro 2
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_06
+  text: отдаю ps5 с дисководом
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_07
+  text: продаю ipad air
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_08
+  text: в наличии айфон 15
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_09
+  text: наличии iphone 16 про
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_10
+  text: оптом samsung s24
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_11
+  text: реализую macbook pro
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_12
+  text: сдаю ps5 в аренду нет продаю ps5
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_13
+  text: продажа airpods pro
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_14
+  text: продам свой айфон 16
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: sell_reject_15
+  text: отдам айпад эйр
+  products:
+  - *id002
+  - *id001
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: sell_intent
+    intent_class: sell
+- id: discussion_01
+  text: у меня айфон 16 тормозит после обновления
+  products:
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_02
+  text: iphone 16 pro глючит экран
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_03
+  text: samsung s24 батарея садится быстро
+  products:
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_04
+  text: macbook pro m3 перегревается
+  products:
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_05
+  text: airpods pro шумят в левом ухе
+  products:
+  - *id005
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_06
+  text: ps5 не включается после скачка
+  products:
+  - *id006
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_07
+  text: ipad air разбился экран
+  products:
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_08
+  text: айфон 15 не работает камера
+  products:
+  - *id009
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_09
+  text: после обновления iphone 16 pro тормозит
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_10
+  text: какой чехол на samsung s24 лучше
+  products:
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_11
+  text: совет по macbook pro m3
+  products:
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_12
+  text: настроил airpods pro как вам?
+  products:
+  - *id005
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_13
+  text: рекомендуете ps5 или xbox
+  products:
+  - *id006
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_14
+  text: плёнка на ipad air какая
+  products:
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: discussion_15
+  text: у меня 16 про проблема с батареей
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: discussion
+    intent_class: discussion
+- id: no_product_01
+  text: погода сегодня отличная
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_02
+  text: кто смотрел вчера матч
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_03
+  text: привет всем в чате
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_04
+  text: как дела у всех
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_05
+  text: спасибо за помощь ребят
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_06
+  text: завтра встречаемся в 18
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_07
+  text: киньте мемы
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_08
+  text: какой фильм посоветуете
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_09
+  text: работаю удалённо уже год
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: no_product_10
+  text: кто идёт на концерт
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: false
+    reject_reason: no_product
+- id: fuzzy_01
+  text: куплю айфн 16
+  products:
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 1
+- id: fuzzy_02
+  text: ищу iphon 16 pro
+  products:
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 2
+- id: fuzzy_03
+  text: нужен самсунг s24 ультра
+  products:
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 4
+- id: fuzzy_04
+  text: куплю макбук про m3
+  products:
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 5
+- id: fuzzy_05
+  text: беру эйрподс про 2
+  products:
+  - *id005
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 6
+- id: fuzzy_06
+  text: куплю ps5
+  products:
+  - *id006
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 7
+- id: fuzzy_07
+  text: хочу айпад эйр
+  products:
+  - *id007
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 8
+- id: fuzzy_08
+  text: куплю iphone шестнадцатый
+  products:
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 1
+- id: fuzzy_09
+  text: нужен galaxy s24
+  products:
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 4
+- id: fuzzy_10
+  text: куплю macbook m3 pro
+  products:
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 5
+- id: multi_01
+  text: куплю iphone 16 pro
+  products:
+  - *id002
+  - *id001
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 2
+- id: multi_02
+  text: ищу айфон 15
+  products:
+  - *id002
+  - *id009
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 3
+- id: multi_03
+  text: нужен samsung s24
+  products:
+  - *id002
+  - *id003
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 4
+- id: multi_04
+  text: куплю macbook pro
+  products:
+  - *id004
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 5
+- id: multi_05
+  text: беру airpods pro
+  products:
+  - *id005
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 6
+- id: multi_06
+  text: хочу ps5
+  products:
+  - *id006
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 7
+- id: multi_07
+  text: куплю ipad air
+  products:
+  - *id007
+  - *id004
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 8
+- id: multi_08
+  text: ищу iphone 16 pro
+  products:
+  - *id002
+  - *id001
+  - *id009
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 2
+- id: multi_09
+  text: нужен iphone 16
+  products:
+  - *id001
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 1
+- id: multi_10
+  text: куплю galaxy s24
+  products:
+  - *id003
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: true
+    product_id: 4
+- id: sensitivity_precise
+  text: есть айфон 16?
+  products:
+  - *id002
+  sensitivity: precise
+  expect:
+    matched: false
+- id: sensitivity_balanced
+  text: есть айфон 16?
+  products:
+  - *id002
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+- id: sensitivity_aggressive
+  text: есть айфон 16?
+  products:
+  - *id002
+  sensitivity: aggressive
+  expect:
+    matched: true
+    level: probable
+- id: semantic_01
+  text: где достать шестнадцатый про?
+  products:
+  - *id001
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_02
+  text: есть у кого 16 про на 256?
+  products:
+  - *id008
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_03
+  text: ищу шестнадцатую прошку
+  products:
+  - *id001
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_04
+  text: нужна шестнадцатая модель про
+  products:
+  - *id001
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_05
+  text: где взять галакси эс 24
+  products:
+  - *id003
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 4
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_06
+  text: ищу макбук на m3
+  products:
+  - *id004
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 5
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_07
+  text: нужны беспроводные эйрподсы про
+  products:
+  - *id005
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 6
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_08
+  text: где найти плейстейшн пять
+  products:
+  - *id006
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 7
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_09
+  text: ищу планшет эйр от эпл
+  products:
+  - *id007
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 8
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_10
+  text: достать пятнадцатую модель
+  products:
+  - *id009
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 3
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_11
+  text: есть кто продаёт шестнадцатый? нет, ищу купить
+  products:
+  - *id002
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 1
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_12
+  text: подскажите шестнадцатый про 256
+  products:
+  - *id008
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 2
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_13
+  text: где купить эс двадцать четыре
+  products:
+  - *id003
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 4
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_14
+  text: нужен ноутбук про m3
+  products:
+  - *id004
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 5
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: semantic_15
+  text: ищу наушники эйрподс вторые
+  products:
+  - *id005
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: probable
+    product_id: 6
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+- id: variant_storage_pick_256
+  text: куплю iphone 16 pro 256
+  products:
+  - *id001
+  - &id010
+    id: 21
+    title: iPhone 16 Pro 256GB Black
+    keywords:
+    - iphone 16 pro 256 black
+    storage_gb: 256
+    color: black
+  - &id011
+    id: 22
+    title: iPhone 16 Pro 128GB White
+    keywords:
+    - iphone 16 pro 128 white
+    storage_gb: 128
+    color: white
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 21
+- id: variant_color_pick_white
+  text: куплю iphone 16 pro 128 белый
+  products:
+  - *id010
+  - *id011
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 22
+- id: variant_missing_storage_penalty
+  text: куплю iphone 16 pro 256 черный
+  products:
+  - *id001
+  - *id010
+  sensitivity: balanced
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 21
+- id: variant_no_attrs_in_message
+  text: куплю iphone 16 pro
+  products:
+  - *id001
+  - *id010
+  sensitivity: precise
+  expect:
+    matched: true
+    level: confirmed
+    product_id: 2
+- id: discussion_balanced_01
+  text: у меня айфон 16 тормозит
+  products:
+  - *id002
+  sensitivity: aggressive
+  expect:
+    matched: true
+    level: probable
+    intent_class: discussion
+  nlp_v2_enabled: true
+  nlp_v2_semantic: true
+  nlp_v2_normalize: true
