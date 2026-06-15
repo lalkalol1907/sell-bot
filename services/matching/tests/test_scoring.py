@@ -17,6 +17,11 @@ class TestScoring:
         assert result.matched
         assert result.level == "confirmed"
 
+    def test_balanced_high_intent_probable(self):
+        result = compute_level(0.9, IntentResult("buy", 0.9), "balanced", fuzzy_score=0.9)
+        assert result.matched
+        assert result.level == "probable"
+
     def test_discussion_precise_reject(self):
         result = compute_level(0.9, IntentResult("discussion", 0.1), "precise", fuzzy_score=0.9)
         assert not result.matched

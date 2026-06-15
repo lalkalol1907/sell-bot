@@ -7,10 +7,37 @@ from pathlib import Path
 
 import yaml
 
-IPHONE_16 = {"id": 1, "title": "iPhone 16", "keywords": ["айфон 16", "iphone 16"]}
-IPHONE_16_PRO = {"id": 2, "title": "iPhone 16 Pro", "keywords": ["iphone 16 pro", "айфон 16 про"]}
-IPHONE_15 = {"id": 3, "title": "iPhone 15", "keywords": ["iphone 15", "айфон 15"]}
-SAMSUNG_S24 = {"id": 4, "title": "Samsung Galaxy S24", "keywords": ["samsung s24", "самсунг s24", "galaxy s24"]}
+IPHONE_16 = {"id": 1, "title": "iPhone 16", "keywords": ["айфон 16", "iphone 16", "шестнадцатый"]}
+IPHONE_16_PRO = {
+    "id": 2,
+    "title": "iPhone 16 Pro",
+    "keywords": [
+        "iphone 16 pro",
+        "айфон 16 про",
+        "шестнадцатый про",
+        "шестнадцатую прошку",
+        "прошка 16",
+        "16 про",
+    ],
+}
+IPHONE_15 = {
+    "id": 3,
+    "title": "iPhone 15",
+    "keywords": ["iphone 15", "айфон 15", "пятнадцатый", "пятнадцатую модель"],
+}
+SAMSUNG_S24 = {
+    "id": 4,
+    "title": "Samsung Galaxy S24",
+    "keywords": [
+        "samsung s24",
+        "самсунг s24",
+        "galaxy s24",
+        "галакси эс 24",
+        "эс 24",
+        "эс двадцать четыре",
+        "s24 ultra",
+    ],
+}
 MACBOOK = {"id": 5, "title": "MacBook Pro M3", "keywords": ["macbook pro", "макбук про"]}
 AIRPODS = {"id": 6, "title": "AirPods Pro 2", "keywords": ["airpods pro", "эйрподс"]}
 PS5 = {"id": 7, "title": "PlayStation 5", "keywords": ["ps5", "плейстейшн 5"]}

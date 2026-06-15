@@ -41,10 +41,10 @@ def compute_level(
         return ScoreResult(combined, "", False, "discussion")
 
     if intent.score >= 0.8 or (intent.label == "buy" and intent.score >= 0.55):
-        if intent.score >= 0.8:
-            return ScoreResult(combined, "confirmed", True)
         if sensitivity in ("aggressive", "balanced"):
             return ScoreResult(combined, "probable", True)
+        if intent.score >= 0.8:
+            return ScoreResult(combined, "confirmed", True)
         return ScoreResult(combined, "", False, "low_intent")
 
     if intent.score >= 0.4 or sensitivity in ("aggressive", "balanced"):

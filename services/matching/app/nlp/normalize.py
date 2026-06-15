@@ -53,11 +53,18 @@ def translit_expand(text: str) -> str:
 def _lemmatize_token(token: str) -> str:
     if not token or not re.search(r"[а-яё]", token, re.IGNORECASE):
         return token
+    if re.search(r"[a-z0-9]", token):
+        return token
     morph = _get_morph()
     parsed = morph.parse(token)
     if not parsed:
         return token
-    return parsed[0].normal_form
+    best = parsed[0]
+    if best.score < 0.4 or "UNKN" in best.tag:
+        return token
+    if "VERB" not in best.tag and "INFN" not in best.tag and "ADJF" not in best.tag:
+        return token
+    return best.normal_form
 
 
 def normalize_text_v2(text: str, *, lemmatize: bool = True) -> str:

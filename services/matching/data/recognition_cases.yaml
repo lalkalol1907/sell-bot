@@ -7,6 +7,7 @@
     keywords:
     - айфон 16
     - iphone 16
+    - шестнадцатый
   sensitivity: precise
   expect:
     matched: true
@@ -22,6 +23,10 @@
     keywords:
     - iphone 16 pro
     - айфон 16 про
+    - шестнадцатый про
+    - шестнадцатую прошку
+    - прошка 16
+    - 16 про
   sensitivity: precise
   expect:
     matched: true
@@ -38,6 +43,10 @@
     - samsung s24
     - самсунг s24
     - galaxy s24
+    - галакси эс 24
+    - эс 24
+    - эс двадцать четыре
+    - s24 ultra
   sensitivity: precise
   expect:
     matched: true
@@ -113,6 +122,8 @@
     keywords:
     - iphone 15
     - айфон 15
+    - пятнадцатый
+    - пятнадцатую модель
   sensitivity: precise
   expect:
     matched: true

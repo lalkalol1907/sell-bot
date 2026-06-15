@@ -14,12 +14,13 @@ from app.embeddings.qdrant_client import SearchHit, search_similar, upsert_produ
 from app.nlp.normalize import normalize_text
 
 _redis: redis.Redis | None = None
+_local_indexed: dict[tuple[int, str], bool] = {}
 
 
 def _get_redis() -> redis.Redis:
     global _redis
     if _redis is None:
-        _redis = redis.from_url(REDIS_URL, decode_responses=True)
+        _redis = redis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=1)
     return _redis
 
 
@@ -48,10 +49,19 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
         return
 
     key = f"catalog:hash:{seller_id}"
-    r = _get_redis()
     current = _catalog_hash(products)
-    if r.get(key) == current:
+    cache_key = (seller_id, current)
+    if _local_indexed.get(cache_key):
         return
+
+    redis_client = None
+    try:
+        redis_client = _get_redis()
+        if redis_client.get(key) == current:
+            _local_indexed[cache_key] = True
+            return
+    except Exception:
+        redis_client = None
 
     from app.embeddings.encoder import encode_texts
 
@@ -77,7 +87,9 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
                 vector,
                 product.get("title", ""),
             )
-        r.set(key, current, ex=86400)
+        if redis_client is not None:
+            redis_client.set(key, current, ex=86400)
+        _local_indexed[cache_key] = True
     except Exception:
         pass
 
@@ -94,7 +106,10 @@ def search_products(
     products: list[dict],
     limit: int = 1,
 ) -> list[ProductSearchHit]:
-    ensure_catalog_indexed(seller_id, products)
+    try:
+        ensure_catalog_indexed(seller_id, products)
+    except Exception:
+        pass
     try:
         vector = encode_text(normalized_text)
         hits = search_similar(seller_id, vector, limit=limit)

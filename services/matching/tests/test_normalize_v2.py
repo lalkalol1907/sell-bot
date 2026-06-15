@@ -36,3 +36,8 @@ class TestNormalizeV2:
         from app.nlp.normalize import translit_expand
 
         assert "samsung" in translit_expand("самсунг s24") or "самсунг" in translit_expand("samsung s24")
+
+    def test_keeps_loanword_galaxy(self, v2_normalize):
+        result = v2_normalize("где взять галакси эс 24")
+        assert "галакси" in result
+        assert "галаксить" not in result
