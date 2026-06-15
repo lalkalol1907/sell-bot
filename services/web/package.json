@@ -1,0 +1,12 @@
+{
+  "name": "@sellbot/web",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:miniapp": "bun run --filter @sellbot/login-miniapp dev",
+    "dev:dashboard": "bun run --filter @sellbot/seller-dashboard dev",
+    "build:miniapp": "bun run --filter @sellbot/login-miniapp build",
+    "build:dashboard": "bun run --filter @sellbot/seller-dashboard build",
+    "build": "bun run build:miniapp && bun run build:dashboard"
+  }
+}

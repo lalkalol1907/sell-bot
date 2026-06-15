@@ -56,11 +56,9 @@ services/seller-bot/.bun/
 *.session
 session_*
 
-# --- Web UIs (Vite / Bun) ---
-services/login-miniapp/dist/
-services/login-miniapp/.bun/
-services/seller-dashboard/dist/
-services/seller-dashboard/.bun/
+# --- Web monorepo (Vite / Bun) ---
+services/web/node_modules/
+services/web/apps/*/dist/
 
 # --- HTTP Gateway (Rails / Ruby) ---
 services/http-gateway/log/

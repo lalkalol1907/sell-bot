@@ -280,11 +280,10 @@ cd services/core && ./gradlew generateProto bootJar -x test
 # Worker Engine
 cd services/worker-engine && go build -o worker-engine ./cmd/engine
 
-# Login Mini App
-cd services/login-miniapp && bun install && bun run build
-
-# Seller Dashboard
-cd services/seller-dashboard && bun install && bun run build
+# Web monorepo (Mini App + Dashboard)
+cd services/web && bun install
+bun run dev:miniapp    # :5173/miniapp/
+bun run dev:dashboard  # :5174/dashboard/
 
 # HTTP Gateway
 cd services/http-gateway && bundle install && bundle exec rails s -p 3000
@@ -338,8 +337,7 @@ sell-bot/
 │   ├── matching/             # Python: matcher pipeline
 │   ├── seller-bot/           # grammY бот продавца
 │   ├── http-gateway/         # Rails API (seller + login endpoints)
-│   ├── login-miniapp/        # Vite React Mini App + nginx
-│   └── seller-dashboard/     # Vite React seller UI + nginx
+│   └── web/                  # Bun monorepo: apps/login-miniapp, apps/seller-dashboard
 ├── deploy/
 │   └── docker-compose.prod.yml
 ├── docker-compose.yml

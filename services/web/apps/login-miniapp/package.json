@@ -1,5 +1,5 @@
 {
-  "name": "sellbot-login-miniapp",
+  "name": "@sellbot/login-miniapp",
   "private": true,
   "type": "module",
   "scripts": {

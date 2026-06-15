@@ -1,5 +1,5 @@
 {
-  "name": "sellbot-seller-dashboard",
+  "name": "@sellbot/seller-dashboard",
   "private": true,
   "type": "module",
   "scripts": {

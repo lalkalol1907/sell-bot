@@ -162,13 +162,13 @@ jobs:
               ;;
             login-miniapp)
               echo "image=${USER}/${REPO}-login-miniapp" >> "$GITHUB_OUTPUT"
-              echo "context=services/login-miniapp" >> "$GITHUB_OUTPUT"
-              echo "dockerfile=services/login-miniapp/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=services/web" >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/web/apps/login-miniapp/Dockerfile" >> "$GITHUB_OUTPUT"
               ;;
             seller-dashboard)
               echo "image=${USER}/${REPO}-seller-dashboard" >> "$GITHUB_OUTPUT"
-              echo "context=services/seller-dashboard" >> "$GITHUB_OUTPUT"
-              echo "dockerfile=services/seller-dashboard/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=services/web" >> "$GITHUB_OUTPUT"
+              echo "dockerfile=services/web/apps/seller-dashboard/Dockerfile" >> "$GITHUB_OUTPUT"
               ;;
           esac
 

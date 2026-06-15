@@ -131,8 +131,8 @@ services:
 
   login-miniapp:
     build:
-      context: ./services/login-miniapp
-      dockerfile: Dockerfile
+      context: ./services/web
+      dockerfile: apps/login-miniapp/Dockerfile
     ports:
       - "8081:80"
     depends_on:
@@ -142,8 +142,8 @@ services:
 
   seller-dashboard:
     build:
-      context: ./services/seller-dashboard
-      dockerfile: Dockerfile
+      context: ./services/web
+      dockerfile: apps/seller-dashboard/Dockerfile
       args:
         VITE_BOT_USERNAME: ${BOT_USERNAME:-}
         VITE_MINIAPP_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
