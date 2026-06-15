@@ -10,9 +10,9 @@ from typing import Any
 import yaml
 
 from app.matcher import match_message
+from app.paths import data_dir
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-CASES_PATH = DATA_DIR / "recognition_cases.yaml"
+CASES_PATH = data_dir() / "recognition_cases.yaml"
 
 
 @dataclass

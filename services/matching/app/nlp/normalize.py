@@ -24,8 +24,12 @@ _MORPH = None
 
 @lru_cache(maxsize=1)
 def _translit_pairs() -> dict[str, str]:
-    with _TRANSLIT_PATH.open(encoding="utf-8") as f:
-        return json.load(f)
+    if _TRANSLIT_PATH.is_file():
+        with _TRANSLIT_PATH.open(encoding="utf-8") as f:
+            return json.load(f)
+    from importlib.resources import files
+
+    return json.loads(files("app.nlp").joinpath("translit.json").read_text(encoding="utf-8"))
 
 
 def _get_morph():

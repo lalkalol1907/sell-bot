@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 
+from app.paths import models_dir
+
 
 def _bool(name: str, default: bool) -> bool:
     raw = os.getenv(name)
@@ -34,11 +36,11 @@ VARIANT_COLOR_MISSING_MULT = float(os.getenv("VARIANT_COLOR_MISSING_MULT", "0.78
 
 INTENT_MODEL_PATH = os.getenv(
     "INTENT_MODEL_PATH",
-    os.path.join(os.path.dirname(__file__), "..", "models", "intent_v1.joblib"),
+    str(models_dir() / "intent_v1.joblib"),
 )
 SEMANTIC_THRESHOLDS_PATH = os.getenv(
     "SEMANTIC_THRESHOLDS_PATH",
-    os.path.join(os.path.dirname(__file__), "..", "models", "semantic_thresholds.json"),
+    str(models_dir() / "semantic_thresholds.json"),
 )
 
 QDRANT_COLLECTION = "products"

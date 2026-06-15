@@ -37,6 +37,9 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["app*"]
 
+[tool.setuptools.package-data]
+"app.nlp" = ["*.json"]
+
 [tool.pytest.ini_options]
 markers = [
     "integration: tests requiring external services (Qdrant, encoder)",
