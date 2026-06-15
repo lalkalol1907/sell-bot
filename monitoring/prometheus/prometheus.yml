@@ -58,12 +58,26 @@ scrape_configs:
         labels:
           service: worker-engine
 
-  - job_name: sellbot-login-gateway
+  - job_name: sellbot-http-gateway
     metrics_path: /metrics
     static_configs:
-      - targets: [login-gateway:8080]
+      - targets: [http-gateway:3000]
         labels:
-          service: login-gateway
+          service: http-gateway
+
+  - job_name: sellbot-login-miniapp
+    metrics_path: /health
+    static_configs:
+      - targets: [login-miniapp:80]
+        labels:
+          service: login-miniapp
+
+  - job_name: sellbot-seller-dashboard
+    metrics_path: /health
+    static_configs:
+      - targets: [seller-dashboard:80]
+        labels:
+          service: seller-dashboard
 
   - job_name: blackbox-http
     metrics_path: /probe

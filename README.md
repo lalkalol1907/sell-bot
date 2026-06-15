@@ -10,7 +10,9 @@ Telegram-система для продавцов: userbot-воркеры слу
 | **Worker Engine** | Go 1.26 (gotd MTProto) | Слушатели чатов, MTProto login (gRPC) |
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
-| **Login Gateway** | TypeScript + Bun | Mini App UI + HTTP BFF (публичный HTTPS) |
+| **HTTP Gateway** | Ruby on Rails 8 (API-only) | REST API: seller dashboard + login Mini App |
+| **Login Mini App** | Vite + React + nginx | Статика Mini App, прокси `/api/` → http-gateway |
+| **Seller Dashboard** | Vite + React + nginx | Веб-кабинет продавца, прокси `/api/` → http-gateway |
 
 Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.
 
@@ -29,14 +31,14 @@ Telegram-система для продавцов: userbot-воркеры слу
                     │                   │                   │
                     ▼                   ▼                   │
             ┌───────────────┐   ┌───────────────┐          │
-            │  seller-bot   │   │   Mini App    │          │
-            │  (grammY)     │──►│  (WebApp UI)  │          │
+            │  seller-bot   │   │ login-miniapp │          │
+            │  (grammY)     │──►│ nginx + React │          │
             └───────┬───────┘   └───────┬───────┘          │
-                    │                   │ HTTPS REST       │
+                    │                   │ /api/            │
                     │ gRPC              ▼                   │
                     │           ┌───────────────┐          │
-                    │           │ login-gateway │          │
-                    │           │  (Bun BFF)    │          │
+                    │           │ http-gateway  │          │
+                    │           │  (Rails API)  │          │
                     │           └───┬───────┬───┘          │
                     │               │       │              │
                     │         gRPC  │       │ gRPC         │
@@ -53,6 +55,8 @@ Telegram-система для продавцов: userbot-воркеры слу
                          │ PostgreSQL │                    │
                          └────────────┘                    │
                                                             │
+    seller-dashboard ──► nginx + React (JWT cookie auth)   │
+         /api/ ─────────► http-gateway (тот же API)        │
     ┌───────────────┐         NATS          ┌────────────┴───┐
     │ worker-engine │ ───publish──────────► │    matching    │
     │  (Go/gotd)    │ ◄──subscribe───────── │   (Python)     │
@@ -104,7 +108,7 @@ Telegram-система для продавцов: userbot-воркеры слу
 OTP и 2FA **не проходят через чат бота** — только через WebApp или QR в официальном Telegram.
 
 ```
- Продавец        seller-bot       Mini App      login-gateway    worker-engine       core        Telegram
+ Продавец        seller-bot       Mini App      http-gateway    worker-engine       core        Telegram
      │                │               │               │                │              │              │
      │ Добавить       │               │               │                │              │              │
      │ воркера        │               │               │                │              │              │
@@ -150,7 +154,9 @@ OTP и 2FA **не проходят через чат бота** — только
 
 | Сервис | Сеть | Что делает |
 |--------|------|------------|
-| **login-gateway** | Публичный HTTPS | Static Mini App, REST API, валидация `initData` |
+| **login-miniapp** | Публичный HTTPS (nginx) | Static Mini App, прокси `/api/` → http-gateway |
+| **seller-dashboard** | Публичный HTTPS (nginx) | Static dashboard, прокси `/api/` → http-gateway |
+| **http-gateway** | Internal only | REST API, JWT + initData, gRPC → core / worker-engine |
 | **worker-engine** | Только internal | MTProto login, listener-воркеры, gRPC `:50053` |
 | **seller-bot** | Telegram Bot API | Точка входа (кнопка WebApp), приём результата |
 
@@ -176,7 +182,9 @@ OTP и 2FA **не проходят через чат бота** — только
 | Core HTTP | `8080` | Actuator health |
 | Matching gRPC | `50052` | gRPC (опционально) |
 | Matching HTTP | `8000` | `/health` |
-| Login Gateway | `8081` | Mini App + REST API |
+| Login Mini App | `8081` | nginx: `/miniapp/` + `/api/` proxy |
+| Seller Dashboard | `8082` | nginx: `/dashboard/` + `/api/` proxy |
+| HTTP Gateway | — | internal `:3000` (только через nginx фронтов) |
 | Worker Engine login gRPC | `50053` | internal only (не проброшен в prod) |
 | PostgreSQL | `5432` | |
 | Redis | `6379` | |
@@ -196,14 +204,15 @@ docker compose up -d --build
 Проверка:
 - Core: `http://localhost:8080/actuator/health`
 - Matching: `http://localhost:8000/health`
-- Login Gateway: `http://localhost:8081/health`
+- Login Mini App: `http://localhost:8081/health`
+- Seller Dashboard: `http://localhost:8082/health`
 
 ---
 
 ## Добавление воркера (Mini App)
 
 1. Задайте в `.env`: `TG_API_ID`, `TG_API_HASH`, `SESSION_ENCRYPTION_KEY`, `INTERNAL_GRPC_TOKEN`
-2. `LOGIN_WEB_URL` — URL login-gateway (см. TLS ниже)
+2. `LOGIN_WEB_URL` — URL login-miniapp (см. TLS ниже)
 3. В боте: **Воркеры** → **Добавить воркера** → **Открыть подключение воркера**
 4. В Mini App:
    - **QR** — сканировать в официальном Telegram (Настройки → Устройства)
@@ -215,11 +224,13 @@ docker compose up -d --build
 Telegram WebApp требует HTTPS в проде.
 
 1. Поддомен, например `login.example.com`
-2. Reverse proxy (Caddy/nginx) → `login-gateway:8080`
+2. Reverse proxy (Caddy/nginx) → `login-miniapp:80` (путь `/miniapp/`)
 3. BotFather → разрешить домен WebApp
-4. `.env`: `LOGIN_WEB_URL=https://login.example.com`
+4. `.env`: `LOGIN_WEB_URL=https://login.example.com/miniapp/`
 
-Локально: `LOGIN_WEB_URL=http://localhost:8081` (вне Telegram) или ngrok/cloudflared на `8081`.
+Для seller dashboard — отдельный поддомен или путь, reverse proxy → `seller-dashboard:80` (`/dashboard/`).
+
+Локально: `LOGIN_WEB_URL=http://localhost:8081/miniapp/` (вне Telegram) или ngrok/cloudflared на `8081`.
 
 ---
 
@@ -250,7 +261,7 @@ make test
 | Core | JUnit 5 + Mockito | CatalogService, LeadsService, WorkersService, InternalGrpcAuth |
 | Worker Engine | go test | crypto, listener, login (phone + QR gRPC), grpcauth |
 | Seller Bot | bun test | utils, worker-add web_app_data |
-| Login Gateway | bun test | Telegram initData validation |
+| HTTP Gateway | RSpec | Telegram initData, login routing |
 
 Перед тестами Go/Python: `make gen-proto` (включено в `make test`).
 
@@ -269,9 +280,14 @@ cd services/core && ./gradlew generateProto bootJar -x test
 # Worker Engine
 cd services/worker-engine && go build -o worker-engine ./cmd/engine
 
-# Login Gateway (API + Mini App)
-cd services/login-gateway/web && bun install && bun run build
-cd services/login-gateway && bun install && bun run dev
+# Login Mini App
+cd frontend/login-miniapp && bun install && bun run build
+
+# Seller Dashboard
+cd frontend/seller-dashboard && bun install && bun run build
+
+# HTTP Gateway
+cd services/http-gateway && bundle install && bundle exec rails s -p 3000
 
 # Seller Bot
 cd services/seller-bot && bun install && bun run dev
@@ -293,7 +309,7 @@ cd services/matching && pip install ".[dev]" && pytest tests/
 | **Loki** | 3100 | Хранение логов |
 | **Promtail** | — | Сбор логов Docker-контейнеров |
 | **node-exporter** | 9100 | Метрики хоста |
-| **cadvisor** | 8082 | Метрики контейнеров |
+| **cadvisor** | 8083 | Метрики контейнеров |
 | **blackbox-exporter** | 9115 | HTTP health-пробы |
 
 Дашборды лежат в `monitoring/grafana/provisioning/dashboards/json/`:
@@ -315,13 +331,16 @@ cd services/matching && pip install ".[dev]" && pytest tests/
 sell-bot/
 ├── proto/                    # gRPC контракты
 ├── monitoring/               # Prometheus, Loki, Grafana, дашборды
-├── scripts/                  # gen-proto-go.sh, gen-proto-python.sh
+├── frontend/
+│   ├── login-miniapp/        # Vite React Mini App + nginx
+│   └── seller-dashboard/     # Vite React seller UI + nginx
+├── scripts/                  # gen-proto-*.sh
 ├── services/
 │   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway
 │   ├── worker-engine/        # Go: listeners + login.Manager (gRPC)
 │   ├── matching/             # Python: matcher pipeline
 │   ├── seller-bot/           # grammY бот продавца
-│   └── login-gateway/        # Bun BFF + web/ (Vite React Mini App)
+│   └── http-gateway/         # Rails API (seller + login endpoints)
 ├── deploy/
 │   └── docker-compose.prod.yml
 ├── docker-compose.yml
@@ -337,17 +356,20 @@ sell-bot/
 
 | Переменная | Сервис | Назначение |
 |------------|--------|------------|
-| `BOT_TOKEN` | seller-bot, login-gateway | Telegram Bot API + валидация initData |
+| `BOT_TOKEN` | seller-bot, http-gateway | Telegram Bot API + валидация initData |
+| `JWT_SECRET` | http-gateway | Подпись JWT для seller dashboard |
+| `CORS_ORIGINS` | http-gateway | Origins фронтов (8081, 8082) |
+| `BOT_USERNAME` | http-gateway, seller-dashboard | Telegram Login Widget |
 | `LOGIN_WEB_URL` | seller-bot | URL кнопки WebApp |
 | `BOT_TRANSPORT` | seller-bot | `polling` (dev, 1 реплика) или `webhook` (prod, scale) |
 | `WEBHOOK_URL` | seller-bot | Публичный URL webhook (обязателен при `webhook`) |
 | `WEBHOOK_SECRET` | seller-bot | `X-Telegram-Bot-Api-Secret-Token` (обязателен при `webhook`) |
 | `WEBHOOK_PATH` | seller-bot | Путь на HTTP-сервере (по умолчанию `/telegram/webhook`) |
 | `HTTP_PORT` | seller-bot | HTTP: health, metrics, webhook (по умолчанию `8080`) |
-| `REDIS_URL` | login-gateway, seller-bot | Общий Redis для rate limit / FSM / login routes |
-| `WORKER_LOGIN_GRPC_ADDR` | login-gateway | Один или несколько `host:port` через запятую |
-| `LOGIN_ROUTE_TTL_SEC` | login-gateway | TTL привязки `login_id` → worker-engine (сек) |
-| `INTERNAL_GRPC_TOKEN` | core, worker-engine, login-gateway | Auth internal gRPC (metadata) |
+| `REDIS_URL` | http-gateway, seller-bot | Rate limit / FSM / login routes |
+| `WORKER_LOGIN_GRPC_ADDR` | http-gateway | Один или несколько `host:port` через запятую |
+| `LOGIN_ROUTE_TTL_SEC` | http-gateway | TTL привязки `login_id` → worker-engine (сек) |
+| `INTERNAL_GRPC_TOKEN` | core, worker-engine, http-gateway | Auth internal gRPC (metadata) |
 | `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
 | `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
 | `CORE_GRPC_ADDR` | все gRPC-клиенты | Адрес Core |
@@ -380,13 +402,13 @@ seller-bot:
     HTTP_PORT: 8080
 ```
 
-### Core и login-gateway: горизонтальный скейл
+### Core и http-gateway: горизонтальный скейл
 
 **Core** — несколько реплик безопасны:
 - Outbox `notifications` забирается через `FOR UPDATE SKIP LOCKED` (статус `processing`)
 - Зависшие `processing` возвращаются в `pending` через `stale-minutes`
 
-**login-gateway** — несколько реплик безопасны:
+**http-gateway** — несколько реплик безопасны:
 - Rate limit в **Redis** (общий для всех pod'ов)
 - При старте login сохраняется `login_id → worker-engine` в Redis
 - Последующие code/password/status идут на тот же engine
@@ -413,20 +435,22 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-CI: test → build (5 образов) → deploy (SSH) → GitHub Release
+CI: test → build (7 образов) → deploy (SSH) → GitHub Release
 
 **Docker Hub образы:**
 - `{user}/{repo}-core`
 - `{user}/{repo}-worker-engine`
 - `{user}/{repo}-matching`
 - `{user}/{repo}-seller-bot`
-- `{user}/{repo}-login-gateway`
+- `{user}/{repo}-http-gateway`
+- `{user}/{repo}-login-miniapp`
+- `{user}/{repo}-seller-dashboard`
 
 На сервере:
 ```bash
 docker compose -f deploy/docker-compose.prod.yml up -d
 ```
 
-`login-gateway` в prod не пробрасывает порт наружу — только через reverse proxy с TLS.
+`http-gateway` в prod не пробрасывает порт наружу — только через nginx фронтов с TLS.
 
 Подробный продуктовый план: [`../gb-plan.md`](../gb-plan.md)

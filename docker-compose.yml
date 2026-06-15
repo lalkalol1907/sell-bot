@@ -129,19 +129,45 @@ services:
       - "prometheus.port=9102"
       - "prometheus.path=/metrics"
 
-  login-gateway:
+  login-miniapp:
+    build:
+      context: ./frontend/login-miniapp
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - http-gateway
+    labels:
+      - "project=sell-bot"
+
+  seller-dashboard:
+    build:
+      context: ./frontend/seller-dashboard
+      dockerfile: Dockerfile
+      args:
+        VITE_BOT_USERNAME: ${BOT_USERNAME:-}
+        VITE_MINIAPP_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
+    ports:
+      - "8082:80"
+    depends_on:
+      - http-gateway
+    labels:
+      - "project=sell-bot"
+
+  http-gateway:
     build:
       context: .
-      dockerfile: services/login-gateway/Dockerfile
-    ports:
-      - "8081:8080"
+      dockerfile: services/http-gateway/Dockerfile
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-}
       CORE_GRPC_ADDR: core:50051
-      WORKER_LOGIN_GRPC_ADDR: worker-engine:50053
+      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR:-worker-engine:50053}
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
       REDIS_URL: redis://redis:6379/0
-      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:8082}
+      RAILS_ENV: production
+      PORT: 3000
     depends_on:
       - core
       - worker-engine
@@ -149,7 +175,7 @@ services:
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"
-      - "prometheus.port=8080"
+      - "prometheus.port=3000"
       - "prometheus.path=/metrics"
 
   seller-bot:
@@ -161,7 +187,7 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-}
       CORE_GRPC_ADDR: core:50051
-      LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081}
+      LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
       BOT_TRANSPORT: ${BOT_TRANSPORT:-polling}
@@ -175,7 +201,8 @@ services:
       - redis
       - nats
       - worker-engine
-      - login-gateway
+      - http-gateway
+      - login-miniapp
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"
@@ -278,7 +305,7 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
     ports:
-      - "8082:8080"
+      - "8083:8080"
     labels:
       - "project=sell-bot"
 

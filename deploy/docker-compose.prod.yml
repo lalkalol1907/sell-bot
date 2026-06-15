@@ -82,19 +82,38 @@ services:
       - nats
     restart: unless-stopped
 
-  login-gateway:
-    image: ${LOGIN_GATEWAY_IMAGE_NAME}:${IMAGE_TAG:-latest}
+  http-gateway:
+    image: ${HTTP_GATEWAY_IMAGE_NAME}:${IMAGE_TAG:-latest}
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CORE_GRPC_ADDR: core:50051
       WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR:-worker-engine:50053}
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
       REDIS_URL: redis://redis:6379/0
-      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      RAILS_ENV: production
+      PORT: 3000
     depends_on:
       - core
       - worker-engine
       - redis
+    restart: unless-stopped
+
+  login-miniapp:
+    image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    ports:
+      - "8081:80"
+    depends_on:
+      - http-gateway
+    restart: unless-stopped
+
+  seller-dashboard:
+    image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    ports:
+      - "8082:80"
+    depends_on:
+      - http-gateway
     restart: unless-stopped
 
   seller-bot:
@@ -116,7 +135,8 @@ services:
       - redis
       - nats
       - worker-engine
-      - login-gateway
+      - http-gateway
+      - login-miniapp
     restart: unless-stopped
 
 volumes:

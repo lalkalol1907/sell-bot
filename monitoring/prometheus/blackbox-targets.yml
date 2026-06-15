@@ -4,7 +4,9 @@
     - http://loki:3100/ready
     - http://core:8080/actuator/health
     - http://matching:8000/health
-    - http://login-gateway:8080/health
+    - http://http-gateway:3000/health
+    - http://login-miniapp/health
+    - http://seller-dashboard/health
     - http://seller-bot:8080/health
   labels:
     project: sellbot
