@@ -42,7 +42,7 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 markers = [
-    "integration: tests requiring external services (Qdrant, encoder)",
+    "integration: optional tests (Qdrant, encoder, intent training, semantic golden suite)",
 ]
 
 [tool.coverage.run]

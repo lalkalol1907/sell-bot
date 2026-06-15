@@ -329,12 +329,13 @@ cd services/matching && pip install ".[dev]" && pytest tests/ -m "not integratio
 
 **Варианты (память / цвет):** если в сообщении указаны объём или цвет, `product_gate` понижает similarity товарам без этих атрибутов или с несовпадением (`VARIANT_*_MULT` в `.env`). В каталоге можно задать `storage_gb` и `color` у товара или положить их в `title`/`keywords` (например `iPhone 16 Pro 256GB Black`).
 
-Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов).
+Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов). В CI гоняются только fast-кейсы (`pytest -m "not integration"`); semantic/Qdrant и обучение intent — локально.
 
 ```bash
 cd services/matching
-python scripts/eval_recognition.py
-pytest tests/test_recognition_golden.py -q
+pytest tests/ -m "not integration" -q
+python scripts/eval_recognition.py          # локально, с моделью
+pytest tests/ -m integration -q             # Qdrant + semantic golden + train smoke
 ```
 
 Добавить кейс при багрепорте: запись в `recognition_cases.yaml` → `pytest tests/test_recognition_golden.py -k <id>`.

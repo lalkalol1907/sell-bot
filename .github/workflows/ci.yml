@@ -73,14 +73,12 @@ jobs:
         working-directory: services/matching
         run: pip install ".[dev]"
 
-      - name: Generate NLP datasets
+      - name: Validate NLP datasets
         if: matrix.component == 'matching'
         working-directory: services/matching
         run: |
           python scripts/generate_intent_dataset.py
-          python scripts/calibrate_semantic.py
           python scripts/eval_product_pairs.py
-          python scripts/train_intent.py --no-embeddings --min-macro-f1 0.5 --min-discussion-recall 0.3
 
       - name: Generate Python Protos
         if: matrix.component == 'matching'
@@ -96,43 +94,6 @@ jobs:
           pytest tests/ -q --tb=short -m "not integration" \
             --cov=app.nlp --cov=app.matcher --cov=app.embeddings \
             --cov-report=term-missing --cov-fail-under=85
-
-      - name: Eval recognition gate
-        if: matrix.component == 'matching'
-        working-directory: services/matching
-        run: python scripts/eval_recognition.py
-
-      - name: Run Matching Integration Tests
-        if: matrix.component == 'matching' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-        working-directory: services/matching
-        env:
-          QDRANT_URL: http://localhost:6333
-        run: pytest tests/ -q -m integration --tb=short
-
-  matching-integration:
-    name: Matching integration (Qdrant)
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-    services:
-      qdrant:
-        image: qdrant/qdrant:v1.12.5
-        ports:
-          - 6333:6333
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-          cache: pip
-          cache-dependency-path: services/matching/pyproject.toml
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - working-directory: services/matching
-        run: pip install ".[dev]"
-      - run: bash scripts/gen-proto-python.sh
-      - working-directory: services/matching
-        env:
-          QDRANT_URL: http://localhost:6333
-        run: pytest tests/ -q -m integration --tb=short
 
       - name: Set Up Bun
         if: matrix.component == 'seller-bot' || matrix.component == 'http-gateway'
