@@ -281,10 +281,10 @@ cd services/core && ./gradlew generateProto bootJar -x test
 cd services/worker-engine && go build -o worker-engine ./cmd/engine
 
 # Login Mini App
-cd frontend/login-miniapp && bun install && bun run build
+cd services/login-miniapp && bun install && bun run build
 
 # Seller Dashboard
-cd frontend/seller-dashboard && bun install && bun run build
+cd services/seller-dashboard && bun install && bun run build
 
 # HTTP Gateway
 cd services/http-gateway && bundle install && bundle exec rails s -p 3000
@@ -331,16 +331,15 @@ cd services/matching && pip install ".[dev]" && pytest tests/
 sell-bot/
 ├── proto/                    # gRPC контракты
 ├── monitoring/               # Prometheus, Loki, Grafana, дашборды
-├── frontend/
-│   ├── login-miniapp/        # Vite React Mini App + nginx
-│   └── seller-dashboard/     # Vite React seller UI + nginx
 ├── scripts/                  # gen-proto-*.sh
 ├── services/
 │   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway
 │   ├── worker-engine/        # Go: listeners + login.Manager (gRPC)
 │   ├── matching/             # Python: matcher pipeline
 │   ├── seller-bot/           # grammY бот продавца
-│   └── http-gateway/         # Rails API (seller + login endpoints)
+│   ├── http-gateway/         # Rails API (seller + login endpoints)
+│   ├── login-miniapp/        # Vite React Mini App + nginx
+│   └── seller-dashboard/     # Vite React seller UI + nginx
 ├── deploy/
 │   └── docker-compose.prod.yml
 ├── docker-compose.yml

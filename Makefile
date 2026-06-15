@@ -17,8 +17,8 @@ gen-proto-ruby:
 build-local: gen-proto
 	cd services/core && ./gradlew bootJar -x test --no-daemon
 	cd services/worker-engine && go build -o worker-engine ./cmd/engine
-	cd frontend/login-miniapp && bun install && bun run build
-	cd frontend/seller-dashboard && bun install && bun run build
+	cd services/login-miniapp && bun install && bun run build
+	cd services/seller-dashboard && bun install && bun run build
 	cd services/seller-bot && bun run lint
 
 build:

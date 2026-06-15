@@ -56,11 +56,11 @@ services/seller-bot/.bun/
 *.session
 session_*
 
-# --- Frontends (Vite / Bun) ---
-frontend/login-miniapp/dist/
-frontend/login-miniapp/.bun/
-frontend/seller-dashboard/dist/
-frontend/seller-dashboard/.bun/
+# --- Web UIs (Vite / Bun) ---
+services/login-miniapp/dist/
+services/login-miniapp/.bun/
+services/seller-dashboard/dist/
+services/seller-dashboard/.bun/
 
 # --- HTTP Gateway (Rails / Ruby) ---
 services/http-gateway/log/

@@ -131,7 +131,7 @@ services:
 
   login-miniapp:
     build:
-      context: ./frontend/login-miniapp
+      context: ./services/login-miniapp
       dockerfile: Dockerfile
     ports:
       - "8081:80"
@@ -142,7 +142,7 @@ services:
 
   seller-dashboard:
     build:
-      context: ./frontend/seller-dashboard
+      context: ./services/seller-dashboard
       dockerfile: Dockerfile
       args:
         VITE_BOT_USERNAME: ${BOT_USERNAME:-}
