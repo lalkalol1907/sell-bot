@@ -2,20 +2,23 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sellbot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sellbot}
-      POSTGRES_DB: ${POSTGRES_DB:-sellbot}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sellbot"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
 
   qdrant:
@@ -32,12 +35,12 @@ services:
     restart: unless-stopped
 
   core:
-    image: ${CORE_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${CORE_IMAGE_NAME}:${IMAGE_TAG}
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sellbot
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sellbot}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sellbot}
-      GRPC_SERVER_PORT: 50051
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      GRPC_SERVER_PORT: "50051"
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
       NATS_URL: nats://nats:4222
       JAVA_OPTS: -Xmx384m
@@ -53,25 +56,26 @@ services:
       start_period: 90s
 
   matching:
-    image: ${MATCHING_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${MATCHING_IMAGE_NAME}:${IMAGE_TAG}
     environment:
       CORE_GRPC_ADDR: core:50051
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
       QDRANT_URL: http://qdrant:6333
-      NLP_V2_ENABLED: ${NLP_V2_ENABLED:-false}
-      NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC:-true}
-      NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML:-true}
-      NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE:-false}
+      GRPC_PORT: "50052"
       MODELS_LOCAL_DIR: /data/models
-      MODELS_SKIP_S3: ${MODELS_SKIP_S3:-false}
-      MODELS_S3_ENDPOINT: ${MODELS_S3_ENDPOINT:-}
-      MODELS_S3_BUCKET: ${MODELS_S3_BUCKET:-}
-      MODELS_S3_PREFIX: ${MODELS_S3_PREFIX:-}
-      MODELS_S3_VERSION: ${MODELS_S3_VERSION:-}
-      MODELS_S3_REGION: ${MODELS_S3_REGION:-}
-      MODELS_S3_ACCESS_KEY: ${MODELS_S3_ACCESS_KEY:-}
-      MODELS_S3_SECRET_KEY: ${MODELS_S3_SECRET_KEY:-}
+      NLP_V2_ENABLED: ${NLP_V2_ENABLED}
+      NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC}
+      NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML}
+      NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE}
+      MODELS_SKIP_S3: ${MODELS_SKIP_S3}
+      MODELS_S3_ENDPOINT: ${MODELS_S3_ENDPOINT}
+      MODELS_S3_BUCKET: ${MODELS_S3_BUCKET}
+      MODELS_S3_PREFIX: ${MODELS_S3_PREFIX}
+      MODELS_S3_VERSION: ${MODELS_S3_VERSION}
+      MODELS_S3_REGION: ${MODELS_S3_REGION}
+      MODELS_S3_ACCESS_KEY: ${MODELS_S3_ACCESS_KEY}
+      MODELS_S3_SECRET_KEY: ${MODELS_S3_SECRET_KEY}
     volumes:
       - matching_models:/data/models
     depends_on:
@@ -82,23 +86,18 @@ services:
     restart: unless-stopped
 
   worker-engine:
-    image: ${WORKER_ENGINE_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${WORKER_ENGINE_IMAGE_NAME}:${IMAGE_TAG}
     volumes:
       - worker_data:/data
     environment:
       TG_API_ID: ${TG_API_ID}
       TG_API_HASH: ${TG_API_HASH}
       SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY}
+      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
       CORE_GRPC_ADDR: core:50051
       NATS_URL: nats://nats:4222
-      WORKER_SESSION_PATH: /data/session.json
-      WORKER_SESSION_STRING: ${WORKER_SESSION_STRING:-}
-      WORKER_ID: ${WORKER_ID:-1}
-      OWNER_SELLER_ID: ${OWNER_SELLER_ID:-1}
-      DEV_INJECT_MESSAGE: ${DEV_INJECT_MESSAGE:-}
-      LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS:-false}
-      LOGIN_GRPC_PORT: 50053
-      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+      LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS}
+      LOGIN_GRPC_PORT: "50053"
     depends_on:
       - core
       - matching
@@ -106,17 +105,18 @@ services:
     restart: unless-stopped
 
   http-gateway:
-    image: ${HTTP_GATEWAY_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${HTTP_GATEWAY_IMAGE_NAME}:${IMAGE_TAG}
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
-      CORE_GRPC_ADDR: core:50051
-      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR:-worker-engine:50053}
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
+      CORE_GRPC_ADDR: core:50051
+      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR}
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC}
       NODE_ENV: production
-      PORT: 3000
+      PORT: "3000"
     depends_on:
       - core
       - worker-engine
@@ -124,31 +124,31 @@ services:
     restart: unless-stopped
 
   login-miniapp:
-    image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG}
     depends_on:
       - http-gateway
     restart: unless-stopped
 
   seller-dashboard:
-    image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG}
     depends_on:
       - http-gateway
     restart: unless-stopped
 
   seller-bot:
-    image: ${SELLER_BOT_IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: ${SELLER_BOT_IMAGE_NAME}:${IMAGE_TAG}
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CORE_GRPC_ADDR: core:50051
       LOGIN_WEB_URL: ${LOGIN_WEB_URL}
       REDIS_URL: redis://redis:6379/0
       NATS_URL: nats://nats:4222
-      BOT_TRANSPORT: ${BOT_TRANSPORT:-webhook}
-      HTTP_PORT: 8080
+      BOT_TRANSPORT: webhook
+      HTTP_PORT: "8080"
       WEBHOOK_URL: ${WEBHOOK_URL}
-      WEBHOOK_PATH: ${WEBHOOK_PATH:-/telegram/webhook}
+      WEBHOOK_PATH: ${WEBHOOK_PATH}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
-      WEBHOOK_REGISTER_ON_STARTUP: ${WEBHOOK_REGISTER_ON_STARTUP:-true}
+      WEBHOOK_REGISTER_ON_STARTUP: "true"
     depends_on:
       - core
       - redis
@@ -167,7 +167,7 @@ services:
       LOGIN_DOMAIN: ${LOGIN_DOMAIN}
       APP_DOMAIN: ${APP_DOMAIN}
       BOT_DOMAIN: ${BOT_DOMAIN}
-      ACME_EMAIL: ${ACME_EMAIL:-}
+      ACME_EMAIL: ${ACME_EMAIL}
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
@@ -180,9 +180,10 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   nats_data:
-  worker_data:
   qdrant_data:
   matching_models:
+  worker_data:
   caddy-data:
   caddy-config:
