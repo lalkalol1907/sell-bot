@@ -16,6 +16,42 @@ ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "models"
 EMBEDDING_SUBDIR = Path("embedding") / "paraphrase-multilingual-MiniLM-L12-v2"
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+ONNX_FILENAMES = ("model.onnx", "model_optimized.onnx")
+
+
+def _find_onnx_model_dir(root: Path, *, model_hint: str) -> Path | None:
+    hint = model_hint.lower().replace("/", "-")
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.name not in ONNX_FILENAMES:
+            continue
+        normalized = str(path).lower()
+        if hint in normalized or "paraphrase-multilingual-minilm-l12-v2" in normalized:
+            return path.parent
+    return None
+
+
+def _resolve_fastembed_model_source(model_name: str) -> Path:
+    from fastembed import TextEmbedding
+
+    embedding = TextEmbedding(model_name=model_name)
+    list(embedding.embed(["warmup"]))
+
+    cache_dir = getattr(getattr(embedding, "model", None), "cache_dir", None)
+    if cache_dir:
+        source = _find_onnx_model_dir(Path(cache_dir), model_hint=model_name)
+        if source is not None:
+            return source
+
+    legacy_root = Path.home() / ".cache" / "fastembed"
+    if legacy_root.is_dir():
+        source = _find_onnx_model_dir(legacy_root, model_hint=model_name)
+        if source is not None:
+            return source
+
+    raise RuntimeError(
+        f"Could not locate ONNX files for {model_name}. "
+        "Run once with network access so fastembed can download the model."
+    )
 
 
 def _sha256_file(path: Path) -> str:
@@ -47,21 +83,7 @@ def _prepare_embedding_dir(target: Path) -> None:
         shutil.rmtree(target)
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    from fastembed import TextEmbedding
-
-    TextEmbedding(model_name=MODEL_NAME)
-    cache_root = Path.home() / ".cache" / "fastembed"
-    if not cache_root.exists():
-        raise RuntimeError(f"fastembed cache not found at {cache_root}")
-
-    source_dir: Path | None = None
-    for path in cache_root.rglob("model.onnx"):
-        if "paraphrase-multilingual-MiniLM-L12-v2" in str(path):
-            source_dir = path.parent
-            break
-    if source_dir is None:
-        raise RuntimeError("Could not locate ONNX model in fastembed cache")
-
+    source_dir = _resolve_fastembed_model_source(MODEL_NAME)
     shutil.copytree(source_dir, target)
 
 

@@ -3,6 +3,6 @@
   "balanced_shift": 0.0,
   "aggressive_shift": -0.03,
   "precise_shift": 0.03,
-  "pairs_evaluated": 58,
+  "pairs_evaluated": 70,
   "note": "v2 default calibration; run with encoder+Qdrant for data-driven ROC"
 }

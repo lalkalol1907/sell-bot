@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+monitoring/.env
 *.env.local
 
 # OS
@@ -11,6 +12,7 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+.cursor/
 *.iml
 *.swp
 *.swo
@@ -19,7 +21,9 @@ Thumbs.db
 *.log
 .coverage
 htmlcov/
-.pytest_cache/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
 
 # --- Core (Kotlin / Gradle) ---
 services/core/build/
@@ -29,6 +33,7 @@ services/core/out/
 # --- Worker Engine (Go) ---
 services/worker-engine/bin/
 services/worker-engine/dist/
+services/worker-engine/worker-engine
 
 # --- Matching (Python) ---
 services/matching/build/
@@ -37,9 +42,18 @@ services/matching/.venv/
 services/matching/venv/
 services/matching/__pycache__/
 services/matching/**/__pycache__/
+services/matching/**/*.pyc
 services/matching/*.egg-info/
-services/matching/.mypy_cache/
-services/matching/.ruff_cache/
+services/matching/**/.eggs/
+# Local model bundles (large ONNX; publish to S3 instead)
+services/matching/.bundle-staging/
+services/matching/models/bundles/
+services/matching/**/*.onnx
+# Generated eval reports (baseline kept for regression)
+services/matching/reports/*
+!services/matching/reports/recognition_baseline.json
+# Export stub output
+services/matching/data/intent_export.jsonl
 # Generated proto stubs (run: make gen-proto-python)
 services/matching/app/generated/*
 !services/matching/app/generated/__init__.py
@@ -47,18 +61,20 @@ services/matching/app/generated/*
 # --- Node / Bun (TypeScript) ---
 node_modules/
 **/node_modules/
+*.tsbuildinfo
 
 # --- Seller Bot (Bun / TypeScript) ---
 services/seller-bot/dist/
 services/seller-bot/.bun/
 
+# --- HTTP Gateway (Bun / TypeScript) ---
+services/http-gateway/dist/
+services/http-gateway/.bun/
+
+# --- Web monorepo (Vite / Bun) ---
+services/web/apps/*/dist/
+
 # Telegram session files (never commit)
 *.session
 session_*
-
-# --- Web monorepo (Vite / Bun) ---
-services/web/node_modules/
-services/web/apps/*/dist/
-
-# --- HTTP Gateway (Bun / TypeScript) ---
-services/http-gateway/node_modules/
+**/session.json
