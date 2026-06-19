@@ -24,7 +24,7 @@ function normalizePhone(raw: string): string {
 export function createLoginRoutes(deps: LoginDeps) {
   const app = new Hono();
 
-  app.use("*", requireInitData);
+  app.use("/login/*", requireInitData);
 
   app.post("/login/session", (c) => {
     return c.json({ seller_id: c.get("sellerId") });

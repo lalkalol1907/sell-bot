@@ -5,7 +5,7 @@ import { requireSeller } from "../middleware.js";
 export function createSellerRoutes() {
   const app = new Hono();
 
-  app.use("*", requireSeller);
+  app.use("/seller/*", requireSeller);
 
   app.get("/seller/stats", async (c) => {
     const grpc = c.get("grpc");
