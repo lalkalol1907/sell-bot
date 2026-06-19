@@ -130,6 +130,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
       LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC}
+      LOGIN_WEB_URL: ${LOGIN_WEB_URL}
       NODE_ENV: production
       PORT: "3000"
     depends_on:

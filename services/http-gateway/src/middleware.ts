@@ -4,6 +4,7 @@ import type { AppConfig } from "./config.js";
 import { JwtSession, JWT_COOKIE_NAME } from "./auth/jwt.js";
 import type { GrpcClients } from "./grpc/clients.js";
 import { validateInitData, type TelegramUser } from "./auth/telegram.js";
+import type { LoginHandoff } from "./redis.js";
 
 export async function requireSeller(c: Context, next: Next) {
   const jwt = c.get("jwt") as JwtSession;
@@ -17,25 +18,52 @@ export async function requireSeller(c: Context, next: Next) {
   await next();
 }
 
-export async function requireInitData(c: Context, next: Next) {
-  const config = c.get("config") as AppConfig;
-  const grpc = c.get("grpc") as GrpcClients;
+export function createRequireLoginAuth(handoff: LoginHandoff) {
+  return async function requireLoginAuth(c: Context, next: Next) {
+    const config = c.get("config") as AppConfig;
+    const grpc = c.get("grpc") as GrpcClients;
 
-  const initData =
-    c.req.header("X-Telegram-Init-Data") ?? c.req.header("x-telegram-init-data") ?? "";
-  const initUser = validateInitData(initData, config.botToken);
-  if (!initUser) {
-    return c.json({ error: "invalid init data" }, 401);
-  }
+    const initData =
+      c.req.header("X-Telegram-Init-Data") ?? c.req.header("x-telegram-init-data") ?? "";
+    const initUser = validateInitData(initData, config.botToken);
+    if (initUser) {
+      const seller = await grpc.getSellerByTgId(initUser.id);
+      if (!seller?.id) {
+        return c.json({ error: "seller not found, run /start in bot first" }, 401);
+      }
+      c.set("initUser", initUser);
+      c.set("sellerId", seller.id);
+      c.set("tgUserId", initUser.id);
+      await next();
+      return;
+    }
 
-  const seller = await grpc.getSellerByTgId(initUser.id);
-  if (!seller?.id) {
-    return c.json({ error: "seller not found, run /start in bot first" }, 401);
-  }
+    const handoffToken =
+      c.req.header("X-Login-Handoff") ?? c.req.header("x-login-handoff") ?? c.req.query("handoff") ?? "";
+    const payload = await handoff.resolve(handoffToken);
+    if (payload) {
+      c.set("sellerId", payload.seller_id);
+      c.set("tgUserId", payload.tg_user_id);
+      await next();
+      return;
+    }
 
-  c.set("initUser", initUser);
-  c.set("sellerId", seller.id);
-  await next();
+    return c.json(
+      {
+        error:
+          "open from Telegram or use the Add worker button in the dashboard",
+      },
+      401,
+    );
+  };
+}
+
+export function loginActorKey(c: Context): string {
+  const initUser = c.get("initUser") as TelegramUser | undefined;
+  if (initUser?.id) return String(initUser.id);
+  const tgUserId = c.get("tgUserId") as number | undefined;
+  if (tgUserId) return String(tgUserId);
+  return `seller:${c.get("sellerId")}`;
 }
 
 export function sellerJson(seller: {

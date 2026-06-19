@@ -107,4 +107,6 @@ export const sellerApi = {
       method: "PATCH",
       body: JSON.stringify({ settings: { sensitivity } }),
     }),
+  createLoginHandoff: () =>
+    api<{ token: string; url: string }>("/api/v1/login/handoff", { method: "POST" }),
 };

@@ -1,5 +1,44 @@
+import crypto from "node:crypto";
 import { Redis } from "ioredis";
 import type { AppConfig } from "./config.js";
+
+const HANDOFF_PREFIX = "login:handoff:";
+const HANDOFF_TTL_SEC = 30 * 60;
+
+export type LoginHandoffPayload = {
+  seller_id: number;
+  tg_user_id: number;
+};
+
+export class LoginHandoff {
+  constructor(private redis: Redis) {}
+
+  async create(sellerId: number, tgUserId: number): Promise<string> {
+    const token = crypto.randomBytes(32).toString("hex");
+    const payload: LoginHandoffPayload = { seller_id: sellerId, tg_user_id: tgUserId };
+    await this.redis.set(`${HANDOFF_PREFIX}${token}`, JSON.stringify(payload), "EX", HANDOFF_TTL_SEC);
+    return token;
+  }
+
+  async resolve(token: string): Promise<LoginHandoffPayload | null> {
+    if (!token) return null;
+    const raw = await this.redis.get(`${HANDOFF_PREFIX}${token}`);
+    if (!raw) return null;
+    try {
+      const payload = JSON.parse(raw) as LoginHandoffPayload;
+      if (!payload.seller_id) return null;
+      return payload;
+    } catch {
+      return null;
+    }
+  }
+}
+
+export function buildLoginHandoffUrl(baseUrl: string, token: string): string {
+  const url = new URL(baseUrl);
+  url.searchParams.set("handoff", token);
+  return url.toString();
+}
 
 let redis: Redis | null = null;
 

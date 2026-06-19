@@ -3,6 +3,8 @@ package sessionstore
 import (
 	"context"
 	"os"
+
+	"github.com/gotd/td/session"
 )
 
 // MemoryStorage stores gotd session bytes in memory.
@@ -12,7 +14,7 @@ type MemoryStorage struct {
 
 func (s *MemoryStorage) LoadSession(_ context.Context) ([]byte, error) {
 	if len(s.Data) == 0 {
-		return nil, os.ErrNotExist
+		return nil, session.ErrNotFound
 	}
 	return s.Data, nil
 }
@@ -27,8 +29,11 @@ type FileStorage struct {
 	Path string
 }
 
-func (s *FileStorage) LoadSession(ctx context.Context) ([]byte, error) {
+func (s *FileStorage) LoadSession(_ context.Context) ([]byte, error) {
 	data, err := os.ReadFile(s.Path)
+	if os.IsNotExist(err) {
+		return nil, session.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}

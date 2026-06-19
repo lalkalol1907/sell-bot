@@ -9,6 +9,7 @@ export type AppConfig = {
   jwtSecret: string;
   jwtTtlHours: number;
   corsOrigins: string[];
+  loginWebUrl: string;
   isProduction: boolean;
 };
 
@@ -38,6 +39,7 @@ export function loadConfig(): AppConfig {
     jwtSecret: process.env.JWT_SECRET ?? "dev-jwt-secret-change-me",
     jwtTtlHours: Number(process.env.JWT_TTL_HOURS ?? "168"),
     corsOrigins,
+    loginWebUrl: process.env.LOGIN_WEB_URL ?? "http://localhost:8081/miniapp/",
     isProduction: (process.env.NODE_ENV ?? process.env.RAILS_ENV ?? "development") === "production",
   };
 }

@@ -6,6 +6,10 @@ export interface LoginStep {
   message?: string;
 }
 
+import { getHandoffToken, initHandoffToken } from "./handoff";
+
+initHandoffToken();
+
 function getInitData(): string {
   return window.Telegram?.WebApp?.initData ?? "";
 }
@@ -13,7 +17,16 @@ function getInitData(): string {
 async function api<T = LoginStep>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
-  headers.set("X-Telegram-Init-Data", getInitData());
+
+  const initData = getInitData();
+  if (initData) {
+    headers.set("X-Telegram-Init-Data", initData);
+  } else {
+    const handoff = getHandoffToken();
+    if (handoff) {
+      headers.set("X-Login-Handoff", handoff);
+    }
+  }
 
   const res = await fetch(path, { ...options, headers });
   const data = await res.json();

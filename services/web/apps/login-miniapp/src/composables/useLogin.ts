@@ -114,6 +114,17 @@ export function useLogin() {
     }, 2000);
   }
 
+  function formatError(err: unknown, fallback: string): string {
+    const msg = err instanceof Error ? err.message : fallback;
+    if (msg.includes("open from Telegram")) {
+      return "Откройте из Telegram или перейдите из дашборда (кнопка «Добавить воркера»)";
+    }
+    if (msg.includes("seller not found")) {
+      return "Сначала выполните /start в боте";
+    }
+    return msg;
+  }
+
   async function runAction(action: () => Promise<LoginStep>, fallbackError: string) {
     error.value = "";
     loading.value = true;
@@ -122,7 +133,7 @@ export function useLogin() {
       applyStep(current);
       handleSuccess(current);
     } catch (err) {
-      error.value = err instanceof Error ? err.message : fallbackError;
+      error.value = formatError(err, fallbackError);
     } finally {
       loading.value = false;
     }
@@ -156,7 +167,17 @@ export function useLogin() {
 
     initSession()
       .catch((err) => {
-        error.value = err instanceof Error ? err.message : "Ошибка сессии";
+        const msg = err instanceof Error ? err.message : "Ошибка сессии";
+        if (msg.includes("open from Telegram")) {
+          error.value =
+            "Откройте из Telegram или перейдите из дашборда (кнопка «Добавить воркера»)";
+          return;
+        }
+        if (msg.includes("seller not found")) {
+          error.value = "Сначала выполните /start в боте";
+          return;
+        }
+        error.value = msg;
       })
       .finally(() => {
         initializing.value = false;

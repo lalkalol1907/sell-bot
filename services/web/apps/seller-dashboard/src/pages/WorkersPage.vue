@@ -2,14 +2,25 @@
 import { onMounted, ref } from "vue";
 import { sellerApi, type Worker } from "../api";
 
-const miniAppUrl = import.meta.env.VITE_MINIAPP_URL ?? "/miniapp/";
-
 const workers = ref<Worker[]>([]);
 const error = ref("");
+const openingMiniApp = ref(false);
 
 async function load() {
   const data = await sellerApi.workers();
   workers.value = data.workers;
+}
+
+async function openMiniApp() {
+  openingMiniApp.value = true;
+  try {
+    const { url } = await sellerApi.createLoginHandoff();
+    window.open(url, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "Не удалось открыть Mini App";
+  } finally {
+    openingMiniApp.value = false;
+  }
 }
 
 onMounted(() => {
@@ -30,9 +41,9 @@ async function setStatus(id: number, status: string) {
     <p v-if="error" class="error">{{ error }}</p>
 
     <p>
-      <a :href="miniAppUrl" target="_blank" rel="noreferrer">
-        <button>Добавить воркера (Mini App)</button>
-      </a>
+      <button type="button" :disabled="openingMiniApp" @click="openMiniApp">
+        {{ openingMiniApp ? "Открываем…" : "Добавить воркера" }}
+      </button>
     </p>
 
     <div class="card">

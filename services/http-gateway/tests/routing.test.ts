@@ -8,8 +8,12 @@ describe("api route middleware scoping", () => {
 
     const requireInitData = async (c: Context, next: Next) => {
       const initData = c.req.header("X-Telegram-Init-Data") ?? "";
-      if (!initData) {
-        return c.json({ error: "invalid init data" }, 401);
+      const handoff = c.req.header("X-Login-Handoff") ?? "";
+      if (!initData && !handoff) {
+        return c.json({ error: "open from Telegram or use the Add worker button in the dashboard" }, 401);
+      }
+      if (!initData && handoff !== "valid") {
+        return c.json({ error: "invalid handoff" }, 401);
       }
       await next();
     };
@@ -35,7 +39,19 @@ describe("api route middleware scoping", () => {
       headers: { "Content-Type": "application/json" },
     });
     expect(blocked.status).toBe(401);
-    expect(await blocked.json()).toEqual({ error: "invalid init data" });
+    expect(await blocked.json()).toEqual({
+      error: "open from Telegram or use the Add worker button in the dashboard",
+    });
+
+    const handoffOk = await app.request("/api/v1/login/qr/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Login-Handoff": "valid",
+      },
+    });
+    expect(handoffOk.status).toBe(200);
+    expect(await handoffOk.json()).toEqual({ scope: "qr" });
 
     const ok = await app.request("/api/v1/login/qr/start", {
       method: "POST",

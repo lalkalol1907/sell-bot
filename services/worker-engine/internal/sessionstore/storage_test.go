@@ -2,9 +2,10 @@ package sessionstore_test
 
 import (
 	"context"
-	"os"
+	"errors"
 	"testing"
 
+	"github.com/gotd/td/session"
 	"github.com/sellbot/worker-engine/internal/sessionstore"
 )
 
@@ -26,8 +27,8 @@ func TestMemoryStorageRoundTrip(t *testing.T) {
 func TestMemoryStorageEmpty(t *testing.T) {
 	store := &sessionstore.MemoryStorage{}
 	_, err := store.LoadSession(context.Background())
-	if !errorsIsNotExist(err) {
-		t.Fatalf("expected ErrNotExist, got %v", err)
+	if !errors.Is(err, session.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }
 
@@ -44,6 +45,3 @@ func TestMemoryStorageCopyOnStore(t *testing.T) {
 	}
 }
 
-func errorsIsNotExist(err error) bool {
-	return err == os.ErrNotExist
-}

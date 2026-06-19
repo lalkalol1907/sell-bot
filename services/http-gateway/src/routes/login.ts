@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import type { AppConfig } from "../config.js";
 import type { GrpcClients } from "../grpc/clients.js";
 import type { LoginEnginePool, LoginRouting, RateLimiter } from "../redis.js";
-import { loginStepJson, requireInitData } from "../middleware.js";
+import { createRequireLoginAuth, loginActorKey, loginStepJson } from "../middleware.js";
+import type { LoginHandoff } from "../redis.js";
 
 type LoginDeps = {
   config: AppConfig;
@@ -10,6 +11,7 @@ type LoginDeps = {
   rateLimiter: RateLimiter;
   loginRouting: LoginRouting;
   loginEnginePool: LoginEnginePool;
+  loginHandoff: LoginHandoff;
 };
 
 function validPhone(phone: string): boolean {
@@ -23,8 +25,9 @@ function normalizePhone(raw: string): string {
 
 export function createLoginRoutes(deps: LoginDeps) {
   const app = new Hono();
+  const requireLoginAuth = createRequireLoginAuth(deps.loginHandoff);
 
-  app.use("/login/*", requireInitData);
+  app.use("/login/*", requireLoginAuth);
 
   app.post("/login/session", (c) => {
     return c.json({ seller_id: c.get("sellerId") });
@@ -39,10 +42,10 @@ export function createLoginRoutes(deps: LoginDeps) {
   });
 
   app.post("/login/phone/start", async (c) => {
-    const initUser = c.get("initUser");
     const sellerId = c.get("sellerId");
+    const actorKey = loginActorKey(c);
 
-    if (!(await deps.rateLimiter.allow(`phone:${initUser.id}`, 5, 60_000))) {
+    if (!(await deps.rateLimiter.allow(`phone:${actorKey}`, 5, 60_000))) {
       return c.json({ error: "rate limit exceeded" }, 429);
     }
 
@@ -59,10 +62,10 @@ export function createLoginRoutes(deps: LoginDeps) {
   });
 
   app.post("/login/:loginId/code", async (c) => {
-    const initUser = c.get("initUser");
     const loginId = c.req.param("loginId");
+    const actorKey = loginActorKey(c);
 
-    if (!(await deps.rateLimiter.allow(`code:${initUser.id}`, 10, 60_000))) {
+    if (!(await deps.rateLimiter.allow(`code:${actorKey}`, 10, 60_000))) {
       return c.json({ error: "rate limit exceeded" }, 429);
     }
 
