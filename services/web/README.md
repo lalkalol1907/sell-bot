@@ -1,6 +1,6 @@
 # Web monorepo
 
-Bun workspaces: dashboard на Vite + React, login-miniapp — статика (HTML/CSS/JS), один `bun.lock`, **отдельные Docker-образы и деплои**.
+Bun workspaces: login-miniapp и seller-dashboard на Vite + Vue, один `bun.lock`, **отдельные Docker-образы и деплои**.
 
 `.npmrc` — копия [`services/seller-bot/.npmrc`](../seller-bot/.npmrc) (обязателен для `bun install` локально и в Docker).
 
@@ -9,8 +9,8 @@ services/web/
 ├── package.json          # workspaces root
 ├── bun.lock
 ├── apps/
-│   ├── login-miniapp/    # Mini App (static) → nginx :8081, /miniapp/
-│   └── seller-dashboard/ # Dashboard → nginx :8082, /dashboard/
+│   ├── login-miniapp/    # Mini App (Vue + Vite) → nginx :8081, /miniapp/
+│   └── seller-dashboard/ # Dashboard (Vue + Vite) → nginx :8082, /dashboard/
 ```
 
 ## Локальная разработка

@@ -11,8 +11,8 @@ Telegram-система для продавцов: userbot-воркеры слу
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
 | **HTTP Gateway** | Bun 1.3.14 + Hono + gRPC | REST API: seller dashboard + login Mini App |
-| **Login Mini App** | HTML/CSS/JS + nginx | Статика Mini App, прокси `/api/` → http-gateway |
-| **Seller Dashboard** | Vite + React + nginx | Веб-кабинет продавца, прокси `/api/` → http-gateway |
+| **Login Mini App** | Vue 3 + Vite + Bun | Mini App подключения воркера, прокси `/api/` → http-gateway |
+| **Seller Dashboard** | Vue 3 + Vite + Bun | Веб-кабинет продавца, прокси `/api/` → http-gateway |
 
 Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.
 
@@ -32,7 +32,7 @@ Telegram-система для продавцов: userbot-воркеры слу
                     ▼                   ▼                   │
             ┌───────────────┐   ┌───────────────┐          │
             │  seller-bot   │   │ login-miniapp │          │
-            │  (grammY)     │──►│ nginx + React │          │
+            │  (grammY)     │──►│ nginx + Vue   │          │
             └───────┬───────┘   └───────┬───────┘          │
                     │                   │ /api/            │
                     │ gRPC              ▼                   │
@@ -55,7 +55,7 @@ Telegram-система для продавцов: userbot-воркеры слу
                          │ PostgreSQL │                    │
                          └────────────┘                    │
                                                             │
-    seller-dashboard ──► nginx + React (JWT cookie auth)   │
+    seller-dashboard ──► nginx + Vue (JWT cookie auth)   │
          /api/ ─────────► http-gateway (тот же API)        │
     ┌───────────────┐         NATS          ┌────────────┴───┐
     │ worker-engine │ ───publish──────────► │    matching    │
@@ -154,7 +154,7 @@ OTP и 2FA **не проходят через чат бота** — только
 
 | Сервис | Сеть | Что делает |
 |--------|------|------------|
-| **login-miniapp** | Публичный HTTPS (nginx) | Static Mini App, прокси `/api/` → http-gateway |
+| **login-miniapp** | Публичный HTTPS (nginx) | Vue Mini App, прокси `/api/` → http-gateway |
 | **seller-dashboard** | Публичный HTTPS (nginx) | Static dashboard, прокси `/api/` → http-gateway |
 | **http-gateway** | Internal only | REST API, JWT + initData, gRPC → core / worker-engine |
 | **worker-engine** | Только internal | MTProto login, listener-воркеры, gRPC `:50053` |

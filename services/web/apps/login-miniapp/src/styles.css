@@ -9,6 +9,12 @@ body {
   color: var(--tg-theme-text-color, #111);
 }
 
+.app {
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
 .app.initializing h1,
 .app.initializing .subtitle,
 .app.initializing .tabs,
@@ -16,16 +22,6 @@ body {
 .app.initializing .error,
 .app.initializing .success {
   display: none;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.app {
-  padding: 16px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 h1 {

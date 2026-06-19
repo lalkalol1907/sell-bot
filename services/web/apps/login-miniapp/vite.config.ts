@@ -3,13 +3,13 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
-  base: "/dashboard/",
+  base: "/miniapp/",
   build: {
     outDir: "dist",
     emptyOutDir: true,
   },
   server: {
-    port: 5174,
+    port: 5173,
     proxy: {
       "/api": "http://localhost:3000",
     },
