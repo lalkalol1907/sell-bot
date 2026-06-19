@@ -239,8 +239,8 @@ jobs:
               echo "SELLER_DASHBOARD_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-dashboard"
             } >> .env
             echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-            docker compose -f deploy/docker-compose.prod.yml pull
-            docker compose -f deploy/docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
 
   # GitHub Release после успешной сборки образов (тег v* уже запушен вручную).
   release:
