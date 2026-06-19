@@ -195,12 +195,14 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:8082}
       LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
+      NATS_URL: nats://nats:4222
       NODE_ENV: production
       PORT: 3000
     depends_on:
       - core
       - worker-engine
       - redis
+      - nats
     labels:
       - "project=sell-bot"
       - "prometheus.scrape=true"

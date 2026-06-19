@@ -16,7 +16,6 @@ import (
 	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
 
-	workerspb "github.com/sellbot/worker-engine/internal/gen/workers"
 	"github.com/sellbot/worker-engine/internal/config"
 	"github.com/sellbot/worker-engine/internal/core"
 	"github.com/sellbot/worker-engine/internal/publisher"
@@ -28,6 +27,7 @@ type Runtime struct {
 	OwnerSellerID int64
 	SessionData   []byte
 	ChatTitles    map[int64]string
+	SyncCh        chan struct{}
 }
 
 type Listener struct {
@@ -69,6 +69,8 @@ func (l *Listener) Run(ctx context.Context, rt Runtime) error {
 		if err := l.syncDialogs(ctx, client.API(), rt); err != nil {
 			log.Printf("worker %d: sync dialogs failed: %v", rt.WorkerID, err)
 		}
+
+		go l.dialogsSyncLoop(ctx, client.API(), rt)
 
 		go l.whitelistLoop(ctx, rt)
 
@@ -123,6 +125,26 @@ func (l *Listener) shouldListen(chatID int64) bool {
 		return true
 	}
 	return l.active[chatID]
+}
+
+func (l *Listener) dialogsSyncLoop(ctx context.Context, api *tg.Client, rt Runtime) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := l.syncDialogs(ctx, api, rt); err != nil {
+				log.Printf("worker %d: periodic dialog sync failed: %v", rt.WorkerID, err)
+			}
+		case <-rt.SyncCh:
+			if err := l.syncDialogs(ctx, api, rt); err != nil {
+				log.Printf("worker %d: requested dialog sync failed: %v", rt.WorkerID, err)
+			}
+		}
+	}
 }
 
 func (l *Listener) whitelistLoop(ctx context.Context, rt Runtime) {
@@ -199,52 +221,6 @@ func BotAPIChatID(peer tg.PeerClass) int64 {
 	default:
 		return 0
 	}
-}
-
-func (l *Listener) syncDialogs(ctx context.Context, api *tg.Client, rt Runtime) error {
-	result, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-		OffsetPeer: &tg.InputPeerEmpty{},
-		Limit:      100,
-	})
-	if err != nil {
-		return err
-	}
-
-	var dialogs []tg.ChatClass
-	switch d := result.(type) {
-	case *tg.MessagesDialogs:
-		dialogs = d.Chats
-	case *tg.MessagesDialogsSlice:
-		dialogs = d.Chats
-	default:
-		return nil
-	}
-
-	chats := make([]*workerspb.MonitoredChat, 0, len(dialogs))
-	for _, chat := range dialogs {
-		id, title, typ := ChatInfo(chat)
-		if id == 0 {
-			continue
-		}
-		rt.ChatTitles[id] = title
-		chats = append(chats, &workerspb.MonitoredChat{
-			WorkerId: rt.WorkerID,
-			ChatId:   id,
-			Title:    title,
-			Type:     typ,
-			IsActive: false,
-		})
-	}
-
-	if len(chats) == 0 {
-		return nil
-	}
-	synced, err := l.core.SyncChats(ctx, rt.WorkerID, chats)
-	if err != nil {
-		return err
-	}
-	log.Printf("worker %d: synced %d chats", rt.WorkerID, synced)
-	return nil
 }
 
 func PeerID(peer tg.PeerClass) int64 {

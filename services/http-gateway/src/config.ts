@@ -5,6 +5,7 @@ export type AppConfig = {
   loginEngineAddrs: string[];
   internalGrpcToken: string;
   redisUrl: string;
+  natsUrl: string;
   loginRouteTtlSec: number;
   jwtSecret: string;
   jwtTtlHours: number;
@@ -35,6 +36,7 @@ export function loadConfig(): AppConfig {
     loginEngineAddrs,
     internalGrpcToken: process.env.INTERNAL_GRPC_TOKEN ?? "",
     redisUrl: process.env.REDIS_URL ?? "redis://redis:6379/0",
+    natsUrl: process.env.NATS_URL ?? "nats://nats:4222",
     loginRouteTtlSec: Number(process.env.LOGIN_ROUTE_TTL_SEC ?? "600"),
     jwtSecret: process.env.JWT_SECRET ?? "dev-jwt-secret-change-me",
     jwtTtlHours: Number(process.env.JWT_TTL_HOURS ?? "168"),

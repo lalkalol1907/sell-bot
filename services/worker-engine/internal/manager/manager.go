@@ -24,6 +24,7 @@ type Manager struct {
 
 	mu      sync.Mutex
 	running map[int64]context.CancelFunc
+	syncCh  map[int64]chan struct{}
 }
 
 func New(cfg config.Config, coreClient *core.Client, nats *publisher.NATS) *Manager {
@@ -32,10 +33,12 @@ func New(cfg config.Config, coreClient *core.Client, nats *publisher.NATS) *Mana
 		core:    coreClient,
 		nats:    nats,
 		running: map[int64]context.CancelFunc{},
+		syncCh:  map[int64]chan struct{}{},
 	}
 }
 
 func (m *Manager) Start(ctx context.Context) error {
+	go m.listenSyncRequests(ctx)
 	m.syncWorkers(ctx)
 
 	ticker := time.NewTicker(workerPollInterval)
@@ -71,6 +74,13 @@ func (m *Manager) syncWorkers(ctx context.Context) {
 }
 
 func (m *Manager) startWorker(parent context.Context, rt listener.Runtime) {
+	syncCh := make(chan struct{}, 1)
+	rt.SyncCh = syncCh
+
+	m.mu.Lock()
+	m.syncCh[rt.WorkerID] = syncCh
+	m.mu.Unlock()
+
 	workerCtx, cancel := context.WithCancel(parent)
 	workerListener := listener.New(m.cfg, m.core, m.nats)
 
@@ -86,6 +96,7 @@ func (m *Manager) startWorker(parent context.Context, rt listener.Runtime) {
 		defer func() {
 			m.mu.Lock()
 			delete(m.running, rt.WorkerID)
+			delete(m.syncCh, rt.WorkerID)
 			m.mu.Unlock()
 		}()
 
@@ -121,6 +132,7 @@ func (m *Manager) stopExcept(active map[int64]bool) {
 			log.Printf("stopping worker %d (no longer active)", id)
 			cancel()
 			delete(m.running, id)
+			delete(m.syncCh, id)
 		}
 	}
 }
@@ -132,6 +144,26 @@ func (m *Manager) stopAll() {
 		log.Printf("stopping worker %d (shutdown)", id)
 		cancel()
 		delete(m.running, id)
+		delete(m.syncCh, id)
+	}
+}
+
+func (m *Manager) listenSyncRequests(ctx context.Context) {
+	if err := m.nats.SubscribeSyncChats(ctx, m.requestDialogSync); err != nil {
+		log.Printf("sync chats subscription failed: %v", err)
+	}
+}
+
+func (m *Manager) requestDialogSync(workerID int64) {
+	m.mu.Lock()
+	ch := m.syncCh[workerID]
+	m.mu.Unlock()
+	if ch == nil {
+		return
+	}
+	select {
+	case ch <- struct{}{}:
+	default:
 	}
 }
 

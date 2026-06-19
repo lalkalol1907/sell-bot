@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { grpcErrorMessage } from "../grpc/clients.js";
+import { publishWorkerSyncChats } from "../nats.js";
 import { requireSeller } from "../middleware.js";
+import type { AppConfig } from "../config.js";
 
-export function createSellerRoutes() {
+export function createSellerRoutes(config: AppConfig) {
   const app = new Hono();
 
   app.use("/seller/*", requireSeller);
@@ -117,6 +119,54 @@ export function createSellerRoutes() {
     } catch (err) {
       return c.json({ error: grpcErrorMessage(err) || "invalid worker" }, 400);
     }
+  });
+
+  app.get("/seller/workers/:id/chats", async (c) => {
+    const grpc = c.get("grpc");
+    const sellerId = c.get("sellerId");
+    const id = Number(c.req.param("id"));
+
+    try {
+      const chats = await grpc.listChats(id, sellerId);
+      return c.json({ chats });
+    } catch (err) {
+      return c.json({ error: grpcErrorMessage(err) || "worker not found" }, 404);
+    }
+  });
+
+  app.patch("/seller/workers/:id/chats/whitelist", async (c) => {
+    const grpc = c.get("grpc");
+    const sellerId = c.get("sellerId");
+    const id = Number(c.req.param("id"));
+    const body = await c.req.json<{ entries?: { chat_id: number; is_active: boolean }[] }>();
+    const entries = body.entries ?? [];
+
+    try {
+      const updated = await grpc.setChatWhitelist(id, sellerId, entries);
+      return c.json({ updated });
+    } catch (err) {
+      return c.json({ error: grpcErrorMessage(err) || "invalid chat whitelist" }, 400);
+    }
+  });
+
+  app.post("/seller/workers/:id/chats/sync", async (c) => {
+    const grpc = c.get("grpc");
+    const sellerId = c.get("sellerId");
+    const id = Number(c.req.param("id"));
+
+    try {
+      await grpc.listChats(id, sellerId);
+    } catch (err) {
+      return c.json({ error: grpcErrorMessage(err) || "worker not found" }, 404);
+    }
+
+    try {
+      await publishWorkerSyncChats(config.natsUrl, id);
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : "sync request failed" }, 503);
+    }
+
+    return c.json({ ok: true }, 202);
   });
 
   app.patch("/seller/settings", async (c) => {

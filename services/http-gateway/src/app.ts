@@ -54,7 +54,7 @@ export function createApp(config: AppConfig = loadConfig()) {
     return c.json({ token, url });
   });
   api.route("/", createAuthRoutes());
-  api.route("/", createSellerRoutes());
+  api.route("/", createSellerRoutes(config));
   api.route(
     "/",
     createLoginRoutes({

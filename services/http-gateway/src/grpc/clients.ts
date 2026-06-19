@@ -88,6 +88,15 @@ export type Worker = {
   status: string;
 };
 
+export type MonitoredChat = {
+  id: number;
+  worker_id: number;
+  chat_id: number;
+  title: string;
+  type: string;
+  is_active: boolean;
+};
+
 export type LeadStats = {
   total: number;
   new_count: number;
@@ -156,6 +165,17 @@ function mapWorker(raw: any): Worker {
     phone: raw.phone ?? "",
     proxy: raw.proxy ?? "",
     status: raw.status ?? "",
+  };
+}
+
+function mapMonitoredChat(raw: any): MonitoredChat {
+  return {
+    id: Number(raw.id),
+    worker_id: Number(raw.worker_id),
+    chat_id: Number(raw.chat_id),
+    title: raw.title ?? "",
+    type: raw.type ?? "",
+    is_active: Boolean(raw.is_active),
   };
 }
 
@@ -310,6 +330,24 @@ export class GrpcClients {
       this.workers.UpdateWorkerStatus({ id, status }, cb),
     );
     return mapWorker(res);
+  }
+
+  async listChats(workerId: number, ownerSellerId: number): Promise<MonitoredChat[]> {
+    const res = await promisify<any>((cb) =>
+      this.workers.ListChats({ worker_id: workerId, owner_seller_id: ownerSellerId }, cb),
+    );
+    return (res.chats ?? []).map(mapMonitoredChat);
+  }
+
+  async setChatWhitelist(
+    workerId: number,
+    ownerSellerId: number,
+    entries: { chat_id: number; is_active: boolean }[],
+  ): Promise<number> {
+    const res = await promisify<any>((cb) =>
+      this.workers.SetChatWhitelist({ worker_id: workerId, owner_seller_id: ownerSellerId, entries }, cb),
+    );
+    return Number(res.updated ?? 0);
   }
 
   createWorkerLoginClient(address: string) {

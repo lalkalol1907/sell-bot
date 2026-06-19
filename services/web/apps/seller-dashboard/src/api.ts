@@ -33,6 +33,15 @@ export type Worker = {
   status: string;
 };
 
+export type MonitoredChat = {
+  id: number;
+  worker_id: number;
+  chat_id: number;
+  title: string;
+  type: string;
+  is_active: boolean;
+};
+
 export type Stats = {
   total: number;
   new_count: number;
@@ -102,6 +111,15 @@ export const sellerApi = {
       method: "PATCH",
       body: JSON.stringify({ worker: { status } }),
     }),
+  workerChats: (workerId: number) =>
+    api<{ chats: MonitoredChat[] }>(`/api/v1/seller/workers/${workerId}/chats`),
+  setChatWhitelist: (workerId: number, entries: { chat_id: number; is_active: boolean }[]) =>
+    api<{ updated: number }>(`/api/v1/seller/workers/${workerId}/chats/whitelist`, {
+      method: "PATCH",
+      body: JSON.stringify({ entries }),
+    }),
+  syncWorkerChats: (workerId: number) =>
+    api<{ ok: boolean }>(`/api/v1/seller/workers/${workerId}/chats/sync`, { method: "POST" }),
   updateSettings: (sensitivity: string) =>
     api<{ id: number; sensitivity: string }>("/api/v1/seller/settings", {
       method: "PATCH",

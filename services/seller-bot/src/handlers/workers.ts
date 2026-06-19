@@ -40,6 +40,7 @@ function buildChatKeyboard(workerId: number, chats: MonitoredChat[], page: numbe
     kb.row();
   }
 
+  kb.text("🔄 Обновить", `worker:chats:sync:${workerId}:${safePage}`).row();
   kb.text("⬅️ К воркерам", "workers:list");
   return kb;
 }
@@ -108,17 +109,46 @@ export async function handleWorkerChats(
 
   const chats = await listChats(workersClient, workerId, sellerId);
   if (chats.length === 0) {
-    const text = "Чаты не синхронизированы. Запустите worker-engine с сессией.";
+    const kb = new InlineKeyboard()
+      .text("🔄 Обновить", `worker:chats:sync:${workerId}:0`)
+      .row()
+      .text("⬅️ К воркерам", "workers:list");
+    const text =
+      "Чаты не синхронизированы. Запустите worker-engine с сессией или нажмите «Обновить».";
     if (ctx.callbackQuery?.message) {
-      await ctx.editMessageText(text);
+      await ctx.editMessageText(text, { reply_markup: kb });
     } else {
-      await ctx.reply(text);
+      await ctx.reply(text, { reply_markup: kb });
     }
     return;
   }
 
   const kb = buildChatKeyboard(workerId, chats, page);
   await replyOrEdit(ctx, chatListText(workerId, chats, page), kb);
+}
+
+export async function handleWorkerChatsSync(
+  ctx: BotContext,
+  workersClient: any,
+  natsUrl: string,
+  workerId: number,
+  page = 0,
+) {
+  const sellerId = ctx.session.sellerId;
+  if (!sellerId) return;
+
+  await ctx.answerCallbackQuery({ text: "Запросили обновление…" });
+
+  try {
+    const { publishWorkerSyncChats } = await import("../events/worker-sync-chats.js");
+    await publishWorkerSyncChats(natsUrl, workerId);
+  } catch {
+    await ctx.editMessageText("Не удалось запросить обновление чатов.");
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await handleWorkerChats(ctx, workersClient, workerId, page);
 }
 
 export async function handleChatToggle(

@@ -1,6 +1,7 @@
 package publisher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,6 +26,10 @@ type WorkerStatusEvent struct {
 	OwnerSellerID  int64  `json:"owner_seller_id"`
 	Status         string `json:"status"`
 	Phone          string `json:"phone,omitempty"`
+}
+
+type SyncChatsRequest struct {
+	WorkerID int64 `json:"worker_id"`
 }
 
 type NATS struct {
@@ -87,6 +92,38 @@ func (n *NATS) PublishWorkerStatus(evt WorkerStatusEvent) error {
 		return err
 	}
 	return n.publish("worker.status", data)
+}
+
+func (n *NATS) PublishSyncChatsRequest(workerID int64) error {
+	data, err := json.Marshal(SyncChatsRequest{WorkerID: workerID})
+	if err != nil {
+		return err
+	}
+	return n.nc.Publish("worker.sync_chats", data)
+}
+
+func (n *NATS) SubscribeSyncChats(ctx context.Context, handler func(workerID int64)) error {
+	sub, err := n.nc.Subscribe("worker.sync_chats", func(msg *nats.Msg) {
+		var req SyncChatsRequest
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			log.Printf("invalid worker.sync_chats payload: %v", err)
+			return
+		}
+		if req.WorkerID == 0 {
+			return
+		}
+		handler(req.WorkerID)
+	})
+	if err != nil {
+		return err
+	}
+	go func() {
+		<-ctx.Done()
+		if err := sub.Unsubscribe(); err != nil {
+			log.Printf("nats unsubscribe worker.sync_chats: %v", err)
+		}
+	}()
+	return nil
 }
 
 func (n *NATS) PublishDevMessage(sellerID, workerID int64, raw string, chatID, authorID int64, chatTitle, authorUsername string) error {

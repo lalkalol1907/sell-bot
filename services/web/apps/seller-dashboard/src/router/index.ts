@@ -6,6 +6,7 @@ import LeadsPage from "../pages/LeadsPage.vue";
 import LoginPage from "../pages/LoginPage.vue";
 import StatsPage from "../pages/StatsPage.vue";
 import WorkersPage from "../pages/WorkersPage.vue";
+import WorkerChatsPage from "../pages/WorkerChatsPage.vue";
 
 export const router = createRouter({
   history: createWebHistory("/dashboard/"),
@@ -25,6 +26,7 @@ export const router = createRouter({
         { path: "catalog", name: "catalog", component: CatalogPage },
         { path: "leads", name: "leads", component: LeadsPage },
         { path: "workers", name: "workers", component: WorkersPage },
+        { path: "workers/:id/chats", name: "worker-chats", component: WorkerChatsPage },
       ],
     },
   ],

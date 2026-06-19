@@ -131,6 +131,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC}
       LOGIN_WEB_URL: ${LOGIN_WEB_URL}
+      NATS_URL: nats://nats:4222
       NODE_ENV: production
       PORT: "3000"
     depends_on:

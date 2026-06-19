@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
 import { sellerApi, type Worker } from "../api";
 
 const workers = ref<Worker[]>([]);
@@ -62,6 +63,7 @@ async function setStatus(id: number, status: string) {
             <td>{{ w.phone || "—" }}</td>
             <td>{{ w.status }}</td>
             <td class="row">
+              <RouterLink :to="`/workers/${w.id}/chats`">Чаты</RouterLink>
               <button
                 v-if="w.status === 'active'"
                 class="secondary"

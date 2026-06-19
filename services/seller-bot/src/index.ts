@@ -26,6 +26,7 @@ import { handleStats } from "./handlers/stats.js";
 import {
   handleChatToggle,
   handleWorkerChats,
+  handleWorkerChatsSync,
   handleWorkersList,
 } from "./handlers/workers.js";
 import { handleWorkerAddResult, handleWorkerAddStart } from "./handlers/worker-add.js";
@@ -198,6 +199,14 @@ export async function createBot(
     if (data === "workers:list") {
       await ctx.answerCallbackQuery();
       await handleWorkersList(ctx, workersClient);
+      return;
+    }
+
+    if (data.startsWith("worker:chats:sync:")) {
+      const parts = data.split(":");
+      const workerId = Number(parts[3]);
+      const page = parts[4] !== undefined ? Number(parts[4]) : 0;
+      await handleWorkerChatsSync(ctx, workersClient, natsUrl, workerId, page);
       return;
     }
 
