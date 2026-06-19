@@ -223,17 +223,18 @@ docker compose up -d --build
 
 Telegram WebApp требует HTTPS в проде.
 
-Prod-стек включает **Caddy** (`deploy/docker/caddy/Caddyfile`) — auto-TLS через Let's Encrypt и балансировку входящего трафика:
+Prod-стек включает **Caddy** (`caddy/Caddyfile`) — auto-TLS через Let's Encrypt и балансировку входящего трафика:
 
 | Домен (`*.env`) | Куда проксирует | Назначение |
 |-----------------|-----------------|------------|
 | `LOGIN_DOMAIN` | `login-miniapp:80` (dynamic LB) | Mini App (`/miniapp/`) + `/api/` |
 | `APP_DOMAIN` | `seller-dashboard:80` (dynamic LB) | Dashboard (`/dashboard/`) + `/api/` |
 | `BOT_DOMAIN` | `seller-bot:8080` (dynamic LB) | Webhook Telegram + health/metrics |
+| `GRAFANA_DOMAIN` | `grafana:3000` | Grafana (дашборды и логи) |
 
-1. Три поддомена, например `login.example.com`, `app.example.com`, `bot.example.com`
+1. Четыре поддомена, например `login.example.com`, `app.example.com`, `bot.example.com`, `grafana.example.com`
 2. DNS A/AAAA каждого домена → VPS; порты **80** и **443** открыты
-3. В `.env`: `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `ACME_EMAIL`
+3. В `.env`: `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `GRAFANA_DOMAIN`, `ACME_EMAIL`, `GRAFANA_ADMIN_PASSWORD`
 4. BotFather → разрешить домен WebApp для `LOGIN_DOMAIN`
 5. `.env`:
    ```env
@@ -245,7 +246,7 @@ Prod-стек включает **Caddy** (`deploy/docker/caddy/Caddyfile`) — a
 
 Масштабирование за Caddy (Docker DNS → все реплики сервиса):
 ```bash
-docker compose -f deploy/docker-compose.prod.yml up -d \
+docker compose -f docker-compose.prod.yml up -d \
   --scale login-miniapp=2 \
   --scale seller-dashboard=2 \
   --scale seller-bot=3
@@ -418,9 +419,9 @@ sell-bot/
 │   ├── seller-bot/           # grammY бот продавца
 │   ├── http-gateway/         # Bun API (seller + login endpoints)
 │   └── web/                  # Bun monorepo: apps/login-miniapp, apps/seller-dashboard
-├── deploy/
-│   └── docker-compose.prod.yml
-├── docker-compose.yml
+├── caddy/Caddyfile           # prod TLS / reverse proxy
+├── docker-compose.prod.yml   # prod-стек (образы из Docker Hub)
+├── docker-compose.yml        # локальная разработка
 ├── Makefile
 └── .env.example
 ```
@@ -503,7 +504,7 @@ WORKER_LOGIN_GRPC_ADDR=worker-engine-0:50053,worker-engine-1:50053
 
 **GitHub Secrets:**
 - `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
-- `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`
+- `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH` (корень проекта на сервере, напр. `/opt/sell-bot`)
 - `DEPLOY_DOTENV` — полный `.env` для продакшена
 
 **Релиз:**
@@ -523,12 +524,22 @@ CI: test → build (7 образов) → deploy (SSH) → GitHub Release
 - `{user}/{repo}-login-miniapp`
 - `{user}/{repo}-seller-dashboard`
 
-На сервере:
-```bash
-docker compose -f deploy/docker-compose.prod.yml up -d
+На сервере в `$DEPLOY_PATH` (корень проекта):
+
+```
+/opt/sell-bot/
+├── docker-compose.prod.yml
+├── caddy/Caddyfile
+├── monitoring/
+└── .env
 ```
 
-**Caddy** слушает `:80`/`:443`, выпускает TLS-сертификаты и проксирует на фронты и webhook (см. `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN` в `.env.example`).
+```bash
+cd /opt/sell-bot
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Caddy** слушает `:80`/`:443`, выпускает TLS-сертификаты и проксирует на фронты, webhook и Grafana (см. `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `GRAFANA_DOMAIN` в `.env.example`).
 
 `http-gateway` в prod не пробрасывает порт наружу — только через nginx фронтов с TLS.
 

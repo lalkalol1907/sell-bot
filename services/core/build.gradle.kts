@@ -12,6 +12,8 @@ plugins {
 group = "com.sellbot"
 version = "0.1.0"
 
+val grpcVersion = "1.63.0"
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(24)
@@ -35,8 +37,8 @@ dependencies {
     implementation("org.postgresql:postgresql")
 
     implementation("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
-    implementation("io.grpc:grpc-protobuf:1.68.1")
-    implementation("io.grpc:grpc-stub:1.68.1")
+    implementation("io.grpc:grpc-protobuf:$grpcVersion")
+    implementation("io.grpc:grpc-stub:$grpcVersion")
     implementation("com.google.protobuf:protobuf-java:3.25.5")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
@@ -56,6 +58,16 @@ dependencies {
 configurations.configureEach {
     resolutionStrategy {
         force(
+            "io.grpc:grpc-api:$grpcVersion",
+            "io.grpc:grpc-context:$grpcVersion",
+            "io.grpc:grpc-core:$grpcVersion",
+            "io.grpc:grpc-inprocess:$grpcVersion",
+            "io.grpc:grpc-netty-shaded:$grpcVersion",
+            "io.grpc:grpc-protobuf:$grpcVersion",
+            "io.grpc:grpc-protobuf-lite:$grpcVersion",
+            "io.grpc:grpc-services:$grpcVersion",
+            "io.grpc:grpc-stub:$grpcVersion",
+            "io.grpc:grpc-util:$grpcVersion",
             "org.mockito:mockito-core:5.18.0",
             "org.mockito:mockito-junit-jupiter:5.18.0",
             "net.bytebuddy:byte-buddy:1.15.11",
@@ -70,7 +82,7 @@ protobuf {
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.68.1"
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
         }
     }
     generateProtoTasks {

@@ -28,9 +28,10 @@ def test_bootstrap_local_defaults(tmp_path, monkeypatch):
     assert os.environ["EMBEDDING_MODEL_DIR"] == str(embedding)
 
 
-def test_bootstrap_fails_when_s3_required_but_missing(monkeypatch):
+def test_bootstrap_fails_when_s3_required_but_missing(monkeypatch, tmp_path):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
     monkeypatch.setenv("MODELS_S3_PREFIX", "dev")
+    monkeypatch.setenv("MODELS_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
     monkeypatch.delenv("MODELS_SKIP_S3", raising=False)
 
@@ -38,6 +39,30 @@ def test_bootstrap_fails_when_s3_required_but_missing(monkeypatch):
 
     with pytest.raises(SystemExit):
         bootstrap.bootstrap_models()
+
+
+def test_bootstrap_falls_back_to_local_bundle_on_s3_failure(monkeypatch, tmp_path):
+    monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
+    monkeypatch.setenv("MODELS_LOCAL_DIR", str(tmp_path))
+    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
+    monkeypatch.setenv("NLP_V2_INTENT_ML", "true")
+
+    bundle = tmp_path / "2026.06.18-1"
+    embedding = bundle / "embedding" / "paraphrase-multilingual-MiniLM-L12-v2"
+    embedding.mkdir(parents=True)
+    (embedding / "model.onnx").write_bytes(b"onnx")
+    (bundle / "intent_v1.joblib").write_bytes(b"model")
+    (bundle / "manifest.json").write_text("{}", encoding="utf-8")
+
+    from app import bootstrap
+
+    with patch.object(bootstrap, "sync_models_from_s3", side_effect=RuntimeError("S3 object not found")):
+        bootstrap.bootstrap_models()
+
+    import os
+
+    assert os.environ["INTENT_MODEL_PATH"] == str(bundle / "intent_v1.joblib")
+    assert os.environ["EMBEDDING_MODEL_DIR"] == str(embedding)
 
 
 def test_bootstrap_with_mocked_s3_sync(monkeypatch, tmp_path):

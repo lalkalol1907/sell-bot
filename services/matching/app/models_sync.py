@@ -90,12 +90,71 @@ def _latest_key(prefix: str) -> str:
     return f"{prefix}/matching/latest.json" if prefix else "matching/latest.json"
 
 
+def s3_uri(bucket: str, key: str) -> str:
+    return f"s3://{bucket}/{key}"
+
+
+def _get_object(client, bucket: str, key: str) -> dict:
+    try:
+        return client.get_object(Bucket=bucket, Key=key)
+    except Exception as exc:
+        code = ""
+        if hasattr(exc, "response"):
+            code = exc.response.get("Error", {}).get("Code", "")
+        if code in ("NoSuchKey", "404", "NotFound"):
+            raise RuntimeError(
+                f"S3 object not found: {s3_uri(bucket, key)} "
+                f"(publish with: make publish-models MODELS_VERSION=<version>)"
+            ) from exc
+        raise
+
+
+def _bundle_from_dir(bundle_dir: Path, version: str) -> SyncResult | None:
+    intent_path = bundle_dir / "intent_v1.joblib"
+    embedding_dir = bundle_dir / EMBEDDING_SUBDIR
+    has_intent = intent_path.is_file()
+    has_embedding = embedding_dir.is_dir()
+    if not has_intent and not has_embedding:
+        return None
+    return SyncResult(
+        version=version,
+        local_dir=bundle_dir,
+        intent_model_path=intent_path if has_intent else None,
+        embedding_model_dir=embedding_dir if has_embedding else None,
+    )
+
+
+def find_local_bundle(local_dir: Path) -> SyncResult | None:
+    """Find model artifacts under local_dir (flat or versioned bundle layout)."""
+    root = Path(local_dir)
+    flat = _bundle_from_dir(root, "local")
+    if flat is not None:
+        return flat
+
+    if not root.is_dir():
+        return None
+
+    candidates: list[tuple[str, Path]] = []
+    for child in root.iterdir():
+        if not child.is_dir() or child.name.startswith("."):
+            continue
+        if (child / "manifest.json").is_file() or (child / "intent_v1.joblib").is_file():
+            candidates.append((child.name, child))
+
+    for version, bundle_dir in sorted(candidates, key=lambda item: item[0], reverse=True):
+        bundle = _bundle_from_dir(bundle_dir, version)
+        if bundle is not None:
+            return bundle
+    return None
+
+
 def _resolve_version(client, bucket: str, prefix: str) -> str:
     pinned = os.getenv("MODELS_S3_VERSION", "").strip()
     if pinned:
         return pinned
 
-    response = client.get_object(Bucket=bucket, Key=_latest_key(prefix))
+    latest_key = _latest_key(prefix)
+    response = _get_object(client, bucket, latest_key)
     payload = json.loads(response["Body"].read().decode("utf-8"))
     version = payload.get("version")
     if not version:
@@ -105,7 +164,7 @@ def _resolve_version(client, bucket: str, prefix: str) -> str:
 
 def _download_bundle(client, bucket: str, prefix: str, version: str, local_dir: Path) -> SyncResult:
     manifest_key = _object_key(prefix, version, "manifest.json")
-    response = client.get_object(Bucket=bucket, Key=manifest_key)
+    response = _get_object(client, bucket, manifest_key)
     manifest = json.loads(response["Body"].read().decode("utf-8"))
 
     staging = local_dir / ".staging" / version

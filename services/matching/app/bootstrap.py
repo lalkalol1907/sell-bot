@@ -7,7 +7,13 @@ import os
 import sys
 from pathlib import Path
 
-from app.models_sync import EMBEDDING_SUBDIR, should_sync_models, sync_models_from_s3
+from app.models_sync import (
+    EMBEDDING_SUBDIR,
+    SyncResult,
+    find_local_bundle,
+    should_sync_models,
+    sync_models_from_s3,
+)
 from app.paths import models_dir
 
 logger = logging.getLogger(__name__)
@@ -20,8 +26,27 @@ def _bool_env(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _local_models_dir() -> Path:
+    return Path(os.getenv("MODELS_LOCAL_DIR", str(models_dir())))
+
+
+def _apply_sync_result(result: SyncResult) -> None:
+    if result.intent_model_path:
+        os.environ["INTENT_MODEL_PATH"] = str(result.intent_model_path)
+    if result.embedding_model_dir:
+        os.environ["EMBEDDING_MODEL_DIR"] = str(result.embedding_model_dir)
+    thresholds = result.local_dir / "semantic_thresholds.json"
+    if thresholds.is_file():
+        os.environ["SEMANTIC_THRESHOLDS_PATH"] = str(thresholds)
+
+
 def _apply_local_defaults() -> None:
-    root = Path(os.getenv("MODELS_LOCAL_DIR", str(models_dir())))
+    root = _local_models_dir()
+    local = find_local_bundle(root)
+    if local is not None:
+        _apply_sync_result(local)
+        return
+
     intent = root / "intent_v1.joblib"
     embedding = root / EMBEDDING_SUBDIR
 
@@ -58,18 +83,24 @@ def bootstrap_models() -> None:
     synced_from_s3 = False
     try:
         if should_sync_models():
-            result = sync_models_from_s3()
-            if result is None:
-                raise RuntimeError("expected S3 model sync but got no result")
-            synced_from_s3 = True
-            if result.intent_model_path:
-                os.environ["INTENT_MODEL_PATH"] = str(result.intent_model_path)
-            if result.embedding_model_dir:
-                os.environ["EMBEDDING_MODEL_DIR"] = str(result.embedding_model_dir)
-            thresholds = result.local_dir / "semantic_thresholds.json"
-            if thresholds.is_file():
-                os.environ["SEMANTIC_THRESHOLDS_PATH"] = str(thresholds)
-            logger.info("Model bundle %s ready at %s", result.version, result.local_dir)
+            try:
+                result = sync_models_from_s3()
+                if result is None:
+                    raise RuntimeError("expected S3 model sync but got no result")
+                synced_from_s3 = True
+                _apply_sync_result(result)
+                logger.info("Model bundle %s ready at %s", result.version, result.local_dir)
+            except Exception as exc:
+                local = find_local_bundle(_local_models_dir())
+                if local is None:
+                    raise
+                logger.warning(
+                    "S3 model sync failed (%s), using local bundle %s at %s",
+                    exc,
+                    local.version,
+                    local.local_dir,
+                )
+                _apply_sync_result(local)
         else:
             _apply_local_defaults()
 

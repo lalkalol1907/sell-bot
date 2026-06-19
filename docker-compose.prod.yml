@@ -54,6 +54,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 90s
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=8080"
+      - "prometheus.path=/actuator/prometheus"
 
   matching:
     image: ${MATCHING_IMAGE_NAME}:${IMAGE_TAG}
@@ -84,6 +88,10 @@ services:
       - nats
       - qdrant
     restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=8000"
+      - "prometheus.path=/metrics"
 
   worker-engine:
     image: ${WORKER_ENGINE_IMAGE_NAME}:${IMAGE_TAG}
@@ -98,11 +106,16 @@ services:
       NATS_URL: nats://nats:4222
       LISTEN_ALL_CHATS: ${LISTEN_ALL_CHATS}
       LOGIN_GRPC_PORT: "50053"
+      METRICS_ADDR: :9102
     depends_on:
       - core
       - matching
       - nats
     restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=9102"
+      - "prometheus.path=/metrics"
 
   http-gateway:
     image: ${HTTP_GATEWAY_IMAGE_NAME}:${IMAGE_TAG}
@@ -122,6 +135,10 @@ services:
       - worker-engine
       - redis
     restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=3000"
+      - "prometheus.path=/metrics"
 
   login-miniapp:
     image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG}
@@ -157,6 +174,94 @@ services:
       - http-gateway
       - login-miniapp
     restart: unless-stopped
+    labels:
+      - "prometheus.scrape=true"
+      - "prometheus.port=8080"
+      - "prometheus.path=/metrics"
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:3.0.0
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|var/lib/docker/.+)($$|/)
+      - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.57.0
+    restart: unless-stopped
+    privileged: true
+    command:
+      - --docker_only=true
+      - --store_container_labels=true
+      - --housekeeping_interval=10s
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
 
   caddy:
     image: caddy:2-alpine
@@ -167,6 +272,7 @@ services:
       LOGIN_DOMAIN: ${LOGIN_DOMAIN}
       APP_DOMAIN: ${APP_DOMAIN}
       BOT_DOMAIN: ${BOT_DOMAIN}
+      GRAFANA_DOMAIN: ${GRAFANA_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -176,6 +282,7 @@ services:
       - login-miniapp
       - seller-dashboard
       - seller-bot
+      - grafana
     restart: unless-stopped
 
 volumes:
@@ -185,5 +292,8 @@ volumes:
   qdrant_data:
   matching_models:
   worker_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
   caddy-data:
   caddy-config:

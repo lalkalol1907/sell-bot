@@ -107,3 +107,19 @@ def test_sync_models_from_s3_happy_path(tmp_path, monkeypatch):
                 result = models_sync.sync_models_from_s3()
     assert result is not None
     assert result.version == "v1"
+
+
+def test_find_local_bundle_versioned(tmp_path):
+    bundle = tmp_path / "2026.06.18-1"
+    embedding = bundle / "embedding" / "paraphrase-multilingual-MiniLM-L12-v2"
+    embedding.mkdir(parents=True)
+    (embedding / "model.onnx").write_bytes(b"onnx")
+    (bundle / "intent_v1.joblib").write_bytes(b"model")
+    (bundle / "manifest.json").write_text("{}", encoding="utf-8")
+
+    from app import models_sync
+
+    found = models_sync.find_local_bundle(tmp_path)
+    assert found is not None
+    assert found.version == "2026.06.18-1"
+    assert found.intent_model_path == bundle / "intent_v1.joblib"

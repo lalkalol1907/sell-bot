@@ -110,6 +110,8 @@ services:
       MAX_MESSAGE_CHARS: ${MAX_MESSAGE_CHARS:-2000}
     volumes:
       - matching_models:/data/models
+      # Dev fallback when S3 is misconfigured or empty (bootstrap picks newest bundle subdir)
+      - ./services/matching/models/bundles/2026.06.18-1:/data/models/2026.06.18-1:ro
     depends_on:
       - core
       - redis

@@ -202,6 +202,7 @@ jobs:
 
   # Только push тега v*; после успешной сборки всех образов.
   # Секреты: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_PATH, DEPLOY_DOTENV;
+  # DEPLOY_PATH — корень проекта на сервере (docker-compose.prod.yml, caddy/, monitoring/, .env).
   # DOCKERHUB_USERNAME + DOCKERHUB_TOKEN — для docker login на сервере.
   deploy:
     name: Deploy
