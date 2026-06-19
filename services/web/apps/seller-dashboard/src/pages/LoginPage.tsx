@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { authApi } from "../api";
 import { useAuth } from "../auth";
 
 declare global {
@@ -11,15 +10,14 @@ declare global {
 const botUsername = import.meta.env.VITE_BOT_USERNAME ?? "";
 
 export function LoginPage() {
-  const { refresh } = useAuth();
+  const { loginWithTelegram } = useAuth();
   const [error, setError] = useState("");
 
   useEffect(() => {
     window.onTelegramAuth = async (user) => {
       setError("");
       try {
-        await authApi.telegram(user);
-        await refresh();
+        await loginWithTelegram(user);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Ошибка входа");
       }
@@ -37,13 +35,21 @@ export function LoginPage() {
       script.setAttribute("data-request-access", "write");
       container.appendChild(script);
     }
-  }, [refresh]);
+  }, [loginWithTelegram]);
+
+  const domain = typeof window !== "undefined" ? window.location.hostname : "";
 
   return (
     <div className="login-page">
       <div className="login-card">
         <h1>Кабинет продавца</h1>
         <p>Войдите через Telegram. Сначала выполните /start в боте.</p>
+        {domain && (
+          <p className="hint">
+            Домен <code>{domain}</code> должен быть привязан к боту: @BotFather → /setdomain →{" "}
+            <code>{domain}</code>
+          </p>
+        )}
         {botUsername ? (
           <div id="telegram-login" />
         ) : (

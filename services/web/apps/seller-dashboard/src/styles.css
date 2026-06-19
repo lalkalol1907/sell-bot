@@ -132,6 +132,11 @@ button.danger {
   color: #dc2626;
 }
 
+.hint {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
 .login-page {
   min-height: 100vh;
   display: flex;

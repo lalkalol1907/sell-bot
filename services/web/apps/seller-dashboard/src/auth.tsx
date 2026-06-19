@@ -5,6 +5,7 @@ type AuthState = {
   seller: Seller | null;
   loading: boolean;
   refresh: () => Promise<void>;
+  loginWithTelegram: (payload: Record<string, string | number>) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -24,6 +25,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function loginWithTelegram(payload: Record<string, string | number>) {
+    await authApi.telegram(payload);
+    try {
+      setSeller(await authApi.me());
+    } catch {
+      setSeller(null);
+      throw new Error(
+        "Сессия не создана. Выполните /start в боте и привяжите домен через @BotFather → /setdomain.",
+      );
+    }
+  }
+
   async function logout() {
     await authApi.logout();
     setSeller(null);
@@ -34,7 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ seller, loading, refresh, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ seller, loading, refresh, loginWithTelegram, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

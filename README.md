@@ -235,8 +235,11 @@ Prod-стек включает **Caddy** (`caddy/Caddyfile`) — auto-TLS чер
 1. Четыре поддомена, например `login.example.com`, `app.example.com`, `bot.example.com`, `grafana.example.com`
 2. DNS A/AAAA каждого домена → VPS; порты **80** и **443** открыты
 3. В `.env`: `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `GRAFANA_DOMAIN`, `ACME_EMAIL`, `GRAFANA_ADMIN_PASSWORD`
-4. BotFather → разрешить домен WebApp для `LOGIN_DOMAIN`
-5. `.env`:
+4. BotFather (два разных домена — не путать):
+   - **Mini App** (`login-miniapp`): Bot Settings → Menu Button / Web App URL → `https://<LOGIN_DOMAIN>/miniapp/`
+   - **Login Widget** (дашборд): `/setdomain` → выбрать бота → указать **только хост** `APP_DOMAIN` (например `app.example.com`, без `https://`). У бота один домен для виджета; если указать `LOGIN_DOMAIN`, вход на дашборде не сработает.
+5. В боте выполнить `/start` (без этого `POST /api/v1/auth/telegram` вернёт 401).
+6. `.env`:
    ```env
    LOGIN_WEB_URL=https://login.example.com/miniapp/
    CORS_ORIGINS=https://login.example.com,https://app.example.com

@@ -10,6 +10,9 @@ const mime = {
 
 function resolvePath(pathname) {
   let path = pathname;
+  if (path === "/miniapp") {
+    path = "/miniapp/";
+  }
   if (path.startsWith("/miniapp/")) {
     path = path.slice("/miniapp".length);
   }
@@ -23,6 +26,10 @@ Bun.serve({
   port,
   async fetch(req) {
     const url = new URL(req.url);
+
+    if (url.pathname === "/miniapp") {
+      return Response.redirect(`${url.origin}/miniapp/`, 301);
+    }
 
     if (url.pathname.startsWith("/api/")) {
       const target = `${apiOrigin}${url.pathname}${url.search}`;
