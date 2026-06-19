@@ -199,9 +199,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          # seller-dashboard: Vite embeds these at build time (see apps/seller-dashboard/Dockerfile).
+          # Other images ignore unknown build-args.
+          build-args: |
+            VITE_BOT_USERNAME=${{ secrets.BOT_USERNAME }}
+            VITE_MINIAPP_URL=${{ secrets.LOGIN_WEB_URL }}
 
   # Только push тега v*; после успешной сборки всех образов.
   # Секреты: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_PATH, DEPLOY_DOTENV;
+  # BOT_USERNAME, LOGIN_WEB_URL — build-args для seller-dashboard (см. Build and Push);
   # DEPLOY_PATH — корень проекта на сервере (docker-compose.prod.yml, caddy/, monitoring/, .env).
   # DOCKERHUB_USERNAME + DOCKERHUB_TOKEN — для docker login на сервере.
   deploy:
