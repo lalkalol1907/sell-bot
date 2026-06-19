@@ -104,7 +104,7 @@ def _get_object(client, bucket: str, key: str) -> dict:
         if code in ("NoSuchKey", "404", "NotFound"):
             raise RuntimeError(
                 f"S3 object not found: {s3_uri(bucket, key)} "
-                f"(publish with: make publish-models MODELS_VERSION=<version>)"
+                f"(publish with: make publish MODELS_VERSION=<version>)"
             ) from exc
         raise
 

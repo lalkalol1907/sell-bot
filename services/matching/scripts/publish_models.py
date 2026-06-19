@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,41 +19,142 @@ MODELS = ROOT / "models"
 EMBEDDING_SUBDIR = Path("embedding") / "paraphrase-multilingual-MiniLM-L12-v2"
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 ONNX_FILENAMES = ("model.onnx", "model_optimized.onnx")
+MODEL_HINT = "paraphrase-multilingual-minilm-l12-v2"
+
+
+def _onnx_model_path(model_dir: Path) -> Path | None:
+    for name in ONNX_FILENAMES:
+        candidate = model_dir / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _is_valid_embedding_dir(path: Path) -> bool:
+    return path.is_dir() and _onnx_model_path(path) is not None
 
 
 def _find_onnx_model_dir(root: Path, *, model_hint: str) -> Path | None:
     hint = model_hint.lower().replace("/", "-")
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.name not in ONNX_FILENAMES:
+        if path.name not in ONNX_FILENAMES:
+            continue
+        if not path.is_file():
             continue
         normalized = str(path).lower()
-        if hint in normalized or "paraphrase-multilingual-minilm-l12-v2" in normalized:
+        if hint in normalized or MODEL_HINT in normalized:
             return path.parent
     return None
 
 
-def _resolve_fastembed_model_source(model_name: str) -> Path:
+def _fastembed_cache_roots() -> list[Path]:
+    roots = [
+        Path(os.getenv("FASTEMBED_CACHE_PATH", Path(tempfile.gettempdir()) / "fastembed_cache")),
+        Path.home() / ".cache" / "fastembed",
+    ]
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for root in roots:
+        resolved = root.expanduser().resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(resolved)
+    return unique
+
+
+def _local_embedding_sources() -> list[Path]:
+    sources: list[Path] = []
+
+    direct = MODELS / EMBEDDING_SUBDIR
+    if direct.is_dir():
+        sources.append(direct)
+
+    bundles_root = MODELS / "bundles"
+    if bundles_root.is_dir():
+        for bundle in sorted(bundles_root.iterdir(), reverse=True):
+            candidate = bundle / EMBEDDING_SUBDIR
+            if candidate.is_dir():
+                sources.append(candidate)
+
+    for cache_root in _fastembed_cache_roots():
+        found = _find_onnx_model_dir(cache_root, model_hint=MODEL_NAME)
+        if found is not None:
+            sources.append(found)
+
+    deduped: list[Path] = []
+    seen: set[Path] = set()
+    for source in sources:
+        resolved = source.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(resolved)
+    return deduped
+
+
+def _clear_broken_fastembed_caches(model_name: str) -> list[Path]:
+    hint = model_name.lower().replace("/", "-")
+    removed: list[Path] = []
+    for cache_root in _fastembed_cache_roots():
+        if not cache_root.is_dir():
+            continue
+        for path in cache_root.iterdir():
+            normalized = path.name.lower()
+            if hint not in normalized and MODEL_HINT not in normalized:
+                continue
+            if _is_valid_embedding_dir(path):
+                continue
+            found = _find_onnx_model_dir(path, model_hint=model_name)
+            if found is not None and _is_valid_embedding_dir(found):
+                continue
+            shutil.rmtree(path, ignore_errors=True)
+            removed.append(path)
+    return removed
+
+
+def _download_fastembed_model(model_name: str) -> Path:
     from fastembed import TextEmbedding
 
-    embedding = TextEmbedding(model_name=model_name)
-    list(embedding.embed(["warmup"]))
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            embedding = TextEmbedding(model_name=model_name)
+            list(embedding.embed(["warmup"]))
 
-    cache_dir = getattr(getattr(embedding, "model", None), "cache_dir", None)
-    if cache_dir:
-        source = _find_onnx_model_dir(Path(cache_dir), model_hint=model_name)
-        if source is not None:
-            return source
+            cache_dir = getattr(getattr(embedding, "model", None), "cache_dir", None)
+            if cache_dir:
+                source = _find_onnx_model_dir(Path(cache_dir), model_hint=model_name)
+                if source is not None and _is_valid_embedding_dir(source):
+                    return source.resolve()
 
-    legacy_root = Path.home() / ".cache" / "fastembed"
-    if legacy_root.is_dir():
-        source = _find_onnx_model_dir(legacy_root, model_hint=model_name)
-        if source is not None:
-            return source
+            for cache_root in _fastembed_cache_roots():
+                source = _find_onnx_model_dir(cache_root, model_hint=model_name)
+                if source is not None and _is_valid_embedding_dir(source):
+                    return source.resolve()
 
+            raise RuntimeError(f"fastembed loaded {model_name} but ONNX files were not found")
+        except Exception as exc:
+            last_error = exc
+            if attempt == 0 and _clear_broken_fastembed_caches(model_name):
+                continue
+            break
+
+    assert last_error is not None
     raise RuntimeError(
-        f"Could not locate ONNX files for {model_name}. "
-        "Run once with network access so fastembed can download the model."
-    )
+        f"Could not download ONNX files for {model_name}: {last_error}. "
+        "Delete the broken fastembed cache and retry with network access."
+    ) from last_error
+
+
+def _resolve_fastembed_model_source(model_name: str) -> Path:
+    for source in _local_embedding_sources():
+        if _is_valid_embedding_dir(source):
+            print(f"Using local embedding model: {source}", file=sys.stderr)
+            return source
+
+    print(f"Downloading embedding model via fastembed: {model_name}", file=sys.stderr)
+    return _download_fastembed_model(model_name)
 
 
 def _sha256_file(path: Path) -> str:
