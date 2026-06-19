@@ -1,4 +1,4 @@
-.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs train-prod publish publish-local publish-models publish-models-local
+.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs train-prod publish publish-local publish-models publish-models-local clean-embed-cache
 
 gen-proto: gen-proto-python gen-proto-go gen-proto-java
 
@@ -56,8 +56,9 @@ publish-local:
 	if [ -x .venv/bin/pip ]; then .venv/bin/pip install -q ".[train]"; else pip3 install -q ".[train]"; fi && \
 	./scripts/publish_models.sh --local-only $(MODELS_VERSION) $(PUBLISH_ARGS)
 
-publish-models: publish
-publish-models-local: publish-local
+clean-embed-cache:
+	@cd services/matching && \
+	if [ -x .venv/bin/python ]; then .venv/bin/python scripts/clear_fastembed_cache.py; else python3 scripts/clear_fastembed_cache.py; fi
 
 demo-lead:
 	@echo "Inject test message (set DEV_INJECT_MESSAGE in .env first)"

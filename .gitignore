@@ -45,10 +45,8 @@ services/matching/**/__pycache__/
 services/matching/**/*.pyc
 services/matching/*.egg-info/
 services/matching/**/.eggs/
-# Local model bundles (large ONNX; publish to S3 instead)
+# Staging dir for publish (not committed artifacts)
 services/matching/.bundle-staging/
-services/matching/models/bundles/
-services/matching/**/*.onnx
 # Generated eval reports (baseline kept for regression)
 services/matching/reports/*
 !services/matching/reports/recognition_baseline.json

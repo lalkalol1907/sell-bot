@@ -113,6 +113,16 @@ def _clear_broken_fastembed_caches(model_name: str) -> list[Path]:
     return removed
 
 
+def clear_fastembed_cache() -> list[Path]:
+    removed: list[Path] = []
+    for cache_root in _fastembed_cache_roots():
+        if not cache_root.is_dir():
+            continue
+        shutil.rmtree(cache_root, ignore_errors=True)
+        removed.append(cache_root)
+    return removed
+
+
 def _download_fastembed_model(model_name: str) -> Path:
     from fastembed import TextEmbedding
 
