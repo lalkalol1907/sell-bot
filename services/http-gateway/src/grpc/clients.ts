@@ -1,8 +1,23 @@
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
-const PROTO_ROOT = path.resolve(import.meta.dir, "../../../proto");
+function resolveProtoRoot(): string {
+  const fromEnv = process.env.PROTO_ROOT;
+  if (fromEnv) return path.resolve(fromEnv);
+
+  const candidates = [
+    path.resolve(import.meta.dir, "../../proto"),
+    path.resolve(import.meta.dir, "../../../../proto"),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(path.join(dir, "catalog.proto"))) return dir;
+  }
+  return candidates[0];
+}
+
+const PROTO_ROOT = resolveProtoRoot();
 const INTERNAL_GRPC_METADATA_KEY = "x-internal-grpc-token";
 
 function loadProto(file: string) {
