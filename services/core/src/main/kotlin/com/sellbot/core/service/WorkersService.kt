@@ -90,7 +90,7 @@ class WorkersService(
     fun listChats(workerId: Long, ownerSellerId: Long): List<MonitoredChatEntity> {
         workerRepository.findByIdAndOwnerSellerId(workerId, ownerSellerId)
             ?: throw IllegalArgumentException("Worker not found or access denied")
-        return monitoredChatRepository.findByWorkerId(workerId)
+        return monitoredChatRepository.findByWorkerIdOrderByIsActiveDescTitleAsc(workerId)
     }
 
     fun getWorkerSession(workerId: Long): ByteArray? {

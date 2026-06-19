@@ -195,10 +195,18 @@ export async function createBot(
       return;
     }
 
-    if (data.startsWith("worker:chats:")) {
-      const workerId = Number(data.split(":")[2]);
+    if (data === "workers:list") {
       await ctx.answerCallbackQuery();
-      await handleWorkerChats(ctx, workersClient, workerId);
+      await handleWorkersList(ctx, workersClient);
+      return;
+    }
+
+    if (data.startsWith("worker:chats:")) {
+      const parts = data.split(":");
+      const workerId = Number(parts[2]);
+      const page = parts[3] !== undefined ? Number(parts[3]) : 0;
+      await ctx.answerCallbackQuery();
+      await handleWorkerChats(ctx, workersClient, workerId, page);
       return;
     }
 
@@ -206,7 +214,8 @@ export async function createBot(
       const parts = data.split(":");
       const workerId = Number(parts[2]);
       const chatId = Number(parts[3]);
-      await handleChatToggle(ctx, workersClient, workerId, chatId);
+      const page = parts[4] !== undefined ? Number(parts[4]) : 0;
+      await handleChatToggle(ctx, workersClient, workerId, chatId, page);
     }
   });
 
