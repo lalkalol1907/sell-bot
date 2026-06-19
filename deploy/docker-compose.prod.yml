@@ -169,7 +169,7 @@ services:
       BOT_DOMAIN: ${BOT_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
     volumes:
-      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
