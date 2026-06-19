@@ -20,6 +20,21 @@ def _default_nlp_flags(monkeypatch):
     import app.config
 
     importlib.reload(app.config)
+    yield
+    for key in ("INTENT_MODEL_PATH", "EMBEDDING_MODEL_DIR", "SEMANTIC_THRESHOLDS_PATH"):
+        os.environ.pop(key, None)
+    try:
+        from app.embeddings.encoder import reset_encoder_cache
+        from app.embeddings.indexer import reset_index_cache
+        from app.models_runtime import reset_runtime_state
+        from app.nlp.intent_classifier import reset_model_cache
+
+        reset_runtime_state()
+        reset_model_cache()
+        reset_encoder_cache()
+        reset_index_cache("unknown")
+    except Exception:
+        pass
 
 
 @pytest.fixture

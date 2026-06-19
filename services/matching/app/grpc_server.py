@@ -12,6 +12,7 @@ from app.core_client import get_core_client
 from app.dedup import DedupStore
 from app.config import NLP_V2_ENABLED
 from app.matcher import match_message
+from app.models_runtime import current_version
 from app.spam_filter import check_spam
 
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +35,7 @@ GATE_REJECTED = Counter("matching_product_gate_rejected_total", "Product gate re
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "models_version": current_version()}
 
 
 @app.get("/metrics")

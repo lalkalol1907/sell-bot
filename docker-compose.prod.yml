@@ -80,6 +80,8 @@ services:
       MODELS_S3_REGION: ${MODELS_S3_REGION}
       MODELS_S3_ACCESS_KEY: ${MODELS_S3_ACCESS_KEY}
       MODELS_S3_SECRET_KEY: ${MODELS_S3_SECRET_KEY}
+      MODELS_WATCH_ENABLED: ${MODELS_WATCH_ENABLED:-true}
+      MODELS_WATCH_INTERVAL: ${MODELS_WATCH_INTERVAL:-60}
     volumes:
       - matching_models:/data/models
     depends_on:

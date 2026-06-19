@@ -199,7 +199,17 @@ def _download_bundle(client, bucket: str, prefix: str, version: str, local_dir: 
     )
 
 
-def sync_models_from_s3() -> SyncResult | None:
+def peek_remote_version() -> str | None:
+    if not should_sync_models():
+        return None
+
+    bucket = os.getenv("MODELS_S3_BUCKET", "").strip()
+    prefix = os.getenv("MODELS_S3_PREFIX", "").strip()
+    client = _s3_client()
+    return _resolve_version(client, bucket, prefix)
+
+
+def sync_models_from_s3(version: str | None = None) -> SyncResult | None:
     if not should_sync_models():
         logger.info("Skipping S3 model sync")
         return None
@@ -209,7 +219,7 @@ def sync_models_from_s3() -> SyncResult | None:
     local_dir = Path(os.getenv("MODELS_LOCAL_DIR", "/data/models"))
 
     client = _s3_client()
-    version = _resolve_version(client, bucket, prefix)
-    logger.info("Syncing model bundle %s from s3://%s/%s", version, bucket, prefix or "")
+    resolved = version or _resolve_version(client, bucket, prefix)
+    logger.info("Syncing model bundle %s from s3://%s/%s", resolved, bucket, prefix or "")
     local_dir.mkdir(parents=True, exist_ok=True)
-    return _download_bundle(client, bucket, prefix, version, local_dir)
+    return _download_bundle(client, bucket, prefix, resolved, local_dir)

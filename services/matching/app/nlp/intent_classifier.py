@@ -50,12 +50,14 @@ def _load_ml_model():
     if _classifier is not None:
         return _classifier, _vectorizer, _scaler, _feature_type
 
-    from app.config import INTENT_MODEL_PATH, NLP_V2_INTENT_ML
+    from app.config import NLP_V2_INTENT_ML
+    from app.paths import models_dir
 
     if not NLP_V2_INTENT_ML:
         return None, None, None, "heuristic"
 
-    path = Path(INTENT_MODEL_PATH)
+    default_path = str(models_dir() / "intent_v1.joblib")
+    path = Path(os.getenv("INTENT_MODEL_PATH", default_path))
     if not path.is_file():
         return None, None, None, "heuristic"
 

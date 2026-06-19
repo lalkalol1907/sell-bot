@@ -22,8 +22,10 @@ if __name__ == "__main__":
     bootstrap_models()
 
     from app.grpc_server import app, process_message, start as start_grpc
+    from app.models_watcher import start_models_watcher
 
     start_grpc()
+    start_models_watcher()
     start_nats(process_message)
     import uvicorn
 

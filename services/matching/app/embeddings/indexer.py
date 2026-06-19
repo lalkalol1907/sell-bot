@@ -14,7 +14,26 @@ from app.embeddings.qdrant_client import SearchHit, search_similar, upsert_produ
 from app.nlp.normalize import normalize_text
 
 _redis: redis.Redis | None = None
-_local_indexed: dict[tuple[int, str], bool] = {}
+_local_indexed: dict[tuple[int, str, str], bool] = {}
+_model_version: str = "unknown"
+
+
+def reset_index_cache(model_version: str) -> None:
+    global _model_version
+    _model_version = model_version
+    _local_indexed.clear()
+
+
+def _active_model_version() -> str:
+    try:
+        from app.models_runtime import current_version
+
+        version = current_version()
+        if version:
+            return version
+    except Exception:
+        pass
+    return _model_version
 
 
 def _get_redis() -> redis.Redis:
@@ -48,9 +67,10 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
     if not NLP_V2_SEMANTIC or not products:
         return
 
-    key = f"catalog:hash:{seller_id}"
+    model_version = _active_model_version()
+    key = f"catalog:hash:{seller_id}:{model_version}"
     current = _catalog_hash(products)
-    cache_key = (seller_id, current)
+    cache_key = (seller_id, current, model_version)
     if _local_indexed.get(cache_key):
         return
 

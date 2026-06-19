@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 
+from app.models_runtime import apply_bundle
 from app.models_sync import (
     EMBEDDING_SUBDIR,
     SyncResult,
@@ -30,21 +31,11 @@ def _local_models_dir() -> Path:
     return Path(os.getenv("MODELS_LOCAL_DIR", str(models_dir())))
 
 
-def _apply_sync_result(result: SyncResult) -> None:
-    if result.intent_model_path:
-        os.environ["INTENT_MODEL_PATH"] = str(result.intent_model_path)
-    if result.embedding_model_dir:
-        os.environ["EMBEDDING_MODEL_DIR"] = str(result.embedding_model_dir)
-    thresholds = result.local_dir / "semantic_thresholds.json"
-    if thresholds.is_file():
-        os.environ["SEMANTIC_THRESHOLDS_PATH"] = str(thresholds)
-
-
 def _apply_local_defaults() -> None:
     root = _local_models_dir()
     local = find_local_bundle(root)
     if local is not None:
-        _apply_sync_result(local)
+        apply_bundle(local)
         return
 
     intent = root / "intent_v1.joblib"
@@ -59,6 +50,14 @@ def _apply_local_defaults() -> None:
         "SEMANTIC_THRESHOLDS_PATH",
         str(root / "semantic_thresholds.json"),
     )
+
+    fallback = SyncResult(
+        version="local",
+        local_dir=root,
+        intent_model_path=intent if intent.is_file() else None,
+        embedding_model_dir=embedding if embedding.is_dir() else None,
+    )
+    apply_bundle(fallback)
 
 
 def _require_paths() -> None:
@@ -88,7 +87,7 @@ def bootstrap_models() -> None:
                 if result is None:
                     raise RuntimeError("expected S3 model sync but got no result")
                 synced_from_s3 = True
-                _apply_sync_result(result)
+                apply_bundle(result)
                 logger.info("Model bundle %s ready at %s", result.version, result.local_dir)
             except Exception as exc:
                 local = find_local_bundle(_local_models_dir())
@@ -100,7 +99,7 @@ def bootstrap_models() -> None:
                     local.version,
                     local.local_dir,
                 )
-                _apply_sync_result(local)
+                apply_bundle(local)
         else:
             _apply_local_defaults()
 
