@@ -61,6 +61,7 @@ def main() -> int:
             print(
                 f"      actual: matched={actual['matched']} "
                 f"product_id={actual['product_id']} "
+                f"product_ids={actual.get('product_ids')} "
                 f"intent={actual['intent_class']!r} "
                 f"reject={actual['reject_reason']!r} "
                 f"product_score={actual['product_score']:.3f}"

@@ -71,6 +71,11 @@ COLOR_ALIASES: dict[str, str] = {
     "lavender": "lavender",
     "лаванда": "lavender",
     "лиловый": "lavender",
+    "ultramarine": "ultramarine",
+    "ультрамарин": "ultramarine",
+    "пустынный": "desert",
+    "миднайт": "midnight",
+    "sky blue": "sky blue",
 }
 
 COLOR_PHRASES = [
@@ -85,6 +90,8 @@ COLOR_PHRASES = [
     ("чёрный титан", "black"),
     ("белый титан", "white"),
     ("синий титан", "blue"),
+    ("sky blue", "sky blue"),
+    ("space black", "black"),
 ]
 
 

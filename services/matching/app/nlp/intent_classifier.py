@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,7 +20,7 @@ NEGATIVE = {
 }
 INDIRECT = {
     "кто", "где", "есть", "подскажите", "помогите", "достать", "срочно",
-    "подскажи", "помоги", "возьмет", "возьмёт",
+    "подскажи", "помоги", "возьмет", "возьмёт", "предложите", "предложи",
 }
 
 DISCUSSION_BROKEN_PHRASES = (
@@ -35,6 +36,16 @@ DISCUSSION_TOKENS = {
     "пленка", "плёнка", "настроить", "настроила", "совет", "рекомендовать",
     "перегреваться", "шуметь", "мерцать", "вылетать", "зависать",
 }
+
+PRODUCT_MARKERS = (
+    "iphone", "айфон", "ipad", "айпад", "macbook", "макбук", "airpods", "эйрпод",
+    "galaxy", "samsung", "самсунг", "яндекс", "homepod", "хоумпод", "watch",
+    "pro max", "pro ", " air ", " станци", "airpods", "honor", "sony",
+)
+SPEC_TOKEN_RE = re.compile(
+    r"\b(64|128|256|512|1024|2048|1tb|16|15|14|13|12)\b",
+    re.IGNORECASE,
+)
 
 INTENT_SCORES = {
     "buy": 0.9,
@@ -103,12 +114,24 @@ def _looks_like_discussion(text: str, tokens: set[str]) -> bool:
     return bool(tokens & DISCUSSION_TOKENS)
 
 
+def _looks_like_product_listing(text: str) -> bool:
+    """Short product line from chat (often without «куплю»)."""
+    lower = text.lower()
+    if not any(marker in lower for marker in PRODUCT_MARKERS):
+        return False
+    return bool(SPEC_TOKEN_RE.search(lower))
+
+
 def _merge_with_heuristic(heuristic: IntentResult, ml: IntentResult) -> IntentResult:
     """Apply high-precision heuristic guardrails on top of ML output."""
     if heuristic.label == "sell":
         return heuristic
 
     if heuristic.label == "discussion":
+        return heuristic
+
+    # Явный buy (куплю/ищу…) не должен превращаться в sell из-за цветов/моделей в тексте.
+    if heuristic.label == "buy" and ml.label == "sell":
         return heuristic
 
     if ml.label == "buy" and heuristic.label == "none":
@@ -118,7 +141,7 @@ def _merge_with_heuristic(heuristic: IntentResult, ml: IntentResult) -> IntentRe
     if heuristic.label == "buy" and heuristic.score <= 0.55 and ml.label == "buy":
         return heuristic
 
-    if ml.label in ("none", "discussion") and heuristic.label == "buy" and heuristic.score >= 0.8:
+    if ml.label in ("none", "discussion") and heuristic.label == "buy" and heuristic.score >= 0.55:
         return heuristic
 
     if ml.label in ("buy", "none") and heuristic.label == "discussion":
@@ -150,6 +173,8 @@ def intent_score_heuristic(text: str) -> IntentResult:
         return IntentResult("discussion", 0.1)
     if tokens & POSITIVE:
         return IntentResult("buy", 0.9)
+    if _looks_like_product_listing(text):
+        return IntentResult("buy", 0.55)
     if "?" in text or (tokens & INDIRECT):
         return IntentResult("buy", 0.55)
     return IntentResult("none", 0.1)

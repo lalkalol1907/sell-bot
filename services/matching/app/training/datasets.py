@@ -12,6 +12,7 @@ from app.paths import data_dir
 
 DATA = data_dir()
 INTENT_SAMPLES_PATH = DATA / "intent_samples.yaml"
+INTENT_REAL_CHAT_PATH = DATA / "intent_real_chat.yaml"
 PRODUCT_KEYWORDS_PATH = DATA / "product_catalog_keywords.yaml"
 PRODUCT_PAIRS_SEED_PATH = DATA / "product_pairs_seed.yaml"
 
@@ -21,19 +22,52 @@ def _load_yaml(path: Path) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def load_intent_samples(path: Path | None = None) -> dict[str, Any]:
-    path = path or INTENT_SAMPLES_PATH
+def _extend_unique(target: list[str], items: list[str]) -> None:
+    seen = set(target)
+    for item in items:
+        text = str(item).strip()
+        if text and text not in seen:
+            target.append(text)
+            seen.add(text)
+
+
+def load_intent_real_chat(path: Path | None = None) -> dict[str, Any]:
+    path = path or INTENT_REAL_CHAT_PATH
+    if not path.is_file():
+        return {}
     raw = _load_yaml(path)
     return {
         "buy": list(raw.get("buy") or []),
+        "listing_buy": list(raw.get("listing_buy") or []),
+        "multiline_buy": list(raw.get("multiline_buy") or []),
+        "variant_buy": list(raw.get("variant_buy") or []),
+        "eval_holdout": dict(raw.get("eval_holdout") or {}),
+    }
+
+
+def load_intent_samples(path: Path | None = None) -> dict[str, Any]:
+    path = path or INTENT_SAMPLES_PATH
+    raw = _load_yaml(path)
+    real_chat = load_intent_real_chat()
+
+    buy = list(raw.get("buy") or [])
+    variant_buy = list(raw.get("variant_buy") or [])
+    _extend_unique(buy, real_chat.get("buy") or [])
+    _extend_unique(buy, real_chat.get("listing_buy") or [])
+    _extend_unique(buy, real_chat.get("multiline_buy") or [])
+    _extend_unique(variant_buy, real_chat.get("variant_buy") or [])
+
+    return {
+        "buy": buy,
         "sell": list(raw.get("sell") or []),
         "discussion": list(raw.get("discussion") or []),
         "none": list(raw.get("none") or []),
-        "variant_buy": list(raw.get("variant_buy") or []),
+        "variant_buy": variant_buy,
         "variant_sell": list(raw.get("variant_sell") or []),
         "variant_discussion": list(raw.get("variant_discussion") or []),
         "variant_none_color": list(raw.get("variant_none_color") or []),
         "eval_slices": dict(raw.get("eval_slices") or {}),
+        "eval_holdout": real_chat.get("eval_holdout") or {},
     }
 
 
@@ -102,6 +136,14 @@ def main() -> None:
     discussion = samples["discussion"] + samples["variant_discussion"]
     none = samples["none"] + samples["variant_none_color"]
 
+    holdout = samples.get("eval_holdout") or {}
+    holdout_texts: set[str] = set()
+    for key in ("buy", "listing_buy", "multiline_buy"):
+        for text in holdout.get(key) or []:
+            stripped = str(text).strip()
+            if stripped:
+                holdout_texts.add(stripped)
+
     train_rows: list[dict[str, str]] = []
     for label, texts in (
         ("buy", buy),
@@ -110,7 +152,10 @@ def main() -> None:
         ("none", none),
     ):
         for text in texts:
-            train_rows.append({"text": text, "label": label})
+            stripped = str(text).strip()
+            if not stripped or stripped in holdout_texts:
+                continue
+            train_rows.append({"text": stripped, "label": label})
 
     eval_rows: list[dict[str, str]] = []
     eval_buy = (
@@ -137,6 +182,11 @@ def main() -> None:
         eval_rows.append({"text": text, "label": "discussion"})
     for text in eval_none:
         eval_rows.append({"text": text, "label": "none"})
+    for key in ("buy", "listing_buy", "multiline_buy"):
+        for text in holdout.get(key) or []:
+            stripped = str(text).strip()
+            if stripped:
+                eval_rows.append({"text": stripped, "label": "buy"})
 
     pair_rows = [_pair_row(item, keywords, variant_messages) for item in pair_items]
 

@@ -4,6 +4,11 @@
 # Формат каталога: как в базе продавца (модель + RAM/накопитель + цвет).
 # Позитивные кейсы: вариативные написания с полным совпадением модели/памяти/цвета.
 # Негативные кейсы: неполные запросы, опечатки, частичные совпадения.
+#
+# Несколько товаров в сообщении:
+#   - многострочные списки (каждая строка — товар)
+#   - expect.product_ids: [id1, id2, ...]
+#   - для одной строки с несколькими товарами — expect.segments с явным разбиением
 
 catalog:
   # --- iPhone (строгие варианты) ---
@@ -122,6 +127,228 @@ catalog:
       - homepod 2 midnight
       - хоумпод 2 полночь
       - homepod 2 полночь
+
+  # --- iPhone: реальные чаты (без «айфон», короткие форматы) ---
+  - id: 106
+    title: iPhone 16 Pro Max 8/256 Black
+    keywords:
+      - iphone 16 pro max 256 black
+      - 16 pro max 256 black
+      - 16 про макс 256 черный
+      - pro max 256 black
+
+  - id: 107
+    title: iPhone 16 Pro Max 8/256 White
+    keywords:
+      - iphone 16 pro max 256 white
+      - 16 pro max 256 white
+      - 16 про макс 256 белый
+      - pro max 256 white
+
+  - id: 108
+    title: iPhone 16 Pro Max 8/512 Black
+    keywords:
+      - iphone 16 pro max 512 black
+      - 16 pro max 512 black
+      - 16 про макс 512 черный
+      - pro max 512 black
+
+  - id: 109
+    title: iPhone 16 Pro Max 8/512 White
+    keywords:
+      - iphone 16 pro max 512 white
+      - 16 pro max 512 white
+      - 16 про макс 512 белый
+      - pro max 512 white
+
+  - id: 110
+    title: iPhone 16 Pro Max 8/1TB Natural
+    keywords:
+      - iphone 16 pro max 1tb natural
+      - 16 pro max 1tb natural
+      - 16 про макс 1tb натуральный
+      - pro max 1tb natural titanium
+
+  - id: 111
+    title: iPhone 16 Pro 8/256 Desert
+    keywords:
+      - iphone 16 pro 256 desert
+      - iphone 16 pro 256 пустынный
+      - 16 pro 256 desert
+      - 16 pro 256 пустынный
+      - 16 про 256 десерт
+
+  - id: 112
+    title: iPhone 15 Pro Max 8/512 Natural
+    keywords:
+      - iphone 15 pro max 512 natural
+      - 15 pro max 512 natural
+      - 15 про макс 512 натуральный
+
+  - id: 113
+    title: iPhone 15 Pro 8/1TB Natural
+    keywords:
+      - iphone 15 pro 1tb natural
+      - 15pro 1tb natural
+      - 15 pro 1tb natural
+      - 15 про 1tb натуральный
+
+  - id: 114
+    title: iPhone 15 Pro 8/1TB White
+    keywords:
+      - iphone 15 pro 1tb white
+      - 15pro 1tb white
+      - 15 pro 1tb white
+      - 15 про 1tb белый
+
+  - id: 115
+    title: iPhone 14 8/128 Midnight
+    keywords:
+      - iphone 14 128 midnight
+      - 14 128 midnight
+      - 14 128 миднайт
+      - 14 128 полночь
+
+  - id: 116
+    title: iPhone 16 8/128 Ultramarine
+    keywords:
+      - iphone 16 128 ultramarine
+      - 16 128 ultramarine
+      - 16 128gb ultramarine
+      - 16 128 ультрамарин
+
+  - id: 117
+    title: iPhone 16 Plus 8/512 Ultramarine
+    keywords:
+      - iphone 16 plus 512 ultramarine
+      - 16 plus 512 ultramarine
+      - 16 плюс 512 ультрамарин
+
+  - id: 118
+    title: iPhone 13 8/128 Blue
+    keywords:
+      - iphone 13 128 blue
+      - 13 128gb blue
+      - 13 128 голубой
+      - 13 128 синий
+
+  - id: 119
+    title: iPhone 14 8/128 White
+    keywords:
+      - iphone 14 128 white
+      - 14 128 white
+      - 14 128 белый
+
+  - id: 120
+    title: iPhone 15 8/128 Blue
+    keywords:
+      - iphone 15 128 blue
+      - 15 128 blue
+      - 15 128 голубой
+      - 15 128 синий
+
+  - id: 121
+    title: iPhone 15 8/128 White
+    keywords:
+      - iphone 15 128 white
+      - 15 128 white
+      - 15 128 белый
+
+  # --- iPad ---
+  - id: 501
+    title: iPad 11 2025 8/128 Yellow WiFi
+    keywords:
+      - ipad 11 2025 128 yellow
+      - ipad 11 128 yellow wifi
+      - ipad 11 2025 128 yellow wifi
+
+  - id: 502
+    title: iPad 11 2025 8/256 Pink WiFi
+    keywords:
+      - ipad 11 2025 256 pink wifi
+      - ipad 11 256 pink wifi
+      - ipad 11 2025 256 pink
+
+  - id: 503
+    title: iPad Air 11 M2 8/256 Gray WiFi
+    keywords:
+      - ipad air 11 m2 256 gray wifi
+      - apple ipad air 11 m2 256gb gray wifi
+      - ipad air 11 m2 256 gray
+
+  - id: 504
+    title: iPad Air 11 M3 8/256 Gray WiFi
+    keywords:
+      - ipad air 11 m3 256 gray wifi
+      - apple ipad air 11 m3 256gb gray wifi
+      - ipad air 11 m3 256 gray
+
+  - id: 505
+    title: iPad Air 11 M3 8/256 Blue WiFi
+    keywords:
+      - ipad air 11 m3 256 blue wifi
+      - apple ipad air 11 m3 256gb blue wifi
+      - ipad air 11 m3 256 blue
+
+  # --- MacBook M4 (реальные чаты) ---
+  - id: 210
+    title: MacBook Air 13 M4 16/256 Midnight
+    keywords:
+      - macbook air 13 m4 16 256 midnight
+      - air 13 m4 16/256 midnight
+      - air 13 m4 16 256 midnight
+      - mb air 13 m4 16 256 midnight
+
+  - id: 211
+    title: MacBook Air 13 M4 16/512 Midnight
+    keywords:
+      - macbook air 13 m4 16 512 midnight
+      - air 13 m4 16/512 midnight
+      - air 13 m4 16 512 midnight
+
+  - id: 212
+    title: MacBook Air 15 M4 24/512 Sky Blue
+    keywords:
+      - macbook air 15 m4 24 512 sky blue
+      - macbook air 15 m4 24gb 512gb sky blue
+      - macbook air 15 m4 24 512 sky blue mc7d4
+
+  - id: 213
+    title: MacBook Pro 14 M4 Pro 24/512 Space Black
+    keywords:
+      - macbook pro 14 m4 pro 24 512 space black
+      - macbook pro 14 2024 m4 pro 24gb 512gb space black
+      - macbook pro 14 m4 pro 24 512 space black mx2h3
+
+  # --- Наушники / колонки (расширение) ---
+  - id: 304
+    title: AirPods 4
+    keywords:
+      - airpods 4
+      - apple airpods 4
+      - эйрподс 4
+      - airpods 4 usb-c
+
+  - id: 305
+    title: AirPods Max USB-C Purple
+    keywords:
+      - airpods max usb-c purple
+      - airpods max purple
+      - эйрподс макс purple фиолетовый
+
+  - id: 404
+    title: Yandex Station Midi Silver
+    keywords:
+      - yandex station midi silver
+      - яндекс станции миди silver
+      - яндекс станция миди silver
+
+  - id: 405
+    title: Yandex Station Mini 2 Silver
+    keywords:
+      - yandex station mini 2 silver
+      - яндекс станция мини 2 silver
+      - яндекс станция мини 2 с часами silver
 
 scenarios:
   # === iPhone 16 Pro Max Desert — позитив (вариативные написания) ===
@@ -361,3 +588,155 @@ scenarios:
     text: продаю iphone 16 pro max 8 128 desert
     expect:
       matched: false
+
+  # === Реальные чаты: короткие форматы без бренда ===
+  - id: real_chat_16_pmax_256_black
+    text: iphone 16 pro max 256 black 1 сим
+    expect:
+      matched: true
+      product_id: 106
+      product_only: true
+
+  - id: real_chat_16_pmax_256_white
+    text: 16 Pro Max 256 White
+    expect:
+      matched: true
+      product_id: 107
+      product_only: true
+
+  - id: real_chat_16_plus_ultramarine
+    text: 16 plus 512 ultramarine
+    expect:
+      matched: true
+      product_id: 117
+      product_only: true
+
+  - id: real_chat_16_128_ultramarine
+    text: 16 128Gb Ultramarine
+    expect:
+      matched: true
+      product_id: 116
+      product_only: true
+
+  - id: real_chat_14_midnight_ru
+    text: Куплю 14 128 миднайт ,одна сим
+    expect:
+      matched: true
+      product_id: 115
+      intent_class: buy
+
+  - id: real_chat_15_pmax_natural
+    text: 15 Pro Max 512 natural
+    expect:
+      matched: true
+      product_id: 112
+      product_only: true
+
+  - id: real_chat_16_pro_desert_full
+    text: Смартфон Apple iPhone 16 Pro 256GB nanoSim+eSim (Пустынный)
+    expect:
+      matched: true
+      product_id: 111
+      product_only: true
+
+  - id: real_chat_13_blue
+    text: куплю 13 128gb blue
+    expect:
+      matched: true
+      product_id: 118
+      intent_class: buy
+
+  - id: real_chat_ipad_yellow
+    text: iPad 11 2025 128 yellow ?
+    expect:
+      matched: true
+      product_id: 501
+      product_only: true
+
+  - id: real_chat_macbook_air_sky_blue
+    text: MacBook Air 15 M4 24GB 512GB Sky Blue MC7D4 - ?
+    expect:
+      matched: true
+      product_id: 212
+      product_only: true
+
+  - id: real_chat_macbook_pro_m4
+    text: Apple MacBook Pro 14 2024 M4 Pro 24Gb/512Gb (Space Black) (MX2H3) ?
+    expect:
+      matched: true
+      product_id: 213
+      product_only: true
+
+  - id: real_chat_yandex_stations
+    text: |
+      Яндекс станции Миди Silver
+      Яндекс Станция Мини 2 с часами Silver
+    expect:
+      matched: true
+      product_ids: [404, 405]
+
+  - id: real_chat_ipad_air_list
+    text: |
+      Apple iPad Air 11 M2, 256gb Gray, wifi
+      Apple iPad Air 11 M3 , 256gb Gray, wifi
+      Apple iPad Air 11 M3 , 256gb Blue WiFi
+    expect:
+      matched: true
+      product_ids: [503, 504, 505]
+
+  # === Несколько товаров в одном сообщении ===
+  - id: multi_air_13_midnight_lines
+    text: |
+      куплю
+      Air 13 M4 16/256 midnight
+      Air 13 M4 16/512 midnight
+    expect:
+      matched: true
+      product_ids: [210, 211]
+      intent_class: buy
+
+  - id: multi_pmax_512_black_white_lines
+    text: |
+      Куплю 16 pro max 512 black
+      16 pro max 512 white
+    expect:
+      matched: true
+      product_ids: [108, 109]
+      intent_class: buy
+
+  - id: multi_15pro_1tb_semicolon
+    text: Куплю; 15pro 1tb Natural 15pro 1tb White
+    expect:
+      matched: true
+      segments:
+        - 15pro 1tb Natural
+        - 15pro 1tb White
+      product_ids: [113, 114]
+
+  - id: multi_pmax_512_one_line
+    text: куплю 16 pro max 512 black 16 pro max 512 white
+    expect:
+      matched: true
+      segments:
+        - 16 pro max 512 black
+        - 16 pro max 512 white
+      product_ids: [108, 109]
+      intent_class: buy
+
+  - id: multi_iphone_14_15_colors
+    text: |
+      14 128 белый
+      15 128 голубой
+      15 128 белый
+    expect:
+      matched: true
+      product_ids: [119, 120, 121]
+
+  - id: real_chat_predlozhite_pmax_1tb
+    text: |
+      предложите
+      iphone 16 pro max 1tb natural
+    expect:
+      matched: true
+      product_id: 110
+      product_only: true

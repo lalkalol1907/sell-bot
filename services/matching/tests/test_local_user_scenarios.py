@@ -15,8 +15,8 @@ CATALOG, SCENARIOS = load_local_dataset()
 
 @pytest.mark.local
 def test_local_dataset_has_catalog_and_scenarios():
-    assert len(CATALOG) >= 10
-    assert len(SCENARIOS) >= 40
+    assert len(CATALOG) >= 25
+    assert len(SCENARIOS) >= 50
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=lambda s: s.id)

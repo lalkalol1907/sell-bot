@@ -1,0 +1,103 @@
+# Дополнительные intent-примеры из реальных Telegram-чатов (горбушка / apple).
+# Мержится в intent_train.jsonl через datasets.py
+
+buy:
+  - куплю айфон 16 про макс 8 128 десерт
+  - куплю айфон 16 про макс 8 128 пустынный
+  - куплю 13 128gb blue
+  - Куплю 14 128 миднайт ,одна сим
+  - куплю 16 pro max 512 black 16 pro max 512 white
+  - Куплю; 15pro 1tb Natural 15pro 1tb White
+  - куплю Air 13 M4 16/256 midnight
+  - куплю Air 13 M4 16/512 midnight
+  - куплю 16 pro max 512 black
+  - куплю 16 pro max 512 white
+  - куплю iphone 16 pro max 256 black 1 сим
+  - куплю ipad 11 2025 128 yellow
+  - куплю macbook air 15 m4 24gb 512gb sky blue
+  - куплю apple macbook pro 14 m4 pro 24gb 512gb space black
+  - куплю яндекс станция мини 2 silver
+  - куплю airpods 4
+  - куплю airpods max purple
+  - куплю 16 plus 512 ultramarine
+  - куплю 16 128gb ultramarine
+  - куплю 15 pro max 512 natural
+  - куплю iphone 16 pro 256 пустынный
+  - куплю 14 128 белый
+  - куплю 15 128 голубой
+  - куплю 15 128 белый
+
+# Сообщения из чатов без «куплю» — в треде это запрос на покупку
+listing_buy:
+  - iphone 16 pro max 256 black 1 сим
+  - 16 Pro Max 256 White
+  - 16 plus 512 ultramarine
+  - 16 128Gb Ultramarine
+  - 15 Pro Max 512 natural
+  - Смартфон Apple iPhone 16 Pro 256GB nanoSim+eSim (Пустынный)
+  - iPad 11 2025 128 yellow ?
+  - MacBook Air 15 M4 24GB 512GB Sky Blue MC7D4 - ?
+  - Apple MacBook Pro 14 2024 M4 Pro 24Gb/512Gb (Space Black) (MX2H3) ?
+  - Air 13 M4 16/256 midnight
+  - Air 13 M4 16/512 midnight
+  - 14 128 белый
+  - 15 128 голубой
+  - 15 128 белый
+  - Apple iPad Air 11 M2, 256gb Gray, wifi
+  - Apple iPad Air 11 M3 , 256gb Gray, wifi
+  - Apple iPad Air 11 M3 , 256gb Blue WiFi
+  - Яндекс станции Миди Silver
+  - Яндекс Станция Мини 2 с часами Silver
+  - 16 pro 256 black
+  - 16 pro max 1tb natural
+  - iphone 16 pro max 1tb natural titanium
+  - MB Air 15 (M3/16/256) Gray- 1шт
+  - apple watch s9 41 mm pink
+  - AirPods 2
+  - куплю Mk183 1шт
+
+# Многострочные списки (целиком — buy)
+multiline_buy:
+  - |
+    куплю
+    Air 13 M4 16/256 midnight
+    Air 13 M4 16/512 midnight
+  - |
+    Куплю 16 pro max 512 black
+    16 pro max 512 white
+  - |
+    предложите
+    iphone 16 pro max 1tb natural
+  - |
+    14 128 белый
+    15 128 голубой
+    15 128 белый
+  - |
+    Apple iPad Air 11 M2, 256gb Gray, wifi
+    Apple iPad Air 11 M3 , 256gb Gray, wifi
+    Apple iPad Air 11 M3 , 256gb Blue WiFi
+
+# Цвета/модели — не sell (контраст для ML)
+variant_buy:
+  - куплю iphone 16 pro max desert titanium 256
+  - куплю 16 про макс 128 десерт titanium
+  - куплю iphone 16 pro 256 natural titanium black
+  - куплю 16 pro max 512 white titanium
+  - куплю galaxy s25 ultra 12 1tb black
+  - куплю z fold 6 12 1tb silver
+  - куплю honor magic 7 1tb
+
+eval_holdout:
+  buy:
+    - куплю айфон 16 про макс 8 128 десерт
+    - куплю 13 128gb blue
+    - куплю 16 pro max 512 black
+  listing_buy:
+    - 16 Pro Max 256 White
+    - iPad 11 2025 128 yellow ?
+    - предложите iphone 16 pro max 1tb natural
+  multiline_buy:
+    - |
+      куплю
+      Air 13 M4 16/256 midnight
+      Air 13 M4 16/512 midnight
