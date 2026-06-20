@@ -197,17 +197,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy stack files to server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          passphrase: ${{ secrets.DEPLOY_SSH_KEY_PASSPHRASE }}
-          source: "docker-compose.prod.yml,caddy/,monitoring/"
-          target: ${{ secrets.DEPLOY_PATH }}
-          overwrite: true
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
