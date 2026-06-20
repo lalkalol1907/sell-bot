@@ -6,13 +6,12 @@ Telegram-система для продавцов: userbot-воркеры слу
 
 | Сервис | Язык | Роль |
 |--------|------|------|
-| **Core** | Kotlin + Spring Boot + gRPC + Flyway (JDK 25) | Каталог, воркеры, лиды, сессии (PostgreSQL) |
+| **Core** | Kotlin + Spring Boot + gRPC + Flyway (JDK 25) | Каталог, воркеры, лиды, REST `/api/v1` для фронтов, PostgreSQL |
 | **Worker Engine** | Go 1.26 (gotd MTProto) | Слушатели чатов, MTProto login (gRPC) |
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
-| **HTTP Gateway** | Bun 1.3.14 + Hono + gRPC | REST API: seller dashboard + login Mini App |
-| **Login Mini App** | Vue 3 + Vite + Bun | Mini App подключения воркера, прокси `/api/` → core |
-| **Seller Dashboard** | Vue 3 + Vite + Bun | Веб-кабинет продавца, прокси `/api/` → core |
+| **Login Mini App** | Vue 3 + Vite + Bun | Mini App подключения воркера, nginx прокси `/api/` → core |
+| **Seller Dashboard** | Vue 3 + Vite + Bun | Веб-кабинет продавца, nginx прокси `/api/` → core |
 
 Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.
 
@@ -37,26 +36,20 @@ Telegram-система для продавцов: userbot-воркеры слу
                     │                   │ /api/            │
                     │ gRPC              ▼                   │
                     │           ┌───────────────┐          │
-                    │           │  core :8080   │          │
-                    │           │  REST /api/v1 │          │
+                    │           │     core      │          │
+                    │           │ REST :8080    │          │
+                    │           │ gRPC :50051   │          │
                     │           └───┬───────┬───┘          │
                     │               │       │              │
-                    │         gRPC  │       │ gRPC         │
-                    │    (internal) │       │ worker_login │
-                    │               │       │              │
-                    ▼               ▼       ▼              │
-            ┌───────────────────────────────────┐          │
-            │              core (Kotlin)         │          │
-            │         gRPC :50051 + Flyway       │          │
-            └───────────────────┬───────────────┘          │
-                                │                          │
-                                ▼                          │
-                         ┌────────────┐                    │
-                         │ PostgreSQL │                    │
-                         └────────────┘                    │
+                    │               │       │ gRPC         │
+                    │               │       │ worker_login │
+                    └──────────────►│       ▼              │
+                                    │  PostgreSQL          │
+                                    │  Redis (login routes)│
+                                    └──────────────────────┘
                                                             │
     seller-dashboard ──► nginx + Vue (JWT cookie auth)   │
-         /api/ ─────────► core :8080 (тот же API)             │
+         /api/ ─────────► core :8080 (тот же REST API)        │
     ┌───────────────┐         NATS          ┌────────────┴───┐
     │ worker-engine │ ───publish──────────► │    matching    │
     │  (Go/gotd)    │ ◄──subscribe───────── │   (Python)     │
@@ -108,46 +101,45 @@ Telegram-система для продавцов: userbot-воркеры слу
 OTP и 2FA **не проходят через чат бота** — только через WebApp или QR в официальном Telegram.
 
 ```
- Продавец        seller-bot       Mini App      core :8080      worker-engine       core gRPC   Telegram
-     │                │               │               │                │              │              │
-     │ Добавить       │               │               │                │              │              │
-     │ воркера        │               │               │                │              │              │
-     │───────────────►│               │               │                │              │              │
-     │                │ кнопка WebApp │               │                │              │              │
-     │◄───────────────│               │               │                │              │              │
-     │ открыть форму  │               │               │                │              │              │
-     │───────────────────────────────►│               │                │              │              │
-     │                │               │ POST /session │                │              │              │
-     │                │               │──────────────►│ GetSellerByTgId│              │              │
-     │                │               │               │───────────────►│              │              │
-     │                │               │               │                │              │              │
-     │  ─── вариант QR ───            │               │                │              │              │
-     │                │               │ POST /qr/start│                │              │              │
-     │                │               │──────────────►│ StartQRLogin   │              │              │
-     │                │               │               │───────────────►│ qrlogin.Auth │              │
-     │                │               │               │                │─────────────►│              │
-     │                │               │◄─ qr_url ─────│                │              │              │
-     │ сканировать QR │               │               │                │              │              │
-     │─────────────────────────────────────────────────────────────────────────────────────────────►│
-     │                │               │ GET /status   │                │              │              │
-     │                │               │──────────────►│ GetLoginStatus │              │              │
-     │                │               │               │───────────────►│              │              │
-     │                │               │               │                │              │              │
-     │  ─── вариант Телефон ───       │               │                │              │              │
-     │                │               │ POST /phone   │                │              │              │
-     │                │               │──────────────►│ StartLogin     │              │              │
-     │                │               │               │───────────────►│ SendCode     │              │
-     │                │               │               │                │─────────────►│              │
-     │                │               │ POST /code    │                │              │              │
-     │                │               │──────────────►│ SubmitCode     │              │              │
-     │                │               │ POST /password│                │              │              │
-     │                │               │──────────────►│ SubmitPassword │              │              │
-     │                │               │               │                │              │              │
-     │                │               │               │ CreateWorker   │              │              │
-     │                │               │               │───────────────►│─────────────►│              │
-     │                │               │ sendData OK   │                │              │              │
-     │                │◄──────────────│               │                │              │              │
-     │◄───────────────│ воркер OK     │               │                │              │              │
+ Продавец        seller-bot       Mini App         core           worker-engine      Telegram
+     │                │               │               │                │              │
+     │ Добавить       │               │               │                │              │
+     │ воркера        │               │               │                │              │
+     │───────────────►│               │               │                │              │
+     │                │ кнопка WebApp │               │                │              │
+     │◄───────────────│               │               │                │              │
+     │ открыть форму  │               │               │                │              │
+     │───────────────────────────────►│               │                │              │
+     │                │               │ POST /session │                │              │
+     │                │               │──────────────►│ initData auth  │              │
+     │                │               │               │                │              │
+     │  ─── вариант QR ───            │               │                │              │
+     │                │               │ POST /qr/start│                │              │
+     │                │               │──────────────►│ StartQRLogin   │              │
+     │                │               │               │───────────────►│ qrlogin.Auth │
+     │                │               │               │                │─────────────►│
+     │                │               │◄─ qr_url ─────│                │              │
+     │ сканировать QR │               │               │                │              │
+     │──────────────────────────────────────────────────────────────────────────────►│
+     │                │               │ GET /status   │                │              │
+     │                │               │──────────────►│ GetLoginStatus │              │
+     │                │               │               │───────────────►│              │
+     │                │               │               │                │              │
+     │  ─── вариант Телефон ───       │               │                │              │
+     │                │               │ POST /phone   │                │              │
+     │                │               │──────────────►│ StartLogin     │              │
+     │                │               │               │───────────────►│ SendCode     │
+     │                │               │               │                │─────────────►│
+     │                │               │ POST /code    │                │              │
+     │                │               │──────────────►│ SubmitCode     │              │
+     │                │               │ POST /password│                │              │
+     │                │               │──────────────►│ SubmitPassword │              │
+     │                │               │               │                │              │
+     │                │               │               │ CreateWorker   │              │
+     │                │               │               │◄───────────────│              │
+     │                │               │ sendData OK   │                │              │
+     │                │◄──────────────│               │                │              │
+     │◄───────────────│ воркер OK     │               │                │              │
 ```
 
 **Границы ответственности:**
@@ -156,7 +148,7 @@ OTP и 2FA **не проходят через чат бота** — только
 |--------|------|------------|
 | **login-miniapp** | Публичный HTTPS (nginx) | Vue Mini App, прокси `/api/` → core |
 | **seller-dashboard** | Публичный HTTPS (nginx) | Static dashboard, прокси `/api/` → core |
-| **core** | Internal + gRPC | REST API (`/api/v1`), JWT + initData, domain logic, PostgreSQL |
+| **core** | Internal HTTP + gRPC | REST `/api/v1` (JWT, initData, handoff), domain logic, PostgreSQL, Redis |
 | **worker-engine** | Только internal | MTProto login, listener-воркеры, gRPC `:50053` |
 | **seller-bot** | Telegram Bot API | Точка входа (кнопка WebApp), приём результата |
 
@@ -178,13 +170,12 @@ OTP и 2FA **не проходят через чат бота** — только
 
 | Сервис | Порт | Назначение |
 |--------|------|------------|
-| Core gRPC | `50051` | gRPC API |
-| Core HTTP | `8080` | Actuator health |
+| Core gRPC | `50051` | gRPC API (matching, seller-bot, worker-engine) |
+| Core HTTP | `8080` | REST `/api/v1`, `/health`, Actuator `/actuator/*` |
 | Matching gRPC | `50052` | gRPC (опционально) |
 | Matching HTTP | `8000` | `/health` |
-| Login Mini App | `8081` | nginx: `/miniapp/` + `/api/` proxy |
-| Seller Dashboard | `8082` | nginx: `/dashboard/` + `/api/` proxy |
-| HTTP Gateway | — | internal `:3000` (только через nginx фронтов) |
+| Login Mini App | `8081` | nginx: `/miniapp/` + `/api/` → core |
+| Seller Dashboard | `8082` | nginx: `/dashboard/` + `/api/` → core |
 | Worker Engine login gRPC | `50053` | internal only (не проброшен в prod) |
 | PostgreSQL | `5432` | |
 | Redis | `6379` | |
@@ -196,13 +187,13 @@ OTP и 2FA **не проходят через чат бота** — только
 
 ```bash
 cp .env.example .env
-# Обязательно: BOT_TOKEN, TG_API_ID, TG_API_HASH, SESSION_ENCRYPTION_KEY, INTERNAL_GRPC_TOKEN
+# Обязательно: BOT_TOKEN, JWT_SECRET, TG_API_ID, TG_API_HASH, SESSION_ENCRYPTION_KEY, INTERNAL_GRPC_TOKEN
 
 docker compose up -d --build
 ```
 
 Проверка:
-- Core: `http://localhost:8080/actuator/health`
+- Core: `http://localhost:8080/actuator/health`, REST: `http://localhost:8080/health`
 - Matching: `http://localhost:8000/health`
 - Login Mini App: `http://localhost:8081/health`
 - Seller Dashboard: `http://localhost:8082/health`
@@ -250,6 +241,7 @@ Prod-стек включает **Caddy** (`caddy/Caddyfile`) — auto-TLS чер
 Масштабирование за Caddy (Docker DNS → все реплики сервиса):
 ```bash
 docker compose -f docker-compose.prod.yml up -d \
+  --scale core=2 \
   --scale login-miniapp=2 \
   --scale seller-dashboard=2 \
   --scale seller-bot=3
@@ -283,10 +275,9 @@ make test
 | Сервис | Фреймворк | Что тестируется |
 |--------|-----------|-----------------|
 | Matching | pytest | normalize, intent, matcher, dedup, process_message |
-| Core | JUnit 5 + Mockito | CatalogService, LeadsService, WorkersService, InternalGrpcAuth |
+| Core | JUnit 5 + Mockito | CatalogService, LeadsService, WorkersService, InternalGrpcAuth, TelegramAuth, JWT |
 | Worker Engine | go test | crypto, listener, login (phone + QR gRPC), grpcauth |
 | Seller Bot | bun test | utils, worker-add web_app_data |
-| HTTP Gateway | bun test | Telegram initData, login routing |
 
 Перед тестами Go/Python: `make gen-proto` (включено в `make test`).
 
@@ -299,19 +290,16 @@ make test
 ```bash
 make gen-proto
 
-# Core
-cd services/core && ./gradlew generateProto bootJar -x test
+# Core (gRPC :50051 + REST :8080)
+cd services/core && ./gradlew bootRun
 
 # Worker Engine
 cd services/worker-engine && go build -o worker-engine ./cmd/engine
 
-# Web monorepo (Mini App + Dashboard)
+# Web monorepo (Mini App + Dashboard; dev-серверы проксируют /api/ на core :8080)
 cd services/web && bun install
 bun run dev:miniapp    # :5173/miniapp/
 bun run dev:dashboard  # :5174/dashboard/
-
-# Core (REST API на :8080 вместе с gRPC)
-cd services/core && ./gradlew bootRun
 
 # Seller Bot
 cd services/seller-bot && bun install && bun run dev
@@ -376,6 +364,8 @@ pytest tests/ -m integration -q   # parity / Qdrant — локально
 - `docker.json` — контейнеры Docker
 - `sellbot.json` — лиды, спам-фильтр, уведомления
 
+Blackbox-пробы (`monitoring/prometheus/blackbox-targets.yml`): health всех сервисов, включая `core:8080/health` и `core:8080/actuator/health`.
+
 Логин Grafana: `admin` / `admin` (или `GRAFANA_ADMIN_*` из `monitoring/.env.example`).
 
 Переменные спам-фильтра matching:
@@ -416,7 +406,8 @@ sell-bot/
 | `JWT_SECRET` | core | Подпись JWT для seller dashboard |
 | `CORS_ORIGINS` | core | Origins фронтов (8081, 8082) |
 | `BOT_USERNAME` | seller-dashboard | Telegram Login Widget |
-| `LOGIN_WEB_URL` | seller-bot | URL кнопки WebApp |
+| `LOGIN_WEB_URL` | seller-bot, core | URL кнопки WebApp и handoff dashboard → mini app |
+| `SELLBOT_SECURE_COOKIES` | core | `true` в prod (Secure flag для JWT cookie) |
 | `BOT_TRANSPORT` | seller-bot | `polling` (dev, 1 реплика) или `webhook` (prod, scale) |
 | `WEBHOOK_URL` | seller-bot | Публичный URL webhook (обязателен при `webhook`) |
 | `WEBHOOK_SECRET` | seller-bot | `X-Telegram-Bot-Api-Secret-Token` (обязателен при `webhook`) |
@@ -489,9 +480,9 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-CI: test → build (7 образов) → deploy (SSH) → GitHub Release
+CI: test → build (6 образов) → deploy (SSH) → GitHub Release
 
-**Docker Hub образы:**
+**Docker Hub образы** (отдельного HTTP-gateway больше нет — REST в `core`):
 - `{user}/{repo}-core`
 - `{user}/{repo}-worker-engine`
 - `{user}/{repo}-matching`
@@ -511,11 +502,14 @@ CI: test → build (7 образов) → deploy (SSH) → GitHub Release
 
 ```bash
 cd /opt/sell-bot
+docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+После обновления с версии с `http-gateway`: подтяните новые `docker-compose.prod.yml` и `monitoring/`, удалите старый контейнер (`docker compose ... rm -sf http-gateway`), пересоберите **core**, **login-miniapp**, **seller-dashboard**. Содержимое `DEPLOY_DOTENV` менять не нужно — те же `JWT_SECRET`, `CORS_ORIGINS`, `BOT_TOKEN` теперь читает `core`.
+
 **Caddy** слушает `:80`/`:443`, выпускает TLS-сертификаты и проксирует на фронты, webhook и Grafana (см. `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `GRAFANA_DOMAIN` в `.env.example`).
 
-REST API core в prod не пробрасывается наружу — только через nginx фронтов с TLS.
+REST API core в prod не пробрасывается наружу — только через nginx фронтов (`/api/` → `core:8080`) с TLS.
 
 Подробный продуктовый план: [`../gb-plan.md`](../gb-plan.md)
