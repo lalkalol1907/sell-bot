@@ -29,7 +29,10 @@ export function useLogin() {
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
   const showSessionLoading = computed(() => loading.value && !step.value);
-  const showQrButton = computed(() => !loginId.value);
+  const showQrButton = computed(() => !loginId.value && !loading.value);
+  const showQrSkeleton = computed(
+    () => (loading.value || Boolean(loginId.value)) && !qrDataUrl.value,
+  );
   const showQrBox = computed(() => Boolean(qrDataUrl.value));
   const showPhoneStart = computed(() => !loginId.value);
   const showCode = computed(
@@ -202,6 +205,7 @@ export function useLogin() {
     qrHint,
     showSessionLoading,
     showQrButton,
+    showQrSkeleton,
     showQrBox,
     showPhoneStart,
     showCode,

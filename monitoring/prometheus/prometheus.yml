@@ -58,13 +58,6 @@ scrape_configs:
         labels:
           service: worker-engine
 
-  - job_name: sellbot-http-gateway
-    metrics_path: /metrics
-    static_configs:
-      - targets: [http-gateway:3000]
-        labels:
-          service: http-gateway
-
   - job_name: sellbot-login-miniapp
     metrics_path: /health
     static_configs:

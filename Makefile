@@ -36,7 +36,6 @@ test: gen-proto
 	cd services/core && ./gradlew test --no-daemon
 	cd services/worker-engine && go test ./... -count=1
 	cd services/matching && pip3 install -e ".[dev]" && pytest tests/ -q
-	cd services/http-gateway && bun install --frozen-lockfile && bun run lint && bun test
 	cd services/seller-bot && bun run lint && bun test
 
 up:

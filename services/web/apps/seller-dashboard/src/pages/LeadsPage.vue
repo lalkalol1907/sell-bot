@@ -81,7 +81,7 @@ async function setStatus(id: number, status: string) {
           </thead>
           <tbody>
             <tr v-for="lead in leads" :key="lead.id">
-              <td style="max-width: 320px">{{ lead.raw_text }}</td>
+              <td class="lead-text">{{ lead.raw_text }}</td>
               <td>{{ lead.level }}</td>
               <td>
                 <span :class="['badge', statusBadges[lead.status] ?? 'badge-off']">
@@ -101,3 +101,9 @@ async function setStatus(id: number, status: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.lead-text {
+  max-width: 320px;
+}
+</style>

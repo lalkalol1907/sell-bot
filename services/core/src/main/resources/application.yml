@@ -36,8 +36,22 @@ management:
     tags:
       application: sellbot-core
 
+spring:
+  data:
+    redis:
+      url: ${REDIS_URL:redis://redis:6379/0}
+
 sellbot:
   internal-grpc-token: ${INTERNAL_GRPC_TOKEN:}
+  bot-token: ${BOT_TOKEN:}
+  secure-cookies: ${SELLBOT_SECURE_COOKIES:false}
+  jwt:
+    secret: ${JWT_SECRET:dev-jwt-secret-change-me}
+    ttl-hours: ${JWT_TTL_HOURS:168}
+  cors-origins: ${CORS_ORIGINS:http://localhost:8081,http://localhost:8082}
+  login-web-url: ${LOGIN_WEB_URL:http://localhost:8081/miniapp/}
+  login-route-ttl-sec: ${LOGIN_ROUTE_TTL_SEC:600}
+  worker-login-grpc-addrs: ${WORKER_LOGIN_GRPC_ADDR:worker-engine:50053}
   nats:
     url: ${NATS_URL:nats://nats:4222}
   notifications:

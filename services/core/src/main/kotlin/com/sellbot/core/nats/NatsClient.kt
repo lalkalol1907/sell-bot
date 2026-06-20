@@ -72,4 +72,9 @@ class NatsClient(
     fun publish(subject: String, data: ByteArray) {
         jetStream.publish(subject, data)
     }
+
+    fun publishDirect(subject: String, data: ByteArray) {
+        connection.publish(subject, data)
+        connection.flush(Duration.ofSeconds(5))
+    }
 }

@@ -111,4 +111,4 @@ docker compose up -d seller-dashboard
 # miniapp не трогаем
 ```
 
-Оба контейнера проксируют `/api/` → `http-gateway:3000`; API один, фронты независимы.
+Оба контейнера проксируют `/api/` → `core:8080`; API один, фронты независимы.

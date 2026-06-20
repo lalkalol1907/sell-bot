@@ -63,10 +63,20 @@ services:
       GRPC_SERVER_PORT: 50051
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
       NATS_URL: nats://nats:4222
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:8082}
+      LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
+      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR:-worker-engine:50053}
+      LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC:-600}
+      SELLBOT_SECURE_COOKIES: ${SELLBOT_SECURE_COOKIES:-false}
     depends_on:
       db:
         condition: service_healthy
       nats:
+        condition: service_started
+      redis:
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -159,7 +169,7 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - http-gateway
+      - core
     labels:
       - "project=sell-bot"
 
@@ -173,36 +183,9 @@ services:
     ports:
       - "8082:80"
     depends_on:
-      - http-gateway
-    labels:
-      - "project=sell-bot"
-
-  http-gateway:
-    build:
-      context: .
-      dockerfile: services/http-gateway/Dockerfile
-    environment:
-      BOT_TOKEN: ${BOT_TOKEN:-}
-      CORE_GRPC_ADDR: core:50051
-      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR:-worker-engine:50053}
-      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN:-}
-      REDIS_URL: redis://redis:6379/0
-      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://localhost:8082}
-      LOGIN_WEB_URL: ${LOGIN_WEB_URL:-http://localhost:8081/miniapp/}
-      NATS_URL: nats://nats:4222
-      NODE_ENV: production
-      PORT: 3000
-    depends_on:
       - core
-      - worker-engine
-      - redis
-      - nats
     labels:
       - "project=sell-bot"
-      - "prometheus.scrape=true"
-      - "prometheus.port=3000"
-      - "prometheus.path=/metrics"
 
   seller-bot:
     build:
@@ -227,7 +210,6 @@ services:
       - redis
       - nats
       - worker-engine
-      - http-gateway
       - login-miniapp
     labels:
       - "project=sell-bot"

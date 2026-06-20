@@ -72,9 +72,6 @@ services/seller-bot/dist/
 services/seller-bot/.bun/
 
 # --- HTTP Gateway (Bun / TypeScript) ---
-services/http-gateway/dist/
-services/http-gateway/.bun/
-
 # --- Web monorepo (Vite / Bun) ---
 services/web/apps/*/dist/
 

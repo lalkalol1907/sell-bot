@@ -22,13 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [core, worker-engine, matching, seller-bot, http-gateway]
+        component: [core, worker-engine, matching, seller-bot]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install protoc
-        if: matrix.component != 'core' && matrix.component != 'seller-bot' && matrix.component != 'http-gateway'
+        if: matrix.component != 'core' && matrix.component != 'seller-bot'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Set Up JDK 25
@@ -93,7 +93,7 @@ jobs:
             --cov-report=term-missing --cov-fail-under=75
 
       - name: Set Up Bun
-        if: matrix.component == 'seller-bot' || matrix.component == 'http-gateway'
+        if: matrix.component == 'seller-bot'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.14"
@@ -101,11 +101,6 @@ jobs:
       - name: Run Seller Bot Tests
         if: matrix.component == 'seller-bot'
         working-directory: services/seller-bot
-        run: bun install --frozen-lockfile && bun run lint && bun test
-
-      - name: Run HTTP Gateway Tests
-        if: matrix.component == 'http-gateway'
-        working-directory: services/http-gateway
         run: bun install --frozen-lockfile && bun run lint && bun test
 
   build:
@@ -116,7 +111,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [core, worker-engine, matching, seller-bot, http-gateway, login-miniapp, seller-dashboard]
+        component: [core, worker-engine, matching, seller-bot, login-miniapp, seller-dashboard]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -148,11 +143,6 @@ jobs:
               echo "image=${USER}/${REPO}-seller-bot" >> "$GITHUB_OUTPUT"
               echo "context=." >> "$GITHUB_OUTPUT"
               echo "dockerfile=services/seller-bot/Dockerfile" >> "$GITHUB_OUTPUT"
-              ;;
-            http-gateway)
-              echo "image=${USER}/${REPO}-http-gateway" >> "$GITHUB_OUTPUT"
-              echo "context=." >> "$GITHUB_OUTPUT"
-              echo "dockerfile=services/http-gateway/Dockerfile" >> "$GITHUB_OUTPUT"
               ;;
             login-miniapp)
               echo "image=${USER}/${REPO}-login-miniapp" >> "$GITHUB_OUTPUT"
@@ -238,7 +228,6 @@ jobs:
               echo "WORKER_ENGINE_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-worker-engine"
               echo "MATCHING_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-matching"
               echo "SELLER_BOT_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-bot"
-              echo "HTTP_GATEWAY_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-http-gateway"
               echo "LOGIN_MINIAPP_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-login-miniapp"
               echo "SELLER_DASHBOARD_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-dashboard"
             } >> .env
@@ -273,6 +262,5 @@ jobs:
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-worker-engine:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-matching:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-seller-bot:${{ github.ref_name }}`
-            - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-http-gateway:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-login-miniapp:${{ github.ref_name }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}-seller-dashboard:${{ github.ref_name }}`

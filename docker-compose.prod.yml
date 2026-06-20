@@ -43,10 +43,20 @@ services:
       GRPC_SERVER_PORT: "50051"
       INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
       NATS_URL: nats://nats:4222
+      REDIS_URL: redis://redis:6379/0
+      BOT_TOKEN: ${BOT_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      LOGIN_WEB_URL: ${LOGIN_WEB_URL}
+      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR}
+      LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC}
+      SELLBOT_SECURE_COOKIES: "true"
       JAVA_OPTS: -Xmx384m
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -115,41 +125,16 @@ services:
       - "prometheus.port=9102"
       - "prometheus.path=/metrics"
 
-  http-gateway:
-    image: ${HTTP_GATEWAY_IMAGE_NAME}:${IMAGE_TAG}
-    environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      INTERNAL_GRPC_TOKEN: ${INTERNAL_GRPC_TOKEN}
-      CORE_GRPC_ADDR: core:50051
-      WORKER_LOGIN_GRPC_ADDR: ${WORKER_LOGIN_GRPC_ADDR}
-      REDIS_URL: redis://redis:6379/0
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      LOGIN_ROUTE_TTL_SEC: ${LOGIN_ROUTE_TTL_SEC}
-      LOGIN_WEB_URL: ${LOGIN_WEB_URL}
-      NATS_URL: nats://nats:4222
-      NODE_ENV: production
-      PORT: "3000"
-    depends_on:
-      - core
-      - worker-engine
-      - redis
-    restart: unless-stopped
-    labels:
-      - "prometheus.scrape=true"
-      - "prometheus.port=3000"
-      - "prometheus.path=/metrics"
-
   login-miniapp:
     image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG}
     depends_on:
-      - http-gateway
+      - core
     restart: unless-stopped
 
   seller-dashboard:
     image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG}
     depends_on:
-      - http-gateway
+      - core
     restart: unless-stopped
 
   seller-bot:
@@ -171,7 +156,6 @@ services:
       - redis
       - nats
       - worker-engine
-      - http-gateway
       - login-miniapp
     restart: unless-stopped
     labels:

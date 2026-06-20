@@ -133,13 +133,33 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-        <p v-if="filteredChats.length === 0" class="muted" style="margin-top: 12px">
+        <p v-if="filteredChats.length === 0" class="muted table-meta">
           Ничего не найдено.
         </p>
-        <p v-else class="muted" style="margin-top: 12px">
+        <p v-else class="muted table-meta">
           Показано {{ filteredChats.length }} из {{ chats.length }}.
         </p>
       </template>
     </div>
   </div>
 </template>
+
+<style scoped>
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  transition: color 0.15s;
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+.table-meta {
+  margin-top: 12px;
+}
+</style>

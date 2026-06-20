@@ -11,8 +11,8 @@ Telegram-система для продавцов: userbot-воркеры слу
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
 | **HTTP Gateway** | Bun 1.3.14 + Hono + gRPC | REST API: seller dashboard + login Mini App |
-| **Login Mini App** | Vue 3 + Vite + Bun | Mini App подключения воркера, прокси `/api/` → http-gateway |
-| **Seller Dashboard** | Vue 3 + Vite + Bun | Веб-кабинет продавца, прокси `/api/` → http-gateway |
+| **Login Mini App** | Vue 3 + Vite + Bun | Mini App подключения воркера, прокси `/api/` → core |
+| **Seller Dashboard** | Vue 3 + Vite + Bun | Веб-кабинет продавца, прокси `/api/` → core |
 
 Инфраструктура: **PostgreSQL**, **Redis**, **NATS JetStream**.
 
@@ -37,12 +37,12 @@ Telegram-система для продавцов: userbot-воркеры слу
                     │                   │ /api/            │
                     │ gRPC              ▼                   │
                     │           ┌───────────────┐          │
-                    │           │ http-gateway  │          │
-                    │           │  (Bun + Hono) │          │
+                    │           │  core :8080   │          │
+                    │           │  REST /api/v1 │          │
                     │           └───┬───────┬───┘          │
                     │               │       │              │
                     │         gRPC  │       │ gRPC         │
-                    │    catalog    │       │ worker_login │
+                    │    (internal) │       │ worker_login │
                     │               │       │              │
                     ▼               ▼       ▼              │
             ┌───────────────────────────────────┐          │
@@ -56,7 +56,7 @@ Telegram-система для продавцов: userbot-воркеры слу
                          └────────────┘                    │
                                                             │
     seller-dashboard ──► nginx + Vue (JWT cookie auth)   │
-         /api/ ─────────► http-gateway (тот же API)        │
+         /api/ ─────────► core :8080 (тот же API)             │
     ┌───────────────┐         NATS          ┌────────────┴───┐
     │ worker-engine │ ───publish──────────► │    matching    │
     │  (Go/gotd)    │ ◄──subscribe───────── │   (Python)     │
@@ -108,7 +108,7 @@ Telegram-система для продавцов: userbot-воркеры слу
 OTP и 2FA **не проходят через чат бота** — только через WebApp или QR в официальном Telegram.
 
 ```
- Продавец        seller-bot       Mini App      http-gateway    worker-engine       core        Telegram
+ Продавец        seller-bot       Mini App      core :8080      worker-engine       core gRPC   Telegram
      │                │               │               │                │              │              │
      │ Добавить       │               │               │                │              │              │
      │ воркера        │               │               │                │              │              │
@@ -154,9 +154,9 @@ OTP и 2FA **не проходят через чат бота** — только
 
 | Сервис | Сеть | Что делает |
 |--------|------|------------|
-| **login-miniapp** | Публичный HTTPS (nginx) | Vue Mini App, прокси `/api/` → http-gateway |
-| **seller-dashboard** | Публичный HTTPS (nginx) | Static dashboard, прокси `/api/` → http-gateway |
-| **http-gateway** | Internal only | REST API, JWT + initData, gRPC → core / worker-engine |
+| **login-miniapp** | Публичный HTTPS (nginx) | Vue Mini App, прокси `/api/` → core |
+| **seller-dashboard** | Публичный HTTPS (nginx) | Static dashboard, прокси `/api/` → core |
+| **core** | Internal + gRPC | REST API (`/api/v1`), JWT + initData, domain logic, PostgreSQL |
 | **worker-engine** | Только internal | MTProto login, listener-воркеры, gRPC `:50053` |
 | **seller-bot** | Telegram Bot API | Точка входа (кнопка WebApp), приём результата |
 
@@ -310,8 +310,8 @@ cd services/web && bun install
 bun run dev:miniapp    # :5173/miniapp/
 bun run dev:dashboard  # :5174/dashboard/
 
-# HTTP Gateway
-cd services/http-gateway && bun install && bun run dev
+# Core (REST API на :8080 вместе с gRPC)
+cd services/core && ./gradlew bootRun
 
 # Seller Bot
 cd services/seller-bot && bun install && bun run dev
@@ -392,11 +392,10 @@ sell-bot/
 ├── monitoring/               # Prometheus, Loki, Grafana, дашборды
 ├── scripts/                  # gen-proto-*.sh
 ├── services/
-│   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway
+│   ├── core/                 # Kotlin Spring, PostgreSQL, Flyway, REST /api/v1
 │   ├── worker-engine/        # Go: listeners + login.Manager (gRPC)
 │   ├── matching/             # Python: matcher pipeline
 │   ├── seller-bot/           # grammY бот продавца
-│   ├── http-gateway/         # Bun API (seller + login endpoints)
 │   └── web/                  # Bun monorepo: apps/login-miniapp, apps/seller-dashboard
 ├── caddy/Caddyfile           # prod TLS / reverse proxy
 ├── docker-compose.prod.yml   # prod-стек (образы из Docker Hub)
@@ -413,20 +412,20 @@ sell-bot/
 
 | Переменная | Сервис | Назначение |
 |------------|--------|------------|
-| `BOT_TOKEN` | seller-bot, http-gateway | Telegram Bot API + валидация initData |
-| `JWT_SECRET` | http-gateway | Подпись JWT для seller dashboard |
-| `CORS_ORIGINS` | http-gateway | Origins фронтов (8081, 8082) |
-| `BOT_USERNAME` | http-gateway, seller-dashboard | Telegram Login Widget |
+| `BOT_TOKEN` | seller-bot, core | Telegram Bot API + валидация initData |
+| `JWT_SECRET` | core | Подпись JWT для seller dashboard |
+| `CORS_ORIGINS` | core | Origins фронтов (8081, 8082) |
+| `BOT_USERNAME` | seller-dashboard | Telegram Login Widget |
 | `LOGIN_WEB_URL` | seller-bot | URL кнопки WebApp |
 | `BOT_TRANSPORT` | seller-bot | `polling` (dev, 1 реплика) или `webhook` (prod, scale) |
 | `WEBHOOK_URL` | seller-bot | Публичный URL webhook (обязателен при `webhook`) |
 | `WEBHOOK_SECRET` | seller-bot | `X-Telegram-Bot-Api-Secret-Token` (обязателен при `webhook`) |
 | `WEBHOOK_PATH` | seller-bot | Путь на HTTP-сервере (по умолчанию `/telegram/webhook`) |
 | `HTTP_PORT` | seller-bot | HTTP: health, metrics, webhook (по умолчанию `8080`) |
-| `REDIS_URL` | http-gateway, seller-bot | Rate limit / FSM / login routes |
-| `WORKER_LOGIN_GRPC_ADDR` | http-gateway | Один или несколько `host:port` через запятую |
-| `LOGIN_ROUTE_TTL_SEC` | http-gateway | TTL привязки `login_id` → worker-engine (сек) |
-| `INTERNAL_GRPC_TOKEN` | core, worker-engine, http-gateway | Auth internal gRPC (metadata) |
+| `REDIS_URL` | core, seller-bot | Rate limit / FSM / login routes |
+| `WORKER_LOGIN_GRPC_ADDR` | core | Один или несколько `host:port` через запятую |
+| `LOGIN_ROUTE_TTL_SEC` | core | TTL привязки `login_id` → worker-engine (сек) |
+| `INTERNAL_GRPC_TOKEN` | core, worker-engine | Auth internal gRPC (metadata) |
 | `TG_API_ID`, `TG_API_HASH` | worker-engine | Telegram API для MTProto |
 | `SESSION_ENCRYPTION_KEY` | worker-engine | Шифрование session-строк воркеров |
 | `CORE_GRPC_ADDR` | все gRPC-клиенты | Адрес Core |
@@ -459,14 +458,12 @@ seller-bot:
     HTTP_PORT: 8080
 ```
 
-### Core и http-gateway: горизонтальный скейл
+### Core: горизонтальный скейл
 
 **Core** — несколько реплик безопасны:
 - Outbox `notifications` забирается через `FOR UPDATE SKIP LOCKED` (статус `processing`)
 - Зависшие `processing` возвращаются в `pending` через `stale-minutes`
-
-**http-gateway** — несколько реплик безопасны:
-- Rate limit в **Redis** (общий для всех pod'ов)
+- REST API (`/api/v1`): rate limit и login routing в **Redis** (общий для всех реплик)
 - При старте login сохраняется `login_id → worker-engine` в Redis
 - Последующие code/password/status идут на тот же engine
 
@@ -499,7 +496,6 @@ CI: test → build (7 образов) → deploy (SSH) → GitHub Release
 - `{user}/{repo}-worker-engine`
 - `{user}/{repo}-matching`
 - `{user}/{repo}-seller-bot`
-- `{user}/{repo}-http-gateway`
 - `{user}/{repo}-login-miniapp`
 - `{user}/{repo}-seller-dashboard`
 
@@ -520,6 +516,6 @@ docker compose -f docker-compose.prod.yml up -d
 
 **Caddy** слушает `:80`/`:443`, выпускает TLS-сертификаты и проксирует на фронты, webhook и Grafana (см. `LOGIN_DOMAIN`, `APP_DOMAIN`, `BOT_DOMAIN`, `GRAFANA_DOMAIN` в `.env.example`).
 
-`http-gateway` в prod не пробрасывает порт наружу — только через nginx фронтов с TLS.
+REST API core в prod не пробрасывается наружу — только через nginx фронтов с TLS.
 
 Подробный продуктовый план: [`../gb-plan.md`](../gb-plan.md)
