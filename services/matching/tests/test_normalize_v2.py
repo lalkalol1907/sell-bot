@@ -1,43 +1,40 @@
 """Unit tests for normalize v2."""
 
-import os
-
-import pytest
-
-
-@pytest.fixture
-def v2_normalize(monkeypatch, reload_modules):
-    monkeypatch.setenv("NLP_V2_NORMALIZE", "true")
-    reload_modules()
-    from app.nlp.normalize import normalize_text
-
-    return normalize_text
-
 
 class TestNormalizeV2:
-    def test_lemmatize_kuplyu(self, v2_normalize):
-        result = v2_normalize("куплю айфон")
+    def test_lemmatize_kuplyu(self, reload_modules):
+        from app.nlp.normalize import normalize_text
+
+        result = normalize_text("куплю айфон")
         assert "купить" in result
         assert "айфон" in result
 
-    def test_translit_iphone(self, v2_normalize):
-        result = v2_normalize("Куплю iPhone 16")
+    def test_translit_iphone(self, reload_modules):
+        from app.nlp.normalize import normalize_text
+
+        result = normalize_text("Куплю iPhone 16")
         assert "айфон" in result
         assert "iphone" in result
 
-    def test_emoji_removed(self, v2_normalize):
-        result = v2_normalize("куплю 🔥 айфон")
+    def test_emoji_removed(self, reload_modules):
+        from app.nlp.normalize import normalize_text
+
+        result = normalize_text("куплю 🔥 айфон")
         assert "🔥" not in result
 
-    def test_empty(self, v2_normalize):
-        assert v2_normalize("") == ""
+    def test_empty(self, reload_modules):
+        from app.nlp.normalize import normalize_text
 
-    def test_samsung_translit(self, v2_normalize):
+        assert normalize_text("") == ""
+
+    def test_samsung_translit(self, reload_modules):
         from app.nlp.normalize import translit_expand
 
         assert "samsung" in translit_expand("самсунг s24") or "самсунг" in translit_expand("samsung s24")
 
-    def test_keeps_loanword_galaxy(self, v2_normalize):
-        result = v2_normalize("где взять галакси эс 24")
+    def test_keeps_loanword_galaxy(self, reload_modules):
+        from app.nlp.normalize import normalize_text
+
+        result = normalize_text("где взять галакси эс 24")
         assert "галакси" in result
         assert "галаксить" not in result

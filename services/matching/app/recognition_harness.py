@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from app.matcher import match_message
+from app.pipeline.orchestrator import match_message
 from app.paths import data_dir
 
 CASES_PATH = data_dir() / "recognition_cases.yaml"
@@ -33,9 +32,7 @@ class RecognitionCase:
     products: list[dict] = field(default_factory=list)
     sensitivity: str = "precise"
     seller_id: int = 1
-    nlp_v2_enabled: bool | None = None
-    nlp_v2_semantic: bool | None = None
-    nlp_v2_normalize: bool | None = None
+    requires_semantic: bool = False
     expect: CaseExpect = field(default_factory=CaseExpect)
 
 
@@ -47,6 +44,10 @@ def load_cases(path: Path | None = None) -> list[RecognitionCase]:
     cases: list[RecognitionCase] = []
     for item in raw:
         expect_raw = item.get("expect") or {}
+        requires_semantic = bool(
+            item.get("requires_semantic")
+            or item.get("nlp_v2_semantic")
+        )
         cases.append(
             RecognitionCase(
                 id=item["id"],
@@ -54,9 +55,7 @@ def load_cases(path: Path | None = None) -> list[RecognitionCase]:
                 products=item.get("products") or [],
                 sensitivity=item.get("sensitivity", "precise"),
                 seller_id=item.get("seller_id", 1),
-                nlp_v2_enabled=item.get("nlp_v2_enabled"),
-                nlp_v2_semantic=item.get("nlp_v2_semantic"),
-                nlp_v2_normalize=item.get("nlp_v2_normalize"),
+                requires_semantic=requires_semantic,
                 expect=CaseExpect(**{k: v for k, v in expect_raw.items() if k in CaseExpect.__dataclass_fields__}),
             )
         )
@@ -64,64 +63,23 @@ def load_cases(path: Path | None = None) -> list[RecognitionCase]:
 
 
 def run_case(case: RecognitionCase) -> dict[str, Any]:
-    env_keys: dict[str, bool | None] = {
-        "NLP_V2_ENABLED": case.nlp_v2_enabled,
-        "NLP_V2_SEMANTIC": case.nlp_v2_semantic,
-        "NLP_V2_NORMALIZE": case.nlp_v2_normalize,
+    result = match_message(
+        case.text,
+        case.products,
+        sensitivity=case.sensitivity,
+        seller_id=case.seller_id,
+    )
+    return {
+        "matched": result.matched,
+        "level": result.level,
+        "product_id": result.product.product_id if result.product else None,
+        "intent_class": result.intent_class,
+        "reject_reason": result.reject_reason,
+        "product_score": result.product_score,
+        "semantic_score": result.product.semantic_score if result.product else 0.0,
+        "intent_score": result.intent,
+        "combined_score": result.score,
     }
-    if case.nlp_v2_enabled is True:
-        env_keys["NLP_V2_INTENT_ML"] = True
-    elif case.nlp_v2_enabled is not True:
-        env_keys["NLP_V2_INTENT_ML"] = False
-    saved = {k: os.environ.get(k) for k in env_keys}
-    try:
-        for key, value in env_keys.items():
-            if value is not None:
-                os.environ[key] = "true" if value else "false"
-
-        import importlib
-
-        import app.config as config_mod
-        importlib.reload(config_mod)
-
-        for mod_name in (
-            "app.nlp.normalize",
-            "app.nlp.product_gate",
-            "app.nlp.intent_classifier",
-            "app.matcher",
-        ):
-            mod = importlib.import_module(mod_name)
-            importlib.reload(mod)
-
-        from app.nlp.intent_classifier import reset_model_cache
-
-        reset_model_cache()
-
-        from app.matcher import match_message as run_match
-
-        result = run_match(
-            case.text,
-            case.products,
-            sensitivity=case.sensitivity,
-            seller_id=case.seller_id,
-        )
-        return {
-            "matched": result.matched,
-            "level": result.level,
-            "product_id": result.product.product_id if result.product else None,
-            "intent_class": result.intent_class,
-            "reject_reason": result.reject_reason,
-            "product_score": result.product_score,
-            "semantic_score": result.product.semantic_score if result.product else 0.0,
-            "intent_score": result.intent,
-            "combined_score": result.score,
-        }
-    finally:
-        for key, value in saved.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
 
 
 def assert_case(case: RecognitionCase, actual: dict[str, Any], *, score_tolerance: float = 0.05) -> list[str]:

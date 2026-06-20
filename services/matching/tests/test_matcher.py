@@ -1,7 +1,6 @@
 import pytest
 
-from app.matcher import match_message
-
+from app.pipeline.orchestrator import match_message
 
 IPHONE_PRODUCT = {"id": 1, "title": "iPhone 16", "keywords": ["айфон 16", "iphone 16"]}
 

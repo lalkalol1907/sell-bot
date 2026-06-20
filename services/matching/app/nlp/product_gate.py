@@ -6,7 +6,12 @@ from dataclasses import dataclass
 
 from rapidfuzz import fuzz
 
-from app.config import FUZZY_MIN_SCORE, NLP_V2_SEMANTIC, SEMANTIC_MIN_SCORE
+import logging
+
+from app.config import fuzzy_min_score, semantic_min_score
+from app.handlers import metrics
+
+logger = logging.getLogger(__name__)
 from app.nlp.normalize import keyword_in_text, normalize_keyword, normalize_text
 from app.nlp.variant_attrs import apply_variant_adjustment
 
@@ -43,7 +48,7 @@ def _keyword_fuzzy_score(normalized: str, keywords: list[str]) -> tuple[float, l
             )
             / 100.0
         )
-        if ratio >= FUZZY_MIN_SCORE:
+        if ratio >= fuzzy_min_score():
             local_best = max(local_best, ratio)
             matched_kw.append(kw)
 
@@ -72,11 +77,11 @@ def _fuzzy_match(normalized: str, raw_text: str, products: list[dict]) -> Produc
     for product in products:
         keywords = product.get("keywords") or [product.get("title", "")]
         base_score, matched_kw = _keyword_fuzzy_score(normalized, keywords)
-        if base_score < FUZZY_MIN_SCORE:
+        if base_score < fuzzy_min_score():
             continue
 
         adjusted = apply_variant_adjustment(base_score, raw_text, product)
-        if adjusted < FUZZY_MIN_SCORE:
+        if adjusted < fuzzy_min_score():
             continue
 
         candidate = ProductGateResult(
@@ -100,7 +105,7 @@ def _semantic_match(
     products: list[dict],
     seller_id: int,
 ) -> ProductGateResult | None:
-    if not NLP_V2_SEMANTIC or not products:
+    if not products:
         return None
 
     try:
@@ -110,16 +115,17 @@ def _semantic_match(
         if not hits:
             return None
 
+        min_sem = semantic_min_score()
         best: ProductGateResult | None = None
         for hit in hits:
-            if hit.score < SEMANTIC_MIN_SCORE:
+            if hit.score < min_sem:
                 continue
             product = next((p for p in products if p["id"] == hit.product_id), None)
             if product is None:
                 continue
 
             adjusted = apply_variant_adjustment(hit.score, raw_text, product)
-            if adjusted < SEMANTIC_MIN_SCORE:
+            if adjusted < min_sem:
                 continue
 
             candidate = ProductGateResult(
@@ -135,7 +141,9 @@ def _semantic_match(
             best = _pick_better(best, candidate)
 
         return best
-    except Exception:
+    except Exception as exc:
+        logger.warning("semantic match failed seller=%s: %s", seller_id, exc)
+        metrics.SEMANTIC_ERRORS.labels(stage="match").inc()
         return None
 
 
@@ -156,6 +164,8 @@ def match_product(
     if fuzzy is None:
         return semantic
     if semantic is None:
+        if seller_id:
+            metrics.DEGRADED_TOTAL.inc()
         return fuzzy
 
     if semantic.product_score > fuzzy.product_score:

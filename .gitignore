@@ -47,6 +47,12 @@ services/matching/*.egg-info/
 services/matching/**/.eggs/
 # Staging dir for publish (not committed artifacts)
 services/matching/.bundle-staging/
+# Trained models (generated locally via make train)
+services/matching/models/*.joblib
+services/matching/models/*.meta.json
+services/matching/models/bundles/
+# Keep canonical thresholds template for reference
+!services/matching/models/semantic_thresholds.json
 # Generated eval reports (baseline kept for regression)
 services/matching/reports/*
 !services/matching/reports/recognition_baseline.json

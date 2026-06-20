@@ -7,15 +7,19 @@ const { seller, logout } = useAuth();
 <template>
   <div class="layout">
     <aside class="sidebar">
-      <h1>Sellbot</h1>
-      <p style="opacity: 0.8; margin-bottom: 16px">{{ seller?.full_name || seller?.username }}</p>
+      <div class="sidebar-brand">
+        <h1>Sellbot</h1>
+        <p class="sidebar-user">{{ seller?.full_name || seller?.username }}</p>
+      </div>
       <nav>
         <RouterLink to="/" active-class="active">Статистика</RouterLink>
         <RouterLink to="/catalog" active-class="active">Каталог</RouterLink>
         <RouterLink to="/leads" active-class="active">Лиды</RouterLink>
         <RouterLink to="/workers" active-class="active">Воркеры</RouterLink>
       </nav>
-      <button class="secondary" style="margin-top: 24px" @click="logout()">Выйти</button>
+      <div class="sidebar-footer">
+        <button class="secondary" style="width: 100%" @click="logout()">Выйти</button>
+      </div>
     </aside>
     <main class="content">
       <RouterView />

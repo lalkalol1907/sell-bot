@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.grpc_server import process_message
+from app.handlers.message_processor import process_message
 
 
 @pytest.fixture
@@ -21,8 +21,8 @@ def core_client():
 
 
 class TestProcessMessage:
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_creates_lead_on_match(self, mock_get_core, mock_dedup, core_client):
         mock_get_core.return_value = core_client
         mock_dedup.try_reserve.return_value = True
@@ -45,8 +45,8 @@ class TestProcessMessage:
         assert payload["product_title"] == "iPhone 16"
         assert payload["chat_title"] == "Тестовый чат"
 
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_skips_duplicate(self, mock_get_core, mock_dedup, core_client):
         mock_get_core.return_value = core_client
         mock_dedup.try_reserve.return_value = False
@@ -66,8 +66,8 @@ class TestProcessMessage:
         assert result["reason"] == "duplicate"
         core_client.create_lead.assert_not_called()
 
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_releases_dedup_on_create_failure(self, mock_get_core, mock_dedup, core_client):
         mock_get_core.return_value = core_client
         mock_dedup.try_reserve.return_value = True
@@ -87,8 +87,8 @@ class TestProcessMessage:
 
         mock_dedup.release.assert_called_once()
 
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_no_match_skips_lead(self, mock_get_core, mock_dedup, core_client):
         mock_get_core.return_value = core_client
 
@@ -106,8 +106,8 @@ class TestProcessMessage:
         assert result["matched"] is False
         core_client.create_lead.assert_not_called()
 
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_filters_short_spam(self, mock_get_core, mock_dedup, core_client):
         mock_get_core.return_value = core_client
 
@@ -126,8 +126,8 @@ class TestProcessMessage:
         assert result["reason"] == "spam_length"
         core_client.create_lead.assert_not_called()
 
-    @patch("app.grpc_server.dedup")
-    @patch("app.grpc_server.get_core_client")
+    @patch("app.handlers.message_processor.dedup")
+    @patch("app.handlers.message_processor.get_core_client")
     def test_filters_learned_spam(self, mock_get_core, mock_dedup, core_client):
         core_client.get_seller.return_value["spam_phrases"] = ["курс по заработку"]
         mock_get_core.return_value = core_client

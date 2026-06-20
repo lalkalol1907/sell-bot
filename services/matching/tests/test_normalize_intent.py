@@ -1,17 +1,22 @@
 import pytest
 
-from app.intent import intent_score
-from app.normalize import normalize_text, translit_pairs
+from app.nlp.intent_classifier import intent_score_heuristic
+from app.nlp.normalize import normalize_text, translit_expand
+
+
+def intent_score(text: str) -> float:
+    return intent_score_heuristic(normalize_text(text)).score
 
 
 class TestNormalizeText:
     def test_lowercase_and_strip(self):
-        assert normalize_text("  КУПЛЮ  ") == "куплю"
+        result = normalize_text("  КУПЛЮ  ")
+        assert "купить" in result
 
     def test_emoji_removed(self):
         result = normalize_text("куплю 🔥 айфон")
         assert "🔥" not in result
-        assert "куплю" in result
+        assert "купить" in result
 
     def test_iphone_translit(self):
         assert "айфон" in normalize_text("Куплю iPhone 16")
@@ -21,21 +26,21 @@ class TestNormalizeText:
 
     def test_punctuation_collapsed(self):
         result = normalize_text("куплю!!!  айфон???")
-        assert "куплю" in result
+        assert "купить" in result
         assert "айфон" in result
 
 
 class TestTranslitPairs:
     def test_adds_ayfon_when_iphone_present(self):
-        assert "айфон" in translit_pairs("iphone 16")
+        assert "айфон" in translit_expand("iphone 16")
 
     def test_adds_iphone_when_ayfon_present(self):
-        assert "iphone" in translit_pairs("айфон 16")
+        assert "iphone" in translit_expand("айфон 16")
 
     def test_no_duplicate_when_both_present(self):
         text = "iphone айфон 16"
-        assert translit_pairs(text).count("iphone") == 1
-        assert translit_pairs(text).count("айфон") == 1
+        assert translit_expand(text).count("iphone") == 1
+        assert translit_expand(text).count("айфон") == 1
 
 
 class TestIntentScore:

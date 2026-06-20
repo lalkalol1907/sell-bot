@@ -1,4 +1,15 @@
-.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs train-prod publish publish-local publish-models publish-models-local clean-embed-cache
+.PHONY: gen-proto gen-proto-python gen-proto-java gen-proto-go build build-local test up down logs train publish
+
+define matching_run
+	cd services/matching && \
+	if [ -x .venv/bin/pip ]; then \
+		.venv/bin/pip install -q ".[train]" && \
+		.venv/bin/python -m app.training.cli $(1); \
+	else \
+		pip3 install -q ".[train]" && \
+		python3 -m app.training.cli $(1); \
+	fi
+endef
 
 gen-proto: gen-proto-python gen-proto-go gen-proto-java
 
@@ -24,7 +35,7 @@ build:
 test: gen-proto
 	cd services/core && ./gradlew test --no-daemon
 	cd services/worker-engine && go test ./... -count=1
-	cd services/matching && pip3 install ".[dev]" && pytest tests/ -q
+	cd services/matching && pip3 install -e ".[dev]" && pytest tests/ -q
 	cd services/http-gateway && bun install --frozen-lockfile && bun run lint && bun test
 	cd services/seller-bot && bun run lint && bun test
 
@@ -37,28 +48,12 @@ down:
 logs:
 	docker compose logs -f --tail=100
 
-# Matching models: train locally, then publish bundle to S3 (MODELS_S3_* from .env)
-train-prod:
-	@cd services/matching && \
-	if [ -x .venv/bin/pip ]; then .venv/bin/pip install -q ".[train]"; else pip3 install -q ".[train]"; fi && \
-	./scripts/train_prod.sh
+train:
+	@$(call matching_run,train)
 
-# Optional: PUBLISH_ARGS=--skip-parity
 publish:
 	@test -n "$(MODELS_VERSION)" || (echo "Usage: make publish MODELS_VERSION=2026.06.19-1" >&2 && exit 1)
-	@cd services/matching && \
-	if [ -x .venv/bin/pip ]; then .venv/bin/pip install -q ".[train]"; else pip3 install -q ".[train]"; fi && \
-	./scripts/publish_models.sh $(MODELS_VERSION) $(PUBLISH_ARGS)
-
-publish-local:
-	@test -n "$(MODELS_VERSION)" || (echo "Usage: make publish-local MODELS_VERSION=dev-1" >&2 && exit 1)
-	@cd services/matching && \
-	if [ -x .venv/bin/pip ]; then .venv/bin/pip install -q ".[train]"; else pip3 install -q ".[train]"; fi && \
-	./scripts/publish_models.sh --local-only $(MODELS_VERSION) $(PUBLISH_ARGS)
-
-clean-embed-cache:
-	@cd services/matching && \
-	if [ -x .venv/bin/python ]; then .venv/bin/python scripts/clear_fastembed_cache.py; else python3 scripts/clear_fastembed_cache.py; fi
+	@$(call matching_run,publish --version $(MODELS_VERSION))
 
 demo-lead:
 	@echo "Inject test message (set DEV_INJECT_MESSAGE in .env first)"

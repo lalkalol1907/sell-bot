@@ -1,4 +1,4 @@
-FROM python:3.14-slim AS builder
+FROM python:3.12-slim AS builder
 WORKDIR /build
 RUN apt-get update && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
 COPY proto/ ./proto/
@@ -15,9 +15,9 @@ RUN pip install --no-cache-dir . && \
       sed -i 's/^import \(.*\)_pb2/from app.generated import \1_pb2/' "$f"; \
     done
 
-FROM python:3.14-slim
+FROM python:3.12-slim
 WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /build/services/matching/app ./app
 COPY --from=builder /build/services/matching/data ./data
 ENV PYTHONPATH=/app

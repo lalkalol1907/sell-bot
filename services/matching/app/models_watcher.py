@@ -7,17 +7,11 @@ import os
 import threading
 import time
 
+from app.env import bool_env
 from app.models_runtime import reload_if_changed
 from app.models_sync import should_sync_models
 
 logger = logging.getLogger(__name__)
-
-
-def _bool_env(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 def should_watch_models() -> bool:
@@ -28,7 +22,7 @@ def should_watch_models() -> bool:
 
     raw = os.getenv("MODELS_WATCH_ENABLED", "").strip()
     if raw:
-        return _bool_env("MODELS_WATCH_ENABLED", default=False)
+        return bool_env("MODELS_WATCH_ENABLED", default=False)
     return True
 
 

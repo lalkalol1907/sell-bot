@@ -8,12 +8,12 @@ pytestmark = pytest.mark.integration
 def test_embedding_parity_with_cached_onnx(tmp_path):
     pytest.importorskip("sentence_transformers")
 
-    from scripts.publish_models import _resolve_fastembed_model_source
-    from scripts.verify_embedding_parity import MODEL_NAME, check_parity
+    from app.training.bundle import resolve_fastembed_model_source
+    from app.training.parity import MODEL_NAME, check_parity
 
     model_dir = tmp_path / "embedding"
     try:
-        source_dir = _resolve_fastembed_model_source(MODEL_NAME)
+        source_dir = resolve_fastembed_model_source(MODEL_NAME)
     except RuntimeError:
         pytest.skip("ONNX model not available from fastembed")
 

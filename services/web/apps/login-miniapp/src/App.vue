@@ -30,94 +30,122 @@ const {
 
 <template>
   <div class="app" :class="{ initializing }">
-    <h1>Подключение воркера</h1>
-    <p class="subtitle">Аккаунт-слушатель для мониторинга чатов</p>
-
-    <div class="tabs">
-      <button type="button" class="tab" :class="{ active: tab === 'qr' }" @click="setTab('qr')">
-        QR-код
-      </button>
-      <button
-        type="button"
-        class="tab"
-        :class="{ active: tab === 'phone' }"
-        @click="setTab('phone')"
-      >
-        Телефон
-      </button>
+    <div v-if="initializing" class="loader-screen">
+      <div class="spinner" />
+      <span>Подготовка…</span>
     </div>
 
-    <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="success" class="success">{{ success }}</p>
-    <p v-if="showSessionLoading" class="hint">Загрузка…</p>
+    <div class="content">
+      <header class="header">
+        <h1>Подключение воркера</h1>
+        <p class="subtitle">Аккаунт-слушатель для мониторинга чатов</p>
+      </header>
 
-    <div v-show="tab === 'qr'" class="panel">
-      <p class="hint">
-        На телефоне с аккаунтом-воркером: Настройки → Устройства → Подключить устройство →
-        Сканировать QR.
-      </p>
-      <button
-        v-if="showQrButton"
-        type="button"
-        class="primary"
-        :disabled="loading"
-        @click="onStartQR"
-      >
-        Сгенерировать QR
-      </button>
-      <div v-if="showQrBox" class="qr-box">
-        <img :src="qrDataUrl" alt="QR login" width="220" height="220" />
-        <p v-if="qrHint" class="hint">{{ qrHint }}</p>
-      </div>
-    </div>
-
-    <div v-show="tab === 'phone'" class="panel">
-      <div v-if="showPhoneStart">
-        <input v-model="phone" placeholder="+79991234567" inputmode="tel" autocomplete="tel" />
+      <div class="tabs">
+        <button type="button" class="tab" :class="{ active: tab === 'qr' }" @click="setTab('qr')">
+          QR-код
+        </button>
         <button
           type="button"
-          class="primary"
-          :disabled="loading || !phone.trim()"
-          @click="onStartPhone"
+          class="tab"
+          :class="{ active: tab === 'phone' }"
+          @click="setTab('phone')"
         >
-          Отправить код
+          Телефон
         </button>
       </div>
 
-      <div v-if="showCode">
-        <p class="hint">{{ codeHint }}</p>
-        <input
-          v-model="code"
-          placeholder="Код из Telegram"
-          inputmode="numeric"
-          autocomplete="one-time-code"
-        />
-        <button
-          type="button"
-          class="primary"
-          :disabled="loading || !code.trim()"
-          @click="onSubmitCode"
-        >
-          Подтвердить код
-        </button>
+      <p v-if="error" class="alert alert-error">{{ error }}</p>
+      <p v-if="success" class="alert alert-success">{{ success }}</p>
+      <p v-if="showSessionLoading" class="alert alert-info">Загрузка…</p>
+
+      <div v-show="tab === 'qr'" class="panel">
+        <div class="card">
+          <p class="hint">
+            На телефоне с аккаунтом-воркером: Настройки → Устройства → Подключить устройство →
+            Сканировать QR.
+          </p>
+          <button
+            v-if="showQrButton"
+            type="button"
+            class="primary"
+            :disabled="loading"
+            @click="onStartQR"
+          >
+            {{ loading ? "Генерируем…" : "Сгенерировать QR" }}
+          </button>
+          <div v-if="showQrBox" class="qr-box">
+            <img :src="qrDataUrl" alt="QR login" width="220" height="220" />
+            <p v-if="qrHint" class="hint">{{ qrHint }}</p>
+          </div>
+        </div>
       </div>
 
-      <div v-if="showPassword">
-        <p class="hint">{{ passwordHint }}</p>
-        <input
-          v-model="password"
-          type="password"
-          placeholder="Пароль 2FA"
-          autocomplete="current-password"
-        />
-        <button
-          type="button"
-          class="primary"
-          :disabled="loading || !password"
-          @click="onSubmitPassword"
-        >
-          Подтвердить пароль
-        </button>
+      <div v-show="tab === 'phone'" class="panel">
+        <div v-if="showPhoneStart" class="card step-block">
+          <div class="field">
+            <label for="phone">Номер телефона</label>
+            <input
+              id="phone"
+              v-model="phone"
+              placeholder="+79991234567"
+              inputmode="tel"
+              autocomplete="tel"
+            />
+          </div>
+          <button
+            type="button"
+            class="primary"
+            :disabled="loading || !phone.trim()"
+            @click="onStartPhone"
+          >
+            {{ loading ? "Отправляем…" : "Отправить код" }}
+          </button>
+        </div>
+
+        <div v-if="showCode" class="card step-block">
+          <p class="hint">{{ codeHint }}</p>
+          <div class="field">
+            <label for="code">Код из Telegram</label>
+            <input
+              id="code"
+              v-model="code"
+              placeholder="12345"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+            />
+          </div>
+          <button
+            type="button"
+            class="primary"
+            :disabled="loading || !code.trim()"
+            @click="onSubmitCode"
+          >
+            {{ loading ? "Проверяем…" : "Подтвердить код" }}
+          </button>
+        </div>
+
+        <div v-if="showPassword" class="card step-block">
+          <p class="hint">{{ passwordHint }}</p>
+          <div class="field">
+            <label for="password">Пароль 2FA</label>
+            <input
+              id="password"
+              v-model="password"
+              type="password"
+              placeholder="Пароль"
+              autocomplete="current-password"
+            />
+          </div>
+          <button
+            type="button"
+            class="primary"
+            :disabled="loading || !password"
+            @click="onSubmitPassword"
+          >
+            {{ loading ? "Проверяем…" : "Подтвердить пароль" }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

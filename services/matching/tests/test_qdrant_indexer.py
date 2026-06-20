@@ -23,7 +23,6 @@ def qdrant_available():
 
 def test_qdrant_upsert_search_delete(monkeypatch, reload_modules, qdrant_available):
     monkeypatch.setenv("QDRANT_URL", qdrant_available)
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
     reload_modules()
 
     from app.embeddings.qdrant_client import delete_product_vector, reset_client, search_similar, upsert_product_vector

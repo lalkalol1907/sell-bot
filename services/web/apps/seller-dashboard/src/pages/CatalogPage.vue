@@ -4,6 +4,7 @@ import { sellerApi, type Product } from "../api";
 
 const products = ref<Product[]>([]);
 const error = ref("");
+const loading = ref(true);
 const title = ref("");
 const price = ref("");
 const keywords = ref("");
@@ -14,9 +15,13 @@ async function load() {
 }
 
 onMounted(() => {
-  load().catch((e) => {
-    error.value = e instanceof Error ? e.message : "Ошибка загрузки";
-  });
+  load()
+    .catch((e) => {
+      error.value = e instanceof Error ? e.message : "Ошибка загрузки";
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 });
 
 async function onCreate() {
@@ -60,45 +65,59 @@ async function remove(id: number) {
 
 <template>
   <div>
-    <h2>Каталог</h2>
+    <header class="page-header">
+      <h2>Каталог</h2>
+      <p>Товары для сопоставления с сообщениями в чатах</p>
+    </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
     <div class="card">
       <h3>Добавить товар</h3>
-      <form @submit.prevent="onCreate">
+      <form class="form-grid" @submit.prevent="onCreate">
         <input v-model="title" placeholder="Название" required />
         <input v-model="price" placeholder="Цена" required />
-        <input v-model="keywords" placeholder="Keywords через запятую" />
-        <button type="submit">Добавить</button>
+        <input v-model="keywords" placeholder="Ключевые слова через запятую" />
+        <div>
+          <button type="submit">Добавить</button>
+        </div>
       </form>
     </div>
 
     <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Товар</th>
-            <th>Цена</th>
-            <th>Keywords</th>
-            <th>Статус</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in products" :key="p.id">
-            <td>{{ p.title }}</td>
-            <td>{{ p.price }}</td>
-            <td>{{ p.keywords.join(", ") || "—" }}</td>
-            <td>{{ p.is_active ? "активен" : "выкл" }}</td>
-            <td class="row">
-              <button class="secondary" @click="toggle(p)">
-                {{ p.is_active ? "Выключить" : "Включить" }}
-              </button>
-              <button class="danger" @click="remove(p.id)">Удалить</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-if="loading" class="empty-state">Загрузка…</div>
+      <div v-else-if="products.length === 0" class="empty-state">Товаров пока нет</div>
+      <div v-else class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Товар</th>
+              <th>Цена</th>
+              <th>Ключевые слова</th>
+              <th>Статус</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in products" :key="p.id">
+              <td>{{ p.title }}</td>
+              <td>{{ p.price }} {{ p.currency }}</td>
+              <td>{{ p.keywords.join(", ") || "—" }}</td>
+              <td>
+                <span :class="p.is_active ? 'badge badge-on' : 'badge badge-off'">
+                  {{ p.is_active ? "Активен" : "Выключен" }}
+                </span>
+              </td>
+              <td class="row">
+                <button class="secondary" @click="toggle(p)">
+                  {{ p.is_active ? "Выключить" : "Включить" }}
+                </button>
+                <button class="danger" @click="remove(p.id)">Удалить</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

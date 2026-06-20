@@ -50,8 +50,8 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["app/nlp", "app/matcher", "app/embeddings", "app/models_sync", "app/bootstrap", "app/models_runtime", "app/models_watcher"]
-omit = ["app/generated/*", "app/main.py"]
+source = ["app/nlp", "app/pipeline", "app/embeddings", "app/models_sync", "app/bootstrap", "app/models_runtime", "app/models_watcher", "app/handlers", "app/transport"]
+omit = ["app/generated/*", "app/main.py", "app/training/*"]
 
 [tool.coverage.report]
 fail_under = 85

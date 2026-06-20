@@ -22,17 +22,18 @@ def compute_level(
     *,
     fuzzy_score: float = 0.0,
     semantic_score: float = 0.0,
-    product_threshold: float = 0.85,
 ) -> ScoreResult:
-    from app.config import FUZZY_MIN_SCORE, SEMANTIC_MIN_SCORE
+    from app.config import fuzzy_min_score, semantic_min_score
 
     if intent.score < 0:
         return ScoreResult(0, "", False, "sell_intent")
 
-    passes_fuzzy = fuzzy_score >= FUZZY_MIN_SCORE
-    passes_semantic = semantic_score >= SEMANTIC_MIN_SCORE
+    fuzzy_threshold = fuzzy_min_score()
+    semantic_threshold = semantic_min_score()
+    passes_fuzzy = fuzzy_score >= fuzzy_threshold
+    passes_semantic = semantic_score >= semantic_threshold
     if not passes_fuzzy and not passes_semantic:
-        if product_score < product_threshold:
+        if product_score < fuzzy_threshold:
             return ScoreResult(0, "", False, "no_product")
 
     combined = product_score * 0.55 + max(intent.score, 0) * 0.45

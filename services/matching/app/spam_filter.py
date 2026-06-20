@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from app.normalize import normalize_text
+from app.nlp.normalize import normalize_text
 
 MIN_MESSAGE_CHARS = int(os.getenv("MIN_MESSAGE_CHARS", "8"))
 MAX_MESSAGE_CHARS = int(os.getenv("MAX_MESSAGE_CHARS", "2000"))

@@ -9,7 +9,6 @@ import pytest
 def test_should_sync_models_requires_bucket(monkeypatch):
     monkeypatch.delenv("MODELS_SKIP_S3", raising=False)
     monkeypatch.delenv("MODELS_S3_BUCKET", raising=False)
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_sync
 
@@ -18,17 +17,15 @@ def test_should_sync_models_requires_bucket(monkeypatch):
 
 def test_should_sync_models_when_configured(monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_sync
 
     assert models_sync.should_sync_models() is True
 
 
-def test_should_skip_when_flags_disabled(monkeypatch):
+def test_should_skip_when_models_skip_s3(monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "false")
-    monkeypatch.setenv("NLP_V2_INTENT_ML", "false")
+    monkeypatch.setenv("MODELS_SKIP_S3", "true")
 
     from app import models_sync
 
@@ -41,7 +38,7 @@ def test_download_bundle_verifies_checksum(tmp_path, monkeypatch):
     manifest = {
         "version": "v1",
         "files": [
-            {"path": "intent_v1.joblib", "sha256": "abc", "size": 3},
+            {"path": "intent.joblib", "sha256": "abc", "size": 3},
         ],
     }
     client = MagicMock()
@@ -62,14 +59,14 @@ def test_download_bundle_verifies_checksum(tmp_path, monkeypatch):
 
 
 def test_download_bundle_success(tmp_path):
-    bundle_file = tmp_path / "intent_v1.joblib"
+    bundle_file = tmp_path / "intent.joblib"
     bundle_file.write_bytes(b"abc")
     import hashlib
 
     digest = hashlib.sha256(b"abc").hexdigest()
     manifest = {
         "version": "v1",
-        "files": [{"path": "intent_v1.joblib", "sha256": digest, "size": 3}],
+        "files": [{"path": "intent.joblib", "sha256": digest, "size": 3}],
     }
     client = MagicMock()
     client.get_object.return_value = {
@@ -85,20 +82,19 @@ def test_download_bundle_success(tmp_path):
 
     result = models_sync._download_bundle(client, "sellbot", "dev", "v1", tmp_path)
     assert result.version == "v1"
-    assert result.intent_model_path == tmp_path / "v1" / "intent_v1.joblib"
+    assert result.intent_model_path == tmp_path / "v1" / "intent.joblib"
 
 
 def test_sync_models_from_s3_happy_path(tmp_path, monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
     monkeypatch.setenv("MODELS_LOCAL_DIR", str(tmp_path))
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_sync
 
     fake_result = models_sync.SyncResult(
         version="v1",
         local_dir=tmp_path / "v1",
-        intent_model_path=tmp_path / "v1" / "intent_v1.joblib",
+        intent_model_path=tmp_path / "v1" / "intent.joblib",
         embedding_model_dir=tmp_path / "v1" / models_sync.EMBEDDING_SUBDIR,
     )
     with patch.object(models_sync, "_s3_client", return_value=MagicMock()):
@@ -112,14 +108,13 @@ def test_sync_models_from_s3_happy_path(tmp_path, monkeypatch):
 def test_sync_models_from_s3_with_explicit_version(tmp_path, monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
     monkeypatch.setenv("MODELS_LOCAL_DIR", str(tmp_path))
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_sync
 
     fake_result = models_sync.SyncResult(
         version="v2",
         local_dir=tmp_path / "v2",
-        intent_model_path=tmp_path / "v2" / "intent_v1.joblib",
+        intent_model_path=tmp_path / "v2" / "intent.joblib",
         embedding_model_dir=tmp_path / "v2" / models_sync.EMBEDDING_SUBDIR,
     )
     with patch.object(models_sync, "_s3_client", return_value=MagicMock()):
@@ -135,7 +130,6 @@ def test_sync_models_from_s3_with_explicit_version(tmp_path, monkeypatch):
 
 def test_peek_remote_version(monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_sync
 
@@ -149,7 +143,7 @@ def test_find_local_bundle_versioned(tmp_path):
     embedding = bundle / "embedding" / "paraphrase-multilingual-MiniLM-L12-v2"
     embedding.mkdir(parents=True)
     (embedding / "model.onnx").write_bytes(b"onnx")
-    (bundle / "intent_v1.joblib").write_bytes(b"model")
+    (bundle / "intent.joblib").write_bytes(b"model")
     (bundle / "manifest.json").write_text("{}", encoding="utf-8")
 
     from app import models_sync
@@ -157,4 +151,4 @@ def test_find_local_bundle_versioned(tmp_path):
     found = models_sync.find_local_bundle(tmp_path)
     assert found is not None
     assert found.version == "2026.06.18-1"
-    assert found.intent_model_path == bundle / "intent_v1.joblib"
+    assert found.intent_model_path == bundle / "intent.joblib"

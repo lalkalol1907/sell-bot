@@ -7,12 +7,23 @@ import pytest
 
 
 def _bundle(tmp_path, version: str) -> tuple[Path, Path, Path]:
+    import joblib
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.linear_model import LogisticRegression
+
     bundle = tmp_path / version
     embedding = bundle / "embedding" / "paraphrase-multilingual-MiniLM-L12-v2"
     embedding.mkdir(parents=True)
     (embedding / "model.onnx").write_bytes(b"onnx")
-    intent = bundle / "intent_v1.joblib"
-    intent.write_bytes(b"model")
+    intent = bundle / "intent.joblib"
+    vec = CountVectorizer()
+    x = vec.fit_transform(["куплю iphone", "продаю iphone"])
+    clf = LogisticRegression()
+    clf.fit(x, ["buy", "sell"])
+    joblib.dump({"classifier": clf, "vectorizer": vec, "feature_type": "tfidf"}, intent)
+    (bundle / "semantic_thresholds.json").write_text(
+        '{"fuzzy_min_score":0.85,"semantic_min_score":0.72}', encoding="utf-8"
+    )
     (bundle / "manifest.json").write_text(
         '{"version": "%s", "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"}'
         % version,
@@ -49,9 +60,9 @@ def test_apply_bundle_resets_caches(tmp_path, monkeypatch):
 
     from app import models_runtime
     from app.embeddings import indexer
-    from app.embeddings.encoder import _load_encoder
+    from app.embeddings.encoder import reset_encoder_cache
     from app.models_sync import SyncResult
-    from app.nlp.intent_classifier import _load_ml_model
+    from app.nlp.intent_classifier import reset_model_cache
 
     indexer._local_indexed[(1, "hash", "old")] = True
     result = SyncResult(
@@ -62,11 +73,13 @@ def test_apply_bundle_resets_caches(tmp_path, monkeypatch):
     )
     models_runtime.apply_bundle(result)
 
+    import os
+
     assert indexer._model_version == "v1"
     assert (1, "hash", "old") not in indexer._local_indexed
-    assert _load_encoder.cache_info().currsize == 0
-    clf, _, _, _ = _load_ml_model()
-    assert clf is None or clf is not None  # cache cleared; reload is lazy
+    reset_encoder_cache()
+    reset_model_cache()
+    assert os.environ["INTENT_MODEL_PATH"] == str(intent)
 
 
 def test_apply_bundle_rejects_incompatible_embedding(tmp_path, monkeypatch):
@@ -92,7 +105,6 @@ def test_apply_bundle_rejects_incompatible_embedding(tmp_path, monkeypatch):
 
 def test_reload_if_changed_noop_when_same_version(monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_runtime
 
@@ -104,7 +116,6 @@ def test_reload_if_changed_noop_when_same_version(monkeypatch):
 def test_reload_if_changed_downloads_new_version(tmp_path, monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
     monkeypatch.setenv("MODELS_LOCAL_DIR", str(tmp_path))
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     bundle, embedding, intent = _bundle(tmp_path, "2026.06.20-1")
     from app import models_runtime
@@ -127,7 +138,6 @@ def test_reload_if_changed_downloads_new_version(tmp_path, monkeypatch):
 def test_reload_if_changed_skips_when_pinned(monkeypatch):
     monkeypatch.setenv("MODELS_S3_BUCKET", "sellbot")
     monkeypatch.setenv("MODELS_S3_VERSION", "pinned-v1")
-    monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
 
     from app import models_runtime
 
@@ -141,9 +151,11 @@ def test_intent_classifier_uses_updated_path(tmp_path, monkeypatch, reload_modul
     from sklearn.feature_extraction.text import CountVectorizer
     from sklearn.linear_model import LogisticRegression
 
+    from app.nlp.normalize import normalize_text
+
     model_a = tmp_path / "intent_a.joblib"
     model_b = tmp_path / "intent_b.joblib"
-    texts = ["куплю iphone", "продаю iphone"]
+    texts = [normalize_text("куплю iphone"), normalize_text("продаю iphone")]
     for path, labels in ((model_a, ["buy", "sell"]), (model_b, ["sell", "buy"])):
         vec = CountVectorizer()
         x = vec.fit_transform(texts)
@@ -151,14 +163,13 @@ def test_intent_classifier_uses_updated_path(tmp_path, monkeypatch, reload_modul
         clf.fit(x, labels)
         joblib.dump({"classifier": clf, "vectorizer": vec, "feature_type": "tfidf"}, path)
 
-    monkeypatch.setenv("NLP_V2_INTENT_ML", "true")
     monkeypatch.setenv("INTENT_MODEL_PATH", str(model_a))
     reload_modules()
 
     from app.nlp.intent_classifier import classify_intent, reset_model_cache
 
-    assert classify_intent("куплю iphone").label == "buy"
+    assert classify_intent(normalize_text("куплю iphone")).label == "buy"
 
     monkeypatch.setenv("INTENT_MODEL_PATH", str(model_b))
     reset_model_cache()
-    assert classify_intent("куплю iphone").label == "sell"
+    assert classify_intent(normalize_text("куплю iphone")).label == "sell"

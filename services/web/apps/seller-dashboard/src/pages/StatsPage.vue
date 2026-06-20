@@ -4,6 +4,7 @@ import { sellerApi, type Stats } from "../api";
 
 const stats = ref<Stats | null>(null);
 const error = ref("");
+const loading = ref(true);
 
 onMounted(() => {
   sellerApi
@@ -13,38 +14,45 @@ onMounted(() => {
     })
     .catch((e) => {
       error.value = e instanceof Error ? e.message : "Ошибка загрузки";
+    })
+    .finally(() => {
+      loading.value = false;
     });
 });
 </script>
 
 <template>
   <div>
+    <header class="page-header">
+      <h2>Статистика</h2>
+      <p>Лиды за последние 30 дней</p>
+    </header>
+
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-else-if="!stats">Загрузка…</p>
-    <template v-else>
-      <h2>Статистика (30 дней)</h2>
-      <div class="grid">
-        <div class="stat">
-          <strong>{{ stats.total }}</strong>
-          <span>Всего лидов</span>
-        </div>
-        <div class="stat">
-          <strong>{{ stats.new_count }}</strong>
-          <span>Новые</span>
-        </div>
-        <div class="stat">
-          <strong>{{ stats.contacted }}</strong>
-          <span>В работе</span>
-        </div>
-        <div class="stat">
-          <strong>{{ stats.closed }}</strong>
-          <span>Закрыты</span>
-        </div>
-        <div class="stat">
-          <strong>{{ stats.spam }}</strong>
-          <span>Спам</span>
-        </div>
+    <div v-else-if="loading" class="card">
+      <p class="muted">Загрузка…</p>
+    </div>
+    <div v-else-if="stats" class="grid">
+      <div class="stat">
+        <strong>{{ stats.total }}</strong>
+        <span>Всего лидов</span>
       </div>
-    </template>
+      <div class="stat">
+        <strong>{{ stats.new_count }}</strong>
+        <span>Новые</span>
+      </div>
+      <div class="stat">
+        <strong>{{ stats.contacted }}</strong>
+        <span>В работе</span>
+      </div>
+      <div class="stat">
+        <strong>{{ stats.closed }}</strong>
+        <span>Закрыты</span>
+      </div>
+      <div class="stat">
+        <strong>{{ stats.spam }}</strong>
+        <span>Спам</span>
+      </div>
+    </div>
   </div>
 </template>

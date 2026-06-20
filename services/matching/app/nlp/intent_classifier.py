@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 POSITIVE = {
-    "купить", "куплю", "ищу", "нужен", "нужна", "нужно", "хотеть", "хочу",
-    "почём", "почем", "сколько", "беру", "возьму", "приобрести", "приобрету",
-    "заказать", "интересует", "достать",
+    "купить", "куплю", "ищу", "искать", "нужен", "нужна", "нужно", "хотеть", "хочу",
+    "почём", "почем", "сколько", "беру", "брать", "возьму", "взять", "приобрести", "приобрету",
+    "заказать", "интересует", "интересовать", "достать",
 }
 NEGATIVE = {
     "продать", "продам", "продаю", "продавать", "продаёт", "продает", "отдать", "отдам", "отдаю", "отдавать",
-    "наличие", "наличии", "опт", "оптом", "продажа", "реализую", "сдаю",
+    "наличие", "наличии", "опт", "оптом", "продажа", "реализую", "реализовать", "сдаю", "сдавать",
 }
 INDIRECT = {
     "кто", "где", "есть", "подскажите", "помогите", "достать", "срочно",
@@ -50,15 +53,13 @@ def _load_ml_model():
     if _classifier is not None:
         return _classifier, _vectorizer, _scaler, _feature_type
 
-    from app.config import NLP_V2_INTENT_ML
+    from app.config import INTENT_MODEL_NAME
     from app.paths import models_dir
 
-    if not NLP_V2_INTENT_ML:
-        return None, None, None, "heuristic"
-
-    default_path = str(models_dir() / "intent_v1.joblib")
+    default_path = str(models_dir() / INTENT_MODEL_NAME)
     path = Path(os.getenv("INTENT_MODEL_PATH", default_path))
     if not path.is_file():
+        logger.warning("Intent ML model missing at %s, using heuristic fallback", path)
         return None, None, None, "heuristic"
 
     import joblib
@@ -71,12 +72,9 @@ def _load_ml_model():
     return _classifier, _vectorizer, _scaler, _feature_type
 
 
-def _build_features(text: str, vectorizer, feature_type: str):
+def _build_features(normalized: str, vectorizer, feature_type: str):
     import numpy as np
 
-    from app.nlp.normalize import normalize_text
-
-    normalized = normalize_text(text)
     if feature_type == "tfidf" and vectorizer is not None:
         return vectorizer.transform([normalized])
     if feature_type == "embeddings":
@@ -87,15 +85,41 @@ def _build_features(text: str, vectorizer, feature_type: str):
     return None
 
 
+def _merge_with_heuristic(heuristic: IntentResult, ml: IntentResult) -> IntentResult:
+    """Apply high-precision heuristic guardrails on top of ML output."""
+    if heuristic.label == "sell":
+        return heuristic
+
+    if heuristic.label == "discussion":
+        return heuristic
+
+    if ml.label == "buy" and heuristic.label == "none":
+        return heuristic
+
+    # Indirect buy ("есть X?") — keep low confidence for precise sensitivity.
+    if heuristic.label == "buy" and heuristic.score <= 0.55 and ml.label == "buy":
+        return heuristic
+
+    if ml.label in ("none", "discussion") and heuristic.label == "buy" and heuristic.score >= 0.8:
+        return heuristic
+
+    if ml.label in ("buy", "none") and heuristic.label == "discussion":
+        return heuristic
+
+    return ml
+
+
 def intent_score_heuristic(text: str) -> IntentResult:
     tokens = set(text.split())
 
     strong_buy_phrases = (
         "ищу купить",
+        "искать купить",
         "хочу купить",
         "буду купить",
         "нужно купить",
         "ищу куплю",
+        "искать купить",
         "нет, ищу",
         "нет ищу",
     )
@@ -104,11 +128,11 @@ def intent_score_heuristic(text: str) -> IntentResult:
 
     if tokens & NEGATIVE or "в наличии" in text:
         return IntentResult("sell", -1.0)
-    if any(marker in text for marker in ("не работает", "не включается", "не ловит", "не коннект")):
+    if any(marker in text for marker in ("не работать", "не работает", "не включаться", "не ловить", "не коннект")):
         return IntentResult("discussion", 0.1)
     discussion_hints = (
-        "тормоз", "глюч", "сломал", "батар", "перегрев", "шум", "мерца", "вылет", "завис",
-        "разбил", "чехол", "плёнк", "пленк", "совет", "рекоменд", "настроил",
+        "тормоз", "тормозить", "глюч", "сломал", "батар", "перегрев", "шум", "мерца", "вылет", "завис",
+        "разбил", "чехол", "плёнк", "пленк", "совет", "рекоменд", "настроить", "настроил",
     )
     if any(h in text for h in discussion_hints) and not (tokens & POSITIVE):
         return IntentResult("discussion", 0.1)
@@ -122,23 +146,30 @@ def intent_score_heuristic(text: str) -> IntentResult:
 
 
 def classify_intent(text: str) -> IntentResult:
+    from app.nlp.normalize import normalize_text
+
+    normalized = normalize_text(text)
+    heuristic = intent_score_heuristic(normalized)
+
     clf, vectorizer, scaler, feature_type = _load_ml_model()
     if clf is None:
-        return intent_score_heuristic(text)
+        return heuristic
 
     try:
         import numpy as np
 
-        features = _build_features(text, vectorizer, feature_type)
+        features = _build_features(normalized, vectorizer, feature_type)
         if features is None:
-            return intent_score_heuristic(text)
+            return heuristic
         if scaler is not None and feature_type == "embeddings":
             features = scaler.transform(features)
         label = str(clf.predict(features)[0])
         score = INTENT_SCORES.get(label, 0.1)
-        return IntentResult(label, score)
-    except Exception:
-        return intent_score_heuristic(text)
+        ml = IntentResult(label, score)
+        return _merge_with_heuristic(heuristic, ml)
+    except Exception as exc:
+        logger.warning("Intent ML inference failed: %s", exc)
+        return heuristic
 
 
 def reset_model_cache() -> None:

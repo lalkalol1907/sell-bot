@@ -6,7 +6,7 @@ Telegram-система для продавцов: userbot-воркеры слу
 
 | Сервис | Язык | Роль |
 |--------|------|------|
-| **Core** | Kotlin + Spring Boot + gRPC + Flyway (JDK 24) | Каталог, воркеры, лиды, сессии (PostgreSQL) |
+| **Core** | Kotlin + Spring Boot + gRPC + Flyway (JDK 25) | Каталог, воркеры, лиды, сессии (PostgreSQL) |
 | **Worker Engine** | Go 1.26 (gotd MTProto) | Слушатели чатов, MTProto login (gRPC) |
 | **Matching** | Python 3.14 + FastAPI + rapidfuzz | Нормализация, intent, fuzzy match, dedup |
 | **Seller Bot** | TypeScript + grammY + Bun 1.3.14 | UX продавца, уведомления о лидах |
@@ -294,7 +294,7 @@ make test
 
 ## Локальная разработка
 
-Требования: **JDK 24** (Core), **Go 1.26**, **Bun 1.3.14**, **Python 3.14**.
+Требования: **JDK 25** (Core), **Go 1.26**, **Bun 1.3.14**, **Python 3.14**.
 
 ```bash
 make gen-proto
@@ -320,47 +320,24 @@ cd services/seller-bot && bun install && bun run dev
 cd services/matching && pip install ".[dev]" && pytest tests/ -m "not integration"
 ```
 
-### NLP v2 (matching)
+### Matching pipeline
 
-Пайплайн распознавания: `normalize_v2` → `product_gate` (fuzzy + semantic/Qdrant) → `intent_classifier` (ML + эвристики) → scoring.
+Пайплайн: `normalize` → `product_gate` (fuzzy + semantic/Qdrant) → `intent_classifier` (ML) → scoring.
 
-| Flag | Default | Описание |
-|------|---------|----------|
-| `NLP_V2_ENABLED` | `false` | Master switch v2 pipeline |
-| `NLP_V2_SEMANTIC` | `true` | Qdrant semantic match |
-| `NLP_V2_INTENT_ML` | `true` | ML intent head |
-| `NLP_V2_NORMALIZE` | `false` | pymorphy3 + razdel normalize |
+Пороги (`fuzzy_min_score`, `semantic_min_score`) загружаются из `semantic_thresholds.json` в model bundle.
 
-**Варианты (память / цвет):** если в сообщении указаны объём или цвет, `product_gate` понижает similarity товарам без этих атрибутов или с несовпадением (`VARIANT_*_MULT` в `.env`). В каталоге можно задать `storage_gb` и `color` у товара или положить их в `title`/`keywords` (например `iPhone 16 Pro 256GB Black`).
+**Варианты (память / цвет):** если в сообщении указаны объём или цвет, `product_gate` понижает similarity товарам без этих атрибутов или с несовпадением (`VARIANT_*_MULT` в `.env`).
 
-Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов). В CI гоняются только fast-кейсы (`pytest -m "not integration"`).
+Golden regression suite: `services/matching/data/recognition_cases.yaml` (80+ кейсов). В CI гоняются fast-кейсы (`pytest -m "not integration"`).
 
-**Модели (ONNX + S3):** runtime использует `fastembed` без PyTorch. Веса не запекаются в образ — публикуются в S3-compatible storage и подтягиваются при старте.
+**Модели (ONNX + S3):** runtime использует `fastembed` без PyTorch. Артефакты: `intent.joblib`, `semantic_thresholds.json`, ONNX embedding.
 
 ```bash
-cd services/matching
-pip install ".[dev,train]"
+# обучить prod-модель (datasets → calibrate → train → pytest gate)
+make train
 
-# обучить intent (локально)
-python scripts/train_intent.py --no-embeddings
-
-# собрать bundle + parity-check + upload (читает MODELS_S3_* из .env)
-make publish-models MODELS_VERSION=2026.06.15-1
-
-# только собрать локально
-make publish-models-local MODELS_VERSION=dev-1
-
-# или напрямую:
-./scripts/publish_models.sh 2026.06.15-1
-
-# вручную через python (env уже в shell)
-export MODELS_S3_ENDPOINT=https://your-s3-endpoint
-export MODELS_S3_BUCKET=your-bucket
-export MODELS_S3_PREFIX=sellbot
-export MODELS_S3_ACCESS_KEY=...
-export MODELS_S3_SECRET_KEY=...
-python scripts/publish_models.py --version 2026.06.15-1
-pytest tests/ -m "not integration" -q
+# собрать bundle + parity + golden gate + upload в S3
+make publish MODELS_VERSION=2026.06.19-1
 ```
 
 | Env | Описание |
@@ -376,7 +353,6 @@ pytest tests/ -m "not integration" -q
 
 ```bash
 pytest tests/ -m integration -q   # parity / Qdrant — локально
-python scripts/eval_recognition.py
 ```
 
 ---

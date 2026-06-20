@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass
 
 import redis
 
-from app.config import NLP_V2_SEMANTIC, REDIS_URL
+from app.config import REDIS_URL
 from app.embeddings.encoder import encode_text
-from app.embeddings.qdrant_client import SearchHit, search_similar, upsert_product_vector
+from app.embeddings.qdrant_client import upsert_product_vector
+from app.handlers import metrics
 from app.nlp.normalize import normalize_text
+
+logger = logging.getLogger(__name__)
 
 _redis: redis.Redis | None = None
 _local_indexed: dict[tuple[int, str, str], bool] = {}
@@ -64,7 +68,7 @@ def _catalog_hash(products: list[dict]) -> str:
 
 
 def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
-    if not NLP_V2_SEMANTIC or not products:
+    if not products:
         return
 
     model_version = _active_model_version()
@@ -80,7 +84,9 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
         if redis_client.get(key) == current:
             _local_indexed[cache_key] = True
             return
-    except Exception:
+    except Exception as exc:
+        logger.warning("catalog index redis check failed seller=%s: %s", seller_id, exc)
+        metrics.SEMANTIC_ERRORS.labels(stage="index_redis").inc()
         redis_client = None
 
     from app.embeddings.encoder import encode_texts
@@ -99,6 +105,8 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
         texts.append(normalize_text(raw))
 
     try:
+        from app.embeddings.qdrant_client import upsert_product_vector
+
         vectors = encode_texts(texts)
         for product, vector in zip(products, vectors):
             upsert_product_vector(
@@ -110,8 +118,9 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
         if redis_client is not None:
             redis_client.set(key, current, ex=86400)
         _local_indexed[cache_key] = True
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("catalog index failed seller=%s: %s", seller_id, exc)
+        metrics.SEMANTIC_ERRORS.labels(stage="index").inc()
 
 
 @dataclass
@@ -128,13 +137,19 @@ def search_products(
 ) -> list[ProductSearchHit]:
     try:
         ensure_catalog_indexed(seller_id, products)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("ensure_catalog_indexed failed seller=%s: %s", seller_id, exc)
+        metrics.SEMANTIC_ERRORS.labels(stage="search_index").inc()
+
     try:
+        from app.embeddings.qdrant_client import search_similar
+
         vector = encode_text(normalized_text)
         hits = search_similar(seller_id, vector, limit=limit)
         if not hits:
             return []
         return [ProductSearchHit(product_id=hit.product_id, score=float(hit.score)) for hit in hits]
-    except Exception:
+    except Exception as exc:
+        logger.warning("semantic search failed seller=%s: %s", seller_id, exc)
+        metrics.SEMANTIC_ERRORS.labels(stage="search").inc()
         return []

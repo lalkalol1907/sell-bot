@@ -8,6 +8,7 @@ const workerId = Number(route.params.id);
 
 const chats = ref<MonitoredChat[]>([]);
 const error = ref("");
+const loading = ref(true);
 const search = ref("");
 const activeOnly = ref(false);
 const syncing = ref(false);
@@ -67,19 +68,27 @@ async function toggle(chat: MonitoredChat) {
 }
 
 onMounted(() => {
-  load().catch((e) => {
-    error.value = e instanceof Error ? e.message : "Ошибка загрузки";
-  });
+  load()
+    .catch((e) => {
+      error.value = e instanceof Error ? e.message : "Ошибка загрузки";
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 });
 </script>
 
 <template>
   <div>
-    <p><RouterLink to="/workers">← Воркеры</RouterLink></p>
-    <h2>Чаты воркера #{{ workerId }}</h2>
+    <RouterLink to="/workers" class="back-link">← Воркеры</RouterLink>
+    <header class="page-header">
+      <h2>Чаты воркера #{{ workerId }}</h2>
+      <p>Выберите группы и каналы для мониторинга</p>
+    </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
-    <div class="card row controls">
+    <div class="card toolbar">
       <input v-model="search" type="search" placeholder="Поиск по названию или ID" />
       <label>
         <input v-model="activeOnly" type="checkbox" />
@@ -90,54 +99,47 @@ onMounted(() => {
       </button>
     </div>
 
-    <p v-if="chats.length === 0 && !error" class="muted">
-      Чаты не синхронизированы. Убедитесь, что worker-engine запущен, и нажмите «Обновить из Telegram».
-    </p>
-
-    <div v-else class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Название</th>
-            <th>Тип</th>
-            <th>Мониторинг</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="chat in filteredChats" :key="chat.id">
-            <td>{{ chat.title || chat.chat_id }}</td>
-            <td>{{ chat.type || "—" }}</td>
-            <td>
-              <button
-                type="button"
-                class="secondary"
-                :disabled="toggling === chat.chat_id"
-                @click="toggle(chat)"
-              >
-                {{ chat.is_active ? "Включён" : "Выключен" }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="filteredChats.length === 0" class="muted">Ничего не найдено.</p>
-      <p v-else class="muted">Показано {{ filteredChats.length }} из {{ chats.length }}.</p>
+    <div class="card">
+      <div v-if="loading" class="empty-state">Загрузка…</div>
+      <p v-else-if="chats.length === 0 && !error" class="empty-state">
+        Чаты не синхронизированы. Убедитесь, что worker-engine запущен, и нажмите «Обновить из
+        Telegram».
+      </p>
+      <template v-else>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Тип</th>
+                <th>Мониторинг</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="chat in filteredChats" :key="chat.id">
+                <td>{{ chat.title || chat.chat_id }}</td>
+                <td>{{ chat.type || "—" }}</td>
+                <td>
+                  <button
+                    type="button"
+                    :class="chat.is_active ? 'secondary' : 'ghost'"
+                    :disabled="toggling === chat.chat_id"
+                    @click="toggle(chat)"
+                  >
+                    {{ chat.is_active ? "Включён" : "Выключен" }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="filteredChats.length === 0" class="muted" style="margin-top: 12px">
+          Ничего не найдено.
+        </p>
+        <p v-else class="muted" style="margin-top: 12px">
+          Показано {{ filteredChats.length }} из {{ chats.length }}.
+        </p>
+      </template>
     </div>
   </div>
 </template>
-
-<style scoped>
-.controls {
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.controls input[type="search"] {
-  min-width: 220px;
-}
-
-.muted {
-  opacity: 0.75;
-}
-</style>

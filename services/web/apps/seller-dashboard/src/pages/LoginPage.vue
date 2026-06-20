@@ -42,7 +42,7 @@ onMounted(() => {
         Домен <code>{{ domain }}</code> должен быть привязан к боту: @BotFather → /setdomain →
         <code>{{ domain }}</code>
       </p>
-      <div v-if="botUsername" ref="loginContainer" />
+      <div v-if="botUsername" ref="loginContainer" class="login-widget" />
       <p v-else class="error">VITE_BOT_USERNAME не настроен</p>
       <p v-if="error" class="error">{{ error }}</p>
     </div>

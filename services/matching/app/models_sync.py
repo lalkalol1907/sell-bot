@@ -10,6 +10,9 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.config import INTENT_MODEL_NAME, THRESHOLDS_NAME, should_sync_models
+from app.env import bool_env
+
 logger = logging.getLogger(__name__)
 
 EMBEDDING_SUBDIR = Path("embedding") / "paraphrase-multilingual-MiniLM-L12-v2"
@@ -21,23 +24,6 @@ class SyncResult:
     local_dir: Path
     intent_model_path: Path | None
     embedding_model_dir: Path | None
-
-
-def _bool_env(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in ("1", "true", "yes", "on")
-
-
-def should_sync_models() -> bool:
-    if _bool_env("MODELS_SKIP_S3"):
-        return False
-    if not os.getenv("MODELS_S3_BUCKET", "").strip():
-        return False
-    semantic = _bool_env("NLP_V2_SEMANTIC", True)
-    intent_ml = _bool_env("NLP_V2_INTENT_ML", True)
-    return semantic or intent_ml
 
 
 def _sha256_file(path: Path) -> str:
@@ -110,7 +96,7 @@ def _get_object(client, bucket: str, key: str) -> dict:
 
 
 def _bundle_from_dir(bundle_dir: Path, version: str) -> SyncResult | None:
-    intent_path = bundle_dir / "intent_v1.joblib"
+    intent_path = bundle_dir / INTENT_MODEL_NAME
     embedding_dir = bundle_dir / EMBEDDING_SUBDIR
     has_intent = intent_path.is_file()
     has_embedding = embedding_dir.is_dir()
@@ -138,7 +124,7 @@ def find_local_bundle(local_dir: Path) -> SyncResult | None:
     for child in root.iterdir():
         if not child.is_dir() or child.name.startswith("."):
             continue
-        if (child / "manifest.json").is_file() or (child / "intent_v1.joblib").is_file():
+        if (child / "manifest.json").is_file() or (child / INTENT_MODEL_NAME).is_file():
             candidates.append((child.name, child))
 
     for version, bundle_dir in sorted(candidates, key=lambda item: item[0], reverse=True):
@@ -189,7 +175,7 @@ def _download_bundle(client, bucket: str, prefix: str, version: str, local_dir: 
         shutil.rmtree(active)
     staging.rename(active)
 
-    intent_path = active / "intent_v1.joblib"
+    intent_path = active / INTENT_MODEL_NAME
     embedding_dir = active / EMBEDDING_SUBDIR
     return SyncResult(
         version=version,

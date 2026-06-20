@@ -20,8 +20,6 @@ class TestProductGate:
         assert match_product("погода отличная", [IPHONE]) is None
 
     def test_semantic_mocked(self, monkeypatch, reload_modules):
-        monkeypatch.setenv("NLP_V2_SEMANTIC", "true")
-
         class FakeHit:
             product_id = 1
             score = 0.8
@@ -37,7 +35,7 @@ class TestProductGate:
         assert hit is not None
         assert hit.semantic_score >= 0.72
 
-    def test_fuzzy_only_when_semantic_disabled(self, reload_modules):
+    def test_fuzzy_match(self, reload_modules):
         from app.nlp.product_gate import match_product
 
         hit = match_product("куплю айфон 16", [IPHONE])

@@ -1,11 +1,11 @@
-FROM eclipse-temurin:24-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 COPY services/core/ ./services/core/
 COPY proto/ ./proto/
 WORKDIR /build/services/core
 RUN ./gradlew bootJar --no-daemon -x test
 
-FROM eclipse-temurin:24-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /build/services/core/build/libs/core.jar app.jar

@@ -11,7 +11,6 @@ type Config struct {
 	SessionEncryptionKey string
 	InternalGRPCSecret   string
 	CoreGRPCAddr         string
-	MatchingGRPCAddr     string
 	NatsURL              string
 	WorkerSessionString  string
 	WorkerSessionPath    string
@@ -29,7 +28,6 @@ func Load() Config {
 		SessionEncryptionKey: os.Getenv("SESSION_ENCRYPTION_KEY"),
 		InternalGRPCSecret:   os.Getenv("INTERNAL_GRPC_TOKEN"),
 		CoreGRPCAddr:         envOr("CORE_GRPC_ADDR", "core:50051"),
-		MatchingGRPCAddr:     envOr("MATCHING_GRPC_ADDR", "matching:50052"),
 		NatsURL:              envOr("NATS_URL", "nats://nats:4222"),
 		WorkerSessionString:  os.Getenv("WORKER_SESSION_STRING"),
 		WorkerSessionPath:    envOr("WORKER_SESSION_PATH", "/data/session.json"),

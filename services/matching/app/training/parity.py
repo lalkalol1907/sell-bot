@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
 """Compare sentence-transformers vs fastembed ONNX embedding parity."""
 
 from __future__ import annotations
 
-import argparse
-import sys
+import os
+import shutil
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -32,6 +33,8 @@ SAMPLE_TEXTS = [
 ]
 
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_HINT = "paraphrase-multilingual-minilm-l12-v2"
+ONNX_FILENAMES = ("model.onnx", "model_optimized.onnx")
 
 
 def _cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -64,7 +67,8 @@ def _encode_fastembed(texts: list[str], model_dir: str) -> list[np.ndarray]:
     return normalized
 
 
-def check_parity(model_dir: str, *, max_drift: float = 0.02) -> dict:
+def check_parity(model_dir: str | Path, *, max_drift: float = 0.02) -> dict:
+    model_dir = str(model_dir)
     st_vectors = _encode_sentence_transformers(SAMPLE_TEXTS)
     onnx_vectors = _encode_fastembed(SAMPLE_TEXTS, model_dir)
 
@@ -79,16 +83,27 @@ def check_parity(model_dir: str, *, max_drift: float = 0.02) -> dict:
     }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model-dir", required=True, help="Path to ONNX embedding directory")
-    parser.add_argument("--max-drift", type=float, default=0.02)
-    args = parser.parse_args()
+def fastembed_cache_roots() -> list[Path]:
+    roots = [
+        Path(os.getenv("FASTEMBED_CACHE_PATH", Path(tempfile.gettempdir()) / "fastembed_cache")),
+        Path.home() / ".cache" / "fastembed",
+    ]
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for root in roots:
+        resolved = root.expanduser().resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(resolved)
+    return unique
 
-    report = check_parity(args.model_dir, max_drift=args.max_drift)
-    print(report)
-    return 0 if report["passed"] else 1
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def clear_fastembed_cache() -> list[Path]:
+    removed: list[Path] = []
+    for cache_root in fastembed_cache_roots():
+        if not cache_root.is_dir():
+            continue
+        shutil.rmtree(cache_root, ignore_errors=True)
+        removed.append(cache_root)
+    return removed

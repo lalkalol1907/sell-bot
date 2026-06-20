@@ -10,7 +10,7 @@ from pathlib import Path
 
 from prometheus_client import Counter, Info
 
-from app.config import EMBEDDING_MODEL_NAME
+from app.config import EMBEDDING_MODEL_NAME, load_thresholds
 from app.models_sync import SyncResult, peek_remote_version, should_sync_models, sync_models_from_s3
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ def apply_bundle(result: SyncResult) -> None:
         thresholds = result.local_dir / "semantic_thresholds.json"
         if thresholds.is_file():
             os.environ["SEMANTIC_THRESHOLDS_PATH"] = str(thresholds)
+            load_thresholds(thresholds)
 
         from app.embeddings.encoder import reset_encoder_cache
         from app.embeddings.indexer import reset_index_cache

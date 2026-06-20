@@ -21,29 +21,15 @@ def test_train_intent_mini(tmp_path, monkeypatch):
     train.write_text("\n".join(rows * 6), encoding="utf-8")
     eval_path.write_text("\n".join(rows), encoding="utf-8")
 
-    import subprocess
-    import sys
+    from app.training.intent import train_intent
 
-    out = tmp_path / "model.joblib"
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(ROOT / "scripts" / "train_intent.py"),
-            "--train",
-            str(train),
-            "--eval",
-            str(eval_path),
-            "--output",
-            str(out),
-            "--no-embeddings",
-            "--min-macro-f1",
-            "0.0",
-            "--min-discussion-recall",
-            "0.0",
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
+    out = tmp_path / "intent.joblib"
+    train_intent(
+        train_path=train,
+        eval_path=eval_path,
+        output_path=out,
+        use_embeddings=False,
+        min_macro_f1=0.0,
+        min_discussion_recall=0.0,
     )
-    assert result.returncode == 0, result.stderr
     assert out.is_file()

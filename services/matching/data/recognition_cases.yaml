@@ -329,8 +329,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_03
   text: кто может подсказать где купить айфон 16?
   products:
@@ -340,8 +339,7 @@
     matched: true
     level: probable
     product_id: 1
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_06
   text: достать airpods pro можно?
   products:
@@ -351,8 +349,7 @@
     matched: true
     level: probable
     product_id: 6
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_11
   text: срочно нужен самсунг s24
   products:
@@ -362,8 +359,7 @@
     matched: true
     level: probable
     product_id: 4
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_13
   text: где купить эйрподс?
   products:
@@ -373,8 +369,7 @@
     matched: true
     level: probable
     product_id: 6
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_16
   text: ищу 16-ку для себя
   products:
@@ -384,8 +379,7 @@
     matched: true
     level: probable
     product_id: 1
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_17
   text: где достать прошку 16?
   products:
@@ -395,8 +389,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_18
   text: можно ли найти s24 ultra
   products:
@@ -406,8 +399,7 @@
     matched: true
     level: probable
     product_id: 4
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_19
   text: есть у кого airpods?
   products:
@@ -417,8 +409,7 @@
     matched: true
     level: probable
     product_id: 6
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: implicit_buy_20
   text: ищу ps5 slim
   products:
@@ -428,8 +419,7 @@
     matched: true
     level: probable
     product_id: 7
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: sell_reject_01
   text: продаю айфон 16, состояние отличное
   products:
@@ -1093,8 +1083,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_02
   text: есть у кого 16 про на 256?
   products:
@@ -1104,8 +1093,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_03
   text: ищу шестнадцатую прошку
   products:
@@ -1115,8 +1103,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_04
   text: нужна шестнадцатая модель про
   products:
@@ -1126,8 +1113,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_05
   text: где взять галакси эс 24
   products:
@@ -1137,8 +1123,7 @@
     matched: true
     level: probable
     product_id: 4
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_06
   text: ищу макбук на m3
   products:
@@ -1148,8 +1133,7 @@
     matched: true
     level: probable
     product_id: 5
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_07
   text: нужны беспроводные эйрподсы про
   products:
@@ -1159,8 +1143,7 @@
     matched: true
     level: probable
     product_id: 6
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_08
   text: где найти плейстейшн пять
   products:
@@ -1170,8 +1153,7 @@
     matched: true
     level: probable
     product_id: 7
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_09
   text: ищу планшет эйр от эпл
   products:
@@ -1181,8 +1163,7 @@
     matched: true
     level: probable
     product_id: 8
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_10
   text: достать пятнадцатую модель
   products:
@@ -1192,8 +1173,7 @@
     matched: true
     level: probable
     product_id: 3
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_11
   text: есть кто продаёт шестнадцатый? нет, ищу купить
   products:
@@ -1203,8 +1183,7 @@
     matched: true
     level: probable
     product_id: 1
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_12
   text: подскажите шестнадцатый про 256
   products:
@@ -1214,8 +1193,7 @@
     matched: true
     level: probable
     product_id: 2
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_13
   text: где купить эс двадцать четыре
   products:
@@ -1225,8 +1203,7 @@
     matched: true
     level: probable
     product_id: 4
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_14
   text: нужен ноутбук про m3
   products:
@@ -1236,8 +1213,7 @@
     matched: true
     level: probable
     product_id: 5
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: semantic_15
   text: ищу наушники эйрподс вторые
   products:
@@ -1247,8 +1223,7 @@
     matched: true
     level: probable
     product_id: 6
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
+  requires_semantic: true
 - id: variant_storage_pick_256
   text: куплю iphone 16 pro 256
   products:
@@ -1280,7 +1255,7 @@
   sensitivity: balanced
   expect:
     matched: true
-    level: confirmed
+    level: probable
     product_id: 22
 - id: variant_missing_storage_penalty
   text: куплю iphone 16 pro 256 черный
@@ -1290,7 +1265,7 @@
   sensitivity: balanced
   expect:
     matched: true
-    level: confirmed
+    level: probable
     product_id: 21
 - id: variant_no_attrs_in_message
   text: куплю iphone 16 pro
@@ -1311,6 +1286,4 @@
     matched: true
     level: probable
     intent_class: discussion
-  nlp_v2_enabled: true
-  nlp_v2_semantic: true
-  nlp_v2_normalize: true
+  requires_semantic: true

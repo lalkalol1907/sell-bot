@@ -93,10 +93,6 @@ services:
       NATS_URL: nats://nats:4222
       GRPC_PORT: 50052
       QDRANT_URL: http://qdrant:6333
-      NLP_V2_ENABLED: ${NLP_V2_ENABLED:-false}
-      NLP_V2_SEMANTIC: ${NLP_V2_SEMANTIC:-true}
-      NLP_V2_INTENT_ML: ${NLP_V2_INTENT_ML:-true}
-      NLP_V2_NORMALIZE: ${NLP_V2_NORMALIZE:-false}
       MODELS_SKIP_S3: ${MODELS_SKIP_S3:-true}
       MODELS_LOCAL_DIR: /data/models
       MODELS_S3_ENDPOINT: ${MODELS_S3_ENDPOINT:-}
@@ -136,7 +132,6 @@ services:
       TG_API_HASH: ${TG_API_HASH:-}
       SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY:-}
       CORE_GRPC_ADDR: core:50051
-      MATCHING_GRPC_ADDR: matching:50052
       NATS_URL: nats://nats:4222
       WORKER_SESSION_STRING: ${WORKER_SESSION_STRING:-}
       WORKER_SESSION_PATH: /data/session.json

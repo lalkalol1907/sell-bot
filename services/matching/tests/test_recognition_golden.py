@@ -7,12 +7,12 @@ import pytest
 from app.recognition_harness import assert_case, load_cases, run_case
 
 CASES = load_cases()
-FAST_CASES = [c for c in CASES if not c.nlp_v2_semantic]
-SEMANTIC_CASES = [c for c in CASES if c.nlp_v2_semantic]
+FAST_CASES = [c for c in CASES if not c.requires_semantic]
+SEMANTIC_CASES = [c for c in CASES if c.requires_semantic]
 
 
 @pytest.mark.parametrize("case", FAST_CASES, ids=lambda c: c.id)
-def test_recognition_golden_fast(case, reload_modules):
+def test_recognition_golden_fast(case):
     actual = run_case(case)
     errors = assert_case(case, actual)
     assert not errors, f"{case.id}: " + "; ".join(errors)
@@ -20,7 +20,7 @@ def test_recognition_golden_fast(case, reload_modules):
 
 @pytest.mark.parametrize("case", SEMANTIC_CASES, ids=lambda c: c.id)
 @pytest.mark.integration
-def test_recognition_golden_semantic(case, reload_modules):
+def test_recognition_golden_semantic(case):
     actual = run_case(case)
     errors = assert_case(case, actual)
     assert not errors, f"{case.id}: " + "; ".join(errors)

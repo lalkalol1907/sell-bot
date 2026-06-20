@@ -6,7 +6,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parent.parent / "data"
+from app.paths import data_dir
+
+DATA = data_dir()
 
 BUY = [
     "куплю айфон 16",
@@ -1020,6 +1022,11 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def generate_datasets() -> None:
+    """Regenerate intent and product-pairs datasets from canonical seed data."""
+    main()
+
+
 def main():
     train_rows = []
     datasets = [
@@ -1052,6 +1059,10 @@ def main():
     write_jsonl(DATA / "intent_eval.jsonl", eval_rows)
     write_jsonl(DATA / "product_pairs_eval.jsonl", pair_rows)
     print(f"train={len(train_rows)} eval={len(eval_rows)} pairs={len(pair_rows)}")
+
+
+def generate_datasets() -> None:
+    main()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.grpc_server import app
+from app.transport.http_app import app
 
 
 def test_health_endpoint():

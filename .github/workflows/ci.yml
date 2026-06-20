@@ -31,11 +31,11 @@ jobs:
         if: matrix.component != 'core' && matrix.component != 'seller-bot' && matrix.component != 'http-gateway'
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
-      - name: Set Up JDK 24
+      - name: Set Up JDK 25
         if: matrix.component == 'core'
         uses: actions/setup-java@v4
         with:
-          java-version: "24"
+          java-version: "25"
           distribution: temurin
           cache: gradle
 
@@ -71,14 +71,13 @@ jobs:
       - name: Install Matching Dependencies
         if: matrix.component == 'matching'
         working-directory: services/matching
-        run: pip install ".[dev]"
+        run: pip install -e ".[dev]"
 
       - name: Validate NLP datasets
         if: matrix.component == 'matching'
         working-directory: services/matching
         run: |
-          python scripts/generate_intent_dataset.py
-          python scripts/eval_product_pairs.py
+          pytest tests/test_intent_dataset.py tests/test_product_pairs_dataset.py tests/test_recognition_golden.py -q -m "not integration"
 
       - name: Generate Python Protos
         if: matrix.component == 'matching'
@@ -87,12 +86,10 @@ jobs:
       - name: Run Matching Tests (fast)
         if: matrix.component == 'matching'
         working-directory: services/matching
-        env:
-          NLP_V2_ENABLED: "false"
-          NLP_V2_SEMANTIC: "false"
         run: |
           pytest tests/ -q --tb=short -m "not integration" \
-            --cov=app.nlp --cov=app.matcher --cov=app.embeddings \
+            --cov=app.nlp --cov=app.pipeline --cov=app.embeddings \
+            --cov=app.handlers --cov=app.transport \
             --cov-report=term-missing --cov-fail-under=85
 
       - name: Set Up Bun

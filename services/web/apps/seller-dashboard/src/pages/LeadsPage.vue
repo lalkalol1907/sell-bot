@@ -2,15 +2,36 @@
 import { ref, watch } from "vue";
 import { sellerApi, type Lead } from "../api";
 
+const statusLabels: Record<string, string> = {
+  "": "Все",
+  new: "Новые",
+  contacted: "В работе",
+  closed: "Закрытые",
+  spam: "Спам",
+};
+
+const statusBadges: Record<string, string> = {
+  new: "badge-new",
+  contacted: "badge-contacted",
+  closed: "badge-closed",
+  spam: "badge-spam",
+};
+
 const statuses = ["", "new", "contacted", "closed", "spam"];
 
 const leads = ref<Lead[]>([]);
 const filter = ref("");
 const error = ref("");
+const loading = ref(true);
 
 async function load(status = filter.value) {
-  const data = await sellerApi.leads(status);
-  leads.value = data.leads;
+  loading.value = true;
+  try {
+    const data = await sellerApi.leads(status);
+    leads.value = data.leads;
+  } finally {
+    loading.value = false;
+  }
 }
 
 watch(
@@ -31,40 +52,52 @@ async function setStatus(id: number, status: string) {
 
 <template>
   <div>
-    <h2>Лиды</h2>
+    <header class="page-header">
+      <h2>Лиды</h2>
+      <p>Входящие сообщения из мониторинга чатов</p>
+    </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
     <select v-model="filter">
       <option v-for="s in statuses" :key="s || 'all'" :value="s">
-        {{ s || "Все" }}
+        {{ statusLabels[s] ?? s }}
       </option>
     </select>
 
     <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Текст</th>
-            <th>Уровень</th>
-            <th>Статус</th>
-            <th>Автор</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="lead in leads" :key="lead.id">
-            <td>{{ lead.raw_text }}</td>
-            <td>{{ lead.level }}</td>
-            <td>{{ lead.status }}</td>
-            <td>{{ lead.author_username || "—" }}</td>
-            <td class="row">
-              <button @click="setStatus(lead.id, 'contacted')">В работе</button>
-              <button class="secondary" @click="setStatus(lead.id, 'closed')">Закрыть</button>
-              <button class="danger" @click="setStatus(lead.id, 'spam')">Спам</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-if="loading" class="empty-state">Загрузка…</div>
+      <div v-else-if="leads.length === 0" class="empty-state">Лидов не найдено</div>
+      <div v-else class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Текст</th>
+              <th>Уровень</th>
+              <th>Статус</th>
+              <th>Автор</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="lead in leads" :key="lead.id">
+              <td style="max-width: 320px">{{ lead.raw_text }}</td>
+              <td>{{ lead.level }}</td>
+              <td>
+                <span :class="['badge', statusBadges[lead.status] ?? 'badge-off']">
+                  {{ statusLabels[lead.status] ?? lead.status }}
+                </span>
+              </td>
+              <td>{{ lead.author_username || "—" }}</td>
+              <td class="row">
+                <button @click="setStatus(lead.id, 'contacted')">В работе</button>
+                <button class="secondary" @click="setStatus(lead.id, 'closed')">Закрыть</button>
+                <button class="danger" @click="setStatus(lead.id, 'spam')">Спам</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

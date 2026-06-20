@@ -119,8 +119,4 @@ def normalize_text_legacy(text: str) -> str:
 
 
 def normalize_text(text: str) -> str:
-    from app.config import NLP_V2_ENABLED, NLP_V2_NORMALIZE
-
-    if NLP_V2_NORMALIZE or NLP_V2_ENABLED:
-        return normalize_text_v2(text)
-    return normalize_text_legacy(text)
+    return normalize_text_v2(text)
