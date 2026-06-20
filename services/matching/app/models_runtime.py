@@ -82,6 +82,19 @@ def apply_bundle(result: SyncResult) -> None:
         MODELS_VERSION_INFO.info({"version": result.version})
         logger.info("Active model bundle switched to %s", result.version)
 
+    warmup_models()
+
+
+def warmup_models() -> None:
+    """Eager-load ML models so the first message does not pay cold-start latency."""
+    from app.embeddings.encoder import warmup_encoder
+    from app.nlp.intent_classifier import warmup_intent_model
+
+    logger.info("Warming up matching models")
+    warmup_intent_model()
+    warmup_encoder()
+    logger.info("Matching models ready")
+
 
 def reload_if_changed() -> bool:
     """Check S3 latest.json and reload if version changed."""

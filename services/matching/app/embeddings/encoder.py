@@ -1,4 +1,4 @@
-"""Embedding encoder (fastembed ONNX, lazy load)."""
+"""Embedding encoder (fastembed ONNX, warmed up at bootstrap)."""
 
 from __future__ import annotations
 
@@ -86,6 +86,11 @@ def encode_texts(texts: list[str]) -> list[list[float]]:
 
 def encode_text(text: str) -> list[float]:
     return encode_texts([text])[0]
+
+
+def warmup_encoder() -> None:
+    """Load ONNX embedding model and run a dummy encode."""
+    encode_text("warmup")
 
 
 def is_encoder_available() -> bool:

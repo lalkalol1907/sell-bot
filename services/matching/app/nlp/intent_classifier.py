@@ -172,6 +172,15 @@ def classify_intent(text: str) -> IntentResult:
         return heuristic
 
 
+def warmup_intent_model() -> None:
+    """Load intent classifier and run a dummy inference."""
+    clf, _, _, _ = _load_ml_model()
+    if clf is None:
+        logger.info("Intent ML model not configured, using heuristic only")
+        return
+    classify_intent("куплю warmup")
+
+
 def reset_model_cache() -> None:
     global _classifier, _vectorizer, _scaler, _feature_type
     _classifier = None

@@ -20,7 +20,8 @@ def test_bootstrap_local_defaults(tmp_path, monkeypatch):
 
     from app.bootstrap import bootstrap_models
 
-    bootstrap_models()
+    with patch("app.models_runtime.warmup_models"):
+        bootstrap_models()
 
     import os
 
@@ -58,7 +59,8 @@ def test_bootstrap_falls_back_to_local_bundle_on_s3_failure(monkeypatch, tmp_pat
     from app import bootstrap
 
     with patch.object(bootstrap, "sync_models_from_s3", side_effect=RuntimeError("S3 object not found")):
-        bootstrap.bootstrap_models()
+        with patch("app.models_runtime.warmup_models"):
+            bootstrap.bootstrap_models()
 
     import os
 
@@ -87,7 +89,8 @@ def test_bootstrap_with_mocked_s3_sync(monkeypatch, tmp_path):
         embedding_model_dir=embedding,
     )
     with patch.object(bootstrap, "sync_models_from_s3", return_value=fake):
-        bootstrap.bootstrap_models()
+        with patch("app.models_runtime.warmup_models"):
+            bootstrap.bootstrap_models()
 
     import os
 

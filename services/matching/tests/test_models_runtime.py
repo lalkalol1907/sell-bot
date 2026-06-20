@@ -45,7 +45,8 @@ def test_apply_bundle_updates_env_and_version(tmp_path, monkeypatch):
         intent_model_path=intent,
         embedding_model_dir=embedding,
     )
-    models_runtime.apply_bundle(result)
+    with patch.object(models_runtime, "warmup_models"):
+        models_runtime.apply_bundle(result)
 
     import os
 
@@ -71,7 +72,8 @@ def test_apply_bundle_resets_caches(tmp_path, monkeypatch):
         intent_model_path=intent,
         embedding_model_dir=embedding,
     )
-    models_runtime.apply_bundle(result)
+    with patch.object(models_runtime, "warmup_models"):
+        models_runtime.apply_bundle(result)
 
     import os
 
@@ -131,7 +133,8 @@ def test_reload_if_changed_downloads_new_version(tmp_path, monkeypatch):
     with patch.object(models_runtime, "current_version", return_value="2026.06.19-1"):
         with patch("app.models_runtime.peek_remote_version", return_value="2026.06.20-1"):
             with patch("app.models_runtime.sync_models_from_s3", return_value=fake):
-                assert models_runtime.reload_if_changed() is True
+                with patch.object(models_runtime, "warmup_models"):
+                    assert models_runtime.reload_if_changed() is True
     assert models_runtime.current_version() == "2026.06.20-1"
 
 
@@ -144,6 +147,41 @@ def test_reload_if_changed_skips_when_pinned(monkeypatch):
     with patch("app.models_runtime.peek_remote_version", return_value="new-v2") as peek:
         assert models_runtime.reload_if_changed() is False
         peek.assert_not_called()
+
+
+def test_warmup_models_loads_intent_and_encoder(tmp_path, monkeypatch):
+    import joblib
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.linear_model import LogisticRegression
+    from unittest.mock import MagicMock
+
+    import numpy as np
+
+    fake = MagicMock()
+    fake.embed.return_value = [np.array([0.1, 0.2, 0.3], dtype=np.float32)]
+
+    monkeypatch.setenv("EMBEDDING_MODEL_DIR", str(tmp_path / "onnx"))
+    (tmp_path / "onnx").mkdir()
+    intent = tmp_path / "intent.joblib"
+    vec = CountVectorizer()
+    x = vec.fit_transform(["куплю iphone", "продаю iphone"])
+    clf = LogisticRegression()
+    clf.fit(x, ["buy", "sell"])
+    joblib.dump({"classifier": clf, "vectorizer": vec, "feature_type": "tfidf"}, intent)
+    monkeypatch.setenv("INTENT_MODEL_PATH", str(intent))
+
+    from app.embeddings import encoder
+    from app import models_runtime
+    from app.nlp import intent_classifier
+
+    encoder.reset_encoder_cache()
+    intent_classifier.reset_model_cache()
+
+    with patch.dict("sys.modules", {"fastembed": MagicMock(TextEmbedding=MagicMock(return_value=fake))}):
+        models_runtime.warmup_models()
+
+    fake.embed.assert_called()
+    assert intent_classifier._classifier is not None
 
 
 def test_intent_classifier_uses_updated_path(tmp_path, monkeypatch, reload_modules):
