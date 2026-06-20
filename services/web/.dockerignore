@@ -1,4 +1,4 @@
 node_modules
 apps/*/dist
 apps/*/node_modules
-packages
+packages/*/node_modules

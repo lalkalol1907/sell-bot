@@ -8,6 +8,8 @@ Bun workspaces: login-miniapp и seller-dashboard на Vite + Vue, один `bun
 services/web/
 ├── package.json          # workspaces root
 ├── bun.lock
+├── packages/
+│   └── api-client/       # shared fetch wrapper
 ├── apps/
 │   ├── login-miniapp/    # Mini App (Vue + Vite) → nginx :8081, /miniapp/
 │   └── seller-dashboard/ # Dashboard (Vue + Vite) → nginx :8082, /dashboard/

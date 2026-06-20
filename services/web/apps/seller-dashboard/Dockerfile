@@ -8,10 +8,12 @@ ENV VITE_BOT_USERNAME=$VITE_BOT_USERNAME
 ENV VITE_MINIAPP_URL=$VITE_MINIAPP_URL
 
 COPY .npmrc package.json bun.lock ./
+COPY packages/api-client/package.json packages/api-client/
 COPY apps/login-miniapp/package.json apps/login-miniapp/
 COPY apps/seller-dashboard/package.json apps/seller-dashboard/
 RUN bun install --frozen-lockfile
 
+COPY packages/api-client/ packages/api-client/
 COPY apps/seller-dashboard/ apps/seller-dashboard/
 RUN bun run --filter @sellbot/seller-dashboard build
 
