@@ -16,6 +16,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    redis:
+      url: ${REDIS_URL:redis://redis:6379/0}
 
 grpc:
   server:
@@ -35,11 +38,6 @@ management:
   metrics:
     tags:
       application: sellbot-core
-
-spring:
-  data:
-    redis:
-      url: ${REDIS_URL:redis://redis:6379/0}
 
 sellbot:
   internal-grpc-token: ${INTERNAL_GRPC_TOKEN:}
