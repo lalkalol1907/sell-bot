@@ -503,8 +503,15 @@ CI: test → build (6 образов) → deploy (SSH) → GitHub Release
 ```bash
 cd /opt/sell-bot
 docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d \
+  --scale "core=${CORE_REPLICAS:-2}" \
+  --scale "matching=${MATCHING_REPLICAS:-2}" \
+  --scale "seller-bot=${SELLER_BOT_REPLICAS:-2}" \
+  --scale "login-miniapp=${LOGIN_MINIAPP_REPLICAS:-2}" \
+  --scale "seller-dashboard=${SELLER_DASHBOARD_REPLICAS:-2}"
 ```
+
+Число реплик задаётся в `.env` (`CORE_REPLICAS`, `SELLER_BOT_REPLICAS`, … — см. `.env.example`). В compose также прописаны `deploy.update_config` (rolling, `start-first`) и `rollback_config`; на VPS без Swarm rolling выполняется через `pull` + `up --scale` (по одному образу за деплой CI). **worker-engine** — всегда 1 реплика: несколько реплик дублируют MTProto-слушателей для всех workers.
 
 После обновления с версии с `http-gateway`: подтяните новые `docker-compose.prod.yml` и `monitoring/`, удалите старый контейнер (`docker compose ... rm -sf http-gateway`), пересоберите **core**, **login-miniapp**, **seller-dashboard**. Содержимое `DEPLOY_DOTENV` менять не нужно — те же `JWT_SECRET`, `CORS_ORIGINS`, `BOT_TOKEN` теперь читает `core`.
 

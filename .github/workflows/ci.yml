@@ -233,7 +233,16 @@ jobs:
             } >> .env
             echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            set -a
+            # shellcheck disable=SC1091
+            source .env
+            set +a
+            docker compose -f docker-compose.prod.yml up -d \
+              --scale "core=${CORE_REPLICAS:-2}" \
+              --scale "matching=${MATCHING_REPLICAS:-1}" \
+              --scale "seller-bot=${SELLER_BOT_REPLICAS:-2}" \
+              --scale "login-miniapp=${LOGIN_MINIAPP_REPLICAS:-1}" \
+              --scale "seller-dashboard=${SELLER_DASHBOARD_REPLICAS:-1}"
 
   # GitHub Release после успешной сборки образов (тег v* уже запушен вручную).
   release:

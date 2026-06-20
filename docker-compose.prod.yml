@@ -1,3 +1,27 @@
+x-deploy-rolling: &deploy-rolling
+  restart_policy:
+    condition: on-failure
+  update_config:
+    parallelism: 1
+    delay: 15s
+    order: start-first
+    failure_action: rollback
+  rollback_config:
+    parallelism: 1
+    delay: 10s
+
+x-deploy-worker: &deploy-worker
+  restart_policy:
+    condition: on-failure
+  update_config:
+    parallelism: 1
+    delay: 30s
+    order: stop-first
+    failure_action: rollback
+  rollback_config:
+    parallelism: 1
+    delay: 15s
+
 services:
   db:
     image: postgres:16-alpine
@@ -36,6 +60,10 @@ services:
 
   core:
     image: ${CORE_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 30s
+    deploy:
+      <<: *deploy-rolling
+      replicas: ${CORE_REPLICAS:-2}
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -71,6 +99,10 @@ services:
 
   matching:
     image: ${MATCHING_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 30s
+    deploy:
+      <<: *deploy-rolling
+      replicas: ${MATCHING_REPLICAS:-1}
     environment:
       CORE_GRPC_ADDR: core:50051
       REDIS_URL: redis://redis:6379/0
@@ -96,6 +128,18 @@ services:
       - nats
       - qdrant
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=8000"
@@ -103,6 +147,10 @@ services:
 
   worker-engine:
     image: ${WORKER_ENGINE_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 30s
+    deploy:
+      <<: *deploy-worker
+      replicas: 1
     volumes:
       - worker_data:/data
     environment:
@@ -120,6 +168,12 @@ services:
       - matching
       - nats
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9102/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=9102"
@@ -127,18 +181,40 @@ services:
 
   login-miniapp:
     image: ${LOGIN_MINIAPP_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 10s
+    deploy:
+      <<: *deploy-rolling
+      replicas: ${LOGIN_MINIAPP_REPLICAS:-1}
     depends_on:
       - core
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   seller-dashboard:
     image: ${SELLER_DASHBOARD_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 10s
+    deploy:
+      <<: *deploy-rolling
+      replicas: ${SELLER_DASHBOARD_REPLICAS:-1}
     depends_on:
       - core
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   seller-bot:
     image: ${SELLER_BOT_IMAGE_NAME}:${IMAGE_TAG}
+    stop_grace_period: 30s
+    deploy:
+      <<: *deploy-rolling
+      replicas: ${SELLER_BOT_REPLICAS:-2}
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CORE_GRPC_ADDR: core:50051
@@ -158,6 +234,12 @@ services:
       - worker-engine
       - login-miniapp
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=8080"
