@@ -203,6 +203,20 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy stack files to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.DEPLOY_SSH_KEY_PASSPHRASE }}
+          source: "docker-compose.prod.yml,caddy/,monitoring/"
+          target: ${{ secrets.DEPLOY_PATH }}
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -221,7 +235,12 @@ jobs:
           script: |
             set -euo pipefail
             cd "$DEPLOY_PATH"
-            printf '%s\n' "$DEPLOY_DOTENV" > .env
+            COMPOSE_FILE="${DEPLOY_PATH}/docker-compose.prod.yml"
+            if [ ! -f "$COMPOSE_FILE" ]; then
+              echo "missing compose file: $COMPOSE_FILE" >&2
+              exit 1
+            fi
+            printf '%s\n' "$DEPLOY_DOTENV" | grep -Ev '^(COMPOSE_FILE|COMPOSE_PATH)=' > .env
             {
               echo "IMAGE_TAG=${IMAGE_TAG}"
               echo "CORE_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-core"
@@ -232,7 +251,6 @@ jobs:
               echo "SELLER_DASHBOARD_IMAGE_NAME=${DOCKERHUB_USERNAME}/${REPO_NAME}-seller-dashboard"
             } >> .env
             echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-            unset COMPOSE_FILE
             env_value() {
               local key="$1" default="$2"
               local line
@@ -248,8 +266,12 @@ jobs:
             SELLER_BOT_REPLICAS="$(env_value SELLER_BOT_REPLICAS 2)"
             LOGIN_MINIAPP_REPLICAS="$(env_value LOGIN_MINIAPP_REPLICAS 2)"
             SELLER_DASHBOARD_REPLICAS="$(env_value SELLER_DASHBOARD_REPLICAS 2)"
-            docker compose --env-file .env -f docker-compose.prod.yml pull
-            docker compose --env-file .env -f docker-compose.prod.yml up -d \
+            compose() {
+              COMPOSE_FILE="$COMPOSE_FILE" COMPOSE_PATH="$DEPLOY_PATH" \
+                docker compose --project-directory "$DEPLOY_PATH" --env-file "$DEPLOY_PATH/.env" "$@"
+            }
+            compose -f "$COMPOSE_FILE" pull
+            compose -f "$COMPOSE_FILE" up -d \
               --scale "core=${CORE_REPLICAS}" \
               --scale "matching=${MATCHING_REPLICAS}" \
               --scale "seller-bot=${SELLER_BOT_REPLICAS}" \

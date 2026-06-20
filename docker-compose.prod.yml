@@ -63,7 +63,7 @@ services:
     stop_grace_period: 30s
     deploy:
       <<: *deploy-rolling
-      replicas: ${CORE_REPLICAS:-2}
+      replicas: 2
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -102,7 +102,7 @@ services:
     stop_grace_period: 30s
     deploy:
       <<: *deploy-rolling
-      replicas: ${MATCHING_REPLICAS:-1}
+      replicas: 1
     environment:
       CORE_GRPC_ADDR: core:50051
       REDIS_URL: redis://redis:6379/0
@@ -184,7 +184,7 @@ services:
     stop_grace_period: 10s
     deploy:
       <<: *deploy-rolling
-      replicas: ${LOGIN_MINIAPP_REPLICAS:-1}
+      replicas: 2
     depends_on:
       - core
     restart: unless-stopped
@@ -199,7 +199,7 @@ services:
     stop_grace_period: 10s
     deploy:
       <<: *deploy-rolling
-      replicas: ${SELLER_DASHBOARD_REPLICAS:-1}
+      replicas: 2
     depends_on:
       - core
     restart: unless-stopped
@@ -214,7 +214,7 @@ services:
     stop_grace_period: 30s
     deploy:
       <<: *deploy-rolling
-      replicas: ${SELLER_BOT_REPLICAS:-2}
+      replicas: 2
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CORE_GRPC_ADDR: core:50051
