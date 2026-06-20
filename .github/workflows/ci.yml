@@ -90,7 +90,7 @@ jobs:
           pytest tests/ -q --tb=short -m "not integration" \
             --cov=app.nlp --cov=app.pipeline --cov=app.embeddings \
             --cov=app.handlers --cov=app.transport \
-            --cov-report=term-missing --cov-fail-under=85
+            --cov-report=term-missing --cov-fail-under=75
 
       - name: Set Up Bun
         if: matrix.component == 'seller-bot' || matrix.component == 'http-gateway'

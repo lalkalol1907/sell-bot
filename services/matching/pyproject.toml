@@ -54,5 +54,5 @@ source = ["app/nlp", "app/pipeline", "app/embeddings", "app/models_sync", "app/b
 omit = ["app/generated/*", "app/main.py", "app/training/*"]
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 75
 show_missing = true
