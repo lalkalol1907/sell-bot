@@ -17,9 +17,6 @@ class DedupStore:
         """Release reservation after failed lead persistence."""
         self._client.delete(self._key(chat_id, author_id, product_id))
 
-    def is_duplicate(self, chat_id: int, author_id: int, product_id: int) -> bool:
-        return not self.try_reserve(chat_id, author_id, product_id)
-
     @staticmethod
     def _key(chat_id: int, author_id: int, product_id: int) -> str:
         raw = f"{chat_id}:{author_id}:{product_id}"

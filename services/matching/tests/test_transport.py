@@ -16,14 +16,16 @@ class TestGrpcServer:
     def test_process_message_servicer(self, mock_process):
         from app.transport import grpc_server
 
-        mock_process.return_value = {
-            "matched": True,
-            "lead_id": 7,
-            "product_id": 3,
-            "product_title": "iPhone 16",
-            "score": 0.91,
-            "level": "confirmed",
-        }
+        from app.handlers.process_result import ProcessResult
+
+        mock_process.return_value = ProcessResult(
+            matched=True,
+            lead_id=7,
+            product_id=3,
+            product_title="iPhone 16",
+            score=0.91,
+            level="confirmed",
+        )
 
         captured: dict = {}
         original_add = matching_pb2_grpc.add_MatchingServiceServicer_to_server

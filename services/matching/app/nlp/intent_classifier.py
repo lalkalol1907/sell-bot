@@ -21,11 +21,19 @@ INDIRECT = {
     "кто", "где", "есть", "подскажите", "помогите", "достать", "срочно",
     "подскажи", "помоги", "возьмет", "возьмёт",
 }
-DISCUSSION_MARKERS = {
-    "тормозит", "глючит", "сломался", "сломалась", "батарея", "экран",
-    "обновление", "после", "проблема", "не работает", "разбился", "чехол",
-    "пленка", "плёнка", "настроил", "настроила", "совет", "рекомендуете",
-    "перегревается", "шумят", "мерцает", "вылетает", "зависает",
+
+DISCUSSION_BROKEN_PHRASES = (
+    "не работать", "не работает", "не включаться", "не ловить", "не коннект",
+)
+DISCUSSION_HINTS = (
+    "тормоз", "тормозить", "глюч", "сломал", "батар", "перегрев", "шум", "мерца", "вылет", "завис",
+    "разбил", "чехол", "плёнк", "пленк", "совет", "рекоменд", "настроить", "настроил",
+)
+DISCUSSION_TOKENS = {
+    "тормозить", "глючить", "сломаться", "сломалась", "батарея", "экран",
+    "обновление", "после", "проблема", "не работать", "разбиться", "чехол",
+    "пленка", "плёнка", "настроить", "настроила", "совет", "рекомендовать",
+    "перегреваться", "шуметь", "мерцать", "вылетать", "зависать",
 }
 
 INTENT_SCORES = {
@@ -85,6 +93,16 @@ def _build_features(normalized: str, vectorizer, feature_type: str):
     return None
 
 
+def _looks_like_discussion(text: str, tokens: set[str]) -> bool:
+    if tokens & POSITIVE:
+        return False
+    if any(phrase in text for phrase in DISCUSSION_BROKEN_PHRASES):
+        return True
+    if any(hint in text for hint in DISCUSSION_HINTS):
+        return True
+    return bool(tokens & DISCUSSION_TOKENS)
+
+
 def _merge_with_heuristic(heuristic: IntentResult, ml: IntentResult) -> IntentResult:
     """Apply high-precision heuristic guardrails on top of ML output."""
     if heuristic.label == "sell":
@@ -128,15 +146,7 @@ def intent_score_heuristic(text: str) -> IntentResult:
 
     if tokens & NEGATIVE or "в наличии" in text:
         return IntentResult("sell", -1.0)
-    if any(marker in text for marker in ("не работать", "не работает", "не включаться", "не ловить", "не коннект")):
-        return IntentResult("discussion", 0.1)
-    discussion_hints = (
-        "тормоз", "тормозить", "глюч", "сломал", "батар", "перегрев", "шум", "мерца", "вылет", "завис",
-        "разбил", "чехол", "плёнк", "пленк", "совет", "рекоменд", "настроить", "настроил",
-    )
-    if any(h in text for h in discussion_hints) and not (tokens & POSITIVE):
-        return IntentResult("discussion", 0.1)
-    if tokens & DISCUSSION_MARKERS and not (tokens & POSITIVE):
+    if _looks_like_discussion(text, tokens):
         return IntentResult("discussion", 0.1)
     if tokens & POSITIVE:
         return IntentResult("buy", 0.9)
@@ -145,10 +155,12 @@ def intent_score_heuristic(text: str) -> IntentResult:
     return IntentResult("none", 0.1)
 
 
-def classify_intent(text: str) -> IntentResult:
-    from app.nlp.normalize import normalize_text
+def classify_intent(text: str, *, normalized: str | None = None) -> IntentResult:
+    if normalized is None:
+        from app.nlp.normalize import normalize_text
 
-    normalized = normalize_text(text)
+        normalized = normalize_text(text)
+
     heuristic = intent_score_heuristic(normalized)
 
     clf, vectorizer, scaler, feature_type = _load_ml_model()
@@ -156,8 +168,6 @@ def classify_intent(text: str) -> IntentResult:
         return heuristic
 
     try:
-        import numpy as np
-
         features = _build_features(normalized, vectorizer, feature_type)
         if features is None:
             return heuristic

@@ -8,6 +8,7 @@
     "apps/login-miniapp": {
       "name": "@sellbot/login-miniapp",
       "dependencies": {
+        "@sellbot/api-client": "workspace:*",
         "qrcode": "^1.5.4",
         "vue": "^3.5.13",
       },
@@ -21,6 +22,7 @@
     "apps/seller-dashboard": {
       "name": "@sellbot/seller-dashboard",
       "dependencies": {
+        "@sellbot/api-client": "workspace:*",
         "vue": "^3.5.13",
         "vue-router": "^4.5.0",
       },
@@ -30,6 +32,9 @@
         "vite": "^6.0.0",
         "vue-tsc": "^2.2.0",
       },
+    },
+    "packages/api-client": {
+      "name": "@sellbot/api-client",
     },
   },
   "packages": {
@@ -144,6 +149,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.62.0", "", { "os": "win32", "cpu": "x64" }, "sha512-SoTb6lPg25xZlA2ibwQ++ahCCnH+FP0qmEuafMJ4gznZKOlXioKEAeJLgCrqjM98ACziXM9V1amFjICVL4IFoA=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.62.0", "", { "os": "win32", "cpu": "x64" }, "sha512-5L+T1fMX4RIEBoZzT0+sQ0PhTS36NULFmMXtl1TZo44TMAROIMHbZufSOjVWt/Y622BtxgxtaNOokbTDvfsrZA=="],
+
+    "@sellbot/api-client": ["@sellbot/api-client@workspace:packages/api-client"],
 
     "@sellbot/login-miniapp": ["@sellbot/login-miniapp@workspace:apps/login-miniapp"],
 

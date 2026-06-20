@@ -32,12 +32,12 @@ def _build_grpc_server():
                 raw_text=request.raw_text,
             )
             return matching_pb2.ProcessMessageResponse(
-                matched=result.get("matched", False),
-                lead_id=result.get("lead_id", 0),
-                product_id=result.get("product_id", 0),
-                product_title=result.get("product_title", ""),
-                score=result.get("score", 0.0),
-                level=result.get("level", ""),
+                matched=result.matched,
+                lead_id=result.lead_id,
+                product_id=result.product_id,
+                product_title=result.product_title,
+                score=result.score,
+                level=result.level,
             )
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=8))

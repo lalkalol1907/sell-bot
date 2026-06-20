@@ -144,21 +144,14 @@ def extract_variant_attrs(text: str) -> VariantAttrs:
 def _product_text(product: dict) -> str:
     parts = [product.get("title", "")]
     parts.extend(product.get("keywords") or [])
-    if product.get("storage_gb") is not None:
-        parts.append(f"{product['storage_gb']}gb")
-    if product.get("color"):
-        parts.append(str(product["color"]))
     return " ".join(str(p) for p in parts if p)
 
 
 def extract_product_variant(product: dict) -> VariantAttrs:
-    explicit_storage = product.get("storage_gb")
-    explicit_color = product.get("color")
-
     text = _product_text(product)
     return VariantAttrs(
-        storage_gb=int(explicit_storage) if explicit_storage is not None else extract_storage_gb(text),
-        color=str(explicit_color).lower() if explicit_color else extract_color(text),
+        storage_gb=extract_storage_gb(text),
+        color=extract_color(text),
     )
 
 

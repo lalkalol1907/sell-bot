@@ -38,8 +38,8 @@ class TestProcessMessage:
             raw_text="куплю айфон 16",
         )
 
-        assert result["matched"] is True
-        assert result["lead_id"] == 42
+        assert result.matched is True
+        assert result.lead_id == 42
         core_client.create_lead.assert_called_once()
         payload = core_client.create_lead.call_args[0][0]
         assert payload["product_title"] == "iPhone 16"
@@ -62,8 +62,8 @@ class TestProcessMessage:
             raw_text="куплю айфон 16",
         )
 
-        assert result["matched"] is False
-        assert result["reason"] == "duplicate"
+        assert result.matched is False
+        assert result.reason == "duplicate"
         core_client.create_lead.assert_not_called()
 
     @patch("app.handlers.message_processor.dedup")
@@ -103,7 +103,7 @@ class TestProcessMessage:
             raw_text="погода сегодня отличная",
         )
 
-        assert result["matched"] is False
+        assert result.matched is False
         core_client.create_lead.assert_not_called()
 
     @patch("app.handlers.message_processor.dedup")
@@ -122,8 +122,8 @@ class TestProcessMessage:
             raw_text="куплю",
         )
 
-        assert result["matched"] is False
-        assert result["reason"] == "spam_length"
+        assert result.matched is False
+        assert result.reason == "spam_length"
         core_client.create_lead.assert_not_called()
 
     @patch("app.handlers.message_processor.dedup")
@@ -143,6 +143,6 @@ class TestProcessMessage:
             raw_text="ищу курс по заработку в телеграм",
         )
 
-        assert result["matched"] is False
-        assert result["reason"] == "spam_learned"
+        assert result.matched is False
+        assert result.reason == "spam_learned"
         core_client.create_lead.assert_not_called()

@@ -35,11 +35,11 @@ class TestDedupStore:
         dedup.release(1, 2, 3)
         dedup._client.delete.assert_called_once()
 
-    def test_is_duplicate_wraps_try_reserve(self, dedup):
+    def test_try_reserve_blocks_duplicate(self, dedup):
         dedup._client.set.return_value = True
-        assert dedup.is_duplicate(1, 2, 3) is False
+        assert dedup.try_reserve(1, 2, 3) is True
         dedup._client.set.return_value = False
-        assert dedup.is_duplicate(1, 2, 3) is True
+        assert dedup.try_reserve(1, 2, 3) is False
 
     def test_different_authors_independent(self, dedup):
         dedup._client.set.return_value = True

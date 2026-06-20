@@ -25,11 +25,17 @@ def matches_learned_spam(normalized: str, spam_phrases: list[str]) -> bool:
     return False
 
 
-def check_spam(raw_text: str, spam_phrases: list[str]) -> str | None:
+def check_spam(
+    raw_text: str,
+    spam_phrases: list[str],
+    *,
+    normalized: str | None = None,
+) -> str | None:
     """Return rejection reason or None if message passes filters."""
     if is_spam_by_length(raw_text):
         return "length"
-    normalized = normalize_text(raw_text)
+    if normalized is None:
+        normalized = normalize_text(raw_text)
     if matches_learned_spam(normalized, spam_phrases):
         return "learned"
     return None

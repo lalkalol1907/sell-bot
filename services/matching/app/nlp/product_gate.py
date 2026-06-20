@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from rapidfuzz import fuzz
 
-import logging
-
 from app.config import fuzzy_min_score, semantic_min_score
 from app.handlers import metrics
-
-logger = logging.getLogger(__name__)
 from app.nlp.normalize import keyword_in_text, normalize_keyword, normalize_text
 from app.nlp.variant_attrs import apply_variant_adjustment
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -151,8 +150,11 @@ def match_product(
     text: str,
     products: list[dict],
     seller_id: int = 0,
+    *,
+    normalized: str | None = None,
 ) -> ProductGateResult | None:
-    normalized = normalize_text(text)
+    if normalized is None:
+        normalized = normalize_text(text)
     if not normalized or not products:
         return None
 

@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import logging
-import os
 
-from app.config import semantic_min_score
+from app.config import REDIS_URL, semantic_min_score
 from app.core_client import get_core_client
 from app.dedup import DedupStore
 from app.handlers import metrics
+from app.handlers.process_result import ProcessResult
+from app.pipeline.context import build_message_context
 from app.pipeline.orchestrator import match_message
 from app.spam_filter import check_spam
 
 logger = logging.getLogger("matching")
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 dedup = DedupStore(REDIS_URL)
 
 
@@ -27,22 +27,29 @@ def process_message(
     author_username: str,
     chat_title: str,
     raw_text: str,
-) -> dict:
+) -> ProcessResult:
+    ctx = build_message_context(raw_text)
     core = get_core_client()
     seller = core.get_seller(seller_id)
     sensitivity = seller.get("sensitivity", "precise")
     spam_phrases = seller.get("spam_phrases", [])
 
-    spam_reason = check_spam(raw_text, spam_phrases)
+    spam_reason = check_spam(raw_text, spam_phrases, normalized=ctx.normalized)
     if spam_reason:
         metrics.SPAM_FILTERED.labels(reason=spam_reason).inc()
         metrics.MESSAGES_TOTAL.labels(result="spam_filtered").inc()
         logger.info("spam filtered seller=%s reason=%s", seller_id, spam_reason)
-        return {"matched": False, "reason": f"spam_{spam_reason}"}
+        return ProcessResult(matched=False, reason=f"spam_{spam_reason}")
 
     products = core.list_products(seller_id, active_only=True)
 
-    result = match_message(raw_text, products, sensitivity, seller_id=seller_id)
+    result = match_message(
+        raw_text,
+        products,
+        sensitivity,
+        seller_id=seller_id,
+        normalized=ctx.normalized,
+    )
     if not result.matched or result.product is None:
         if result.reject_reason:
             metrics.GATE_REJECTED.labels(reason=result.reject_reason).inc()
@@ -51,7 +58,7 @@ def process_message(
         if result.intent_class:
             metrics.INTENT_CLASS.labels(intent_class=result.intent_class).inc()
         metrics.MESSAGES_TOTAL.labels(result="no_match").inc()
-        return {"matched": False, "reason": result.reject_reason or "no_match"}
+        return ProcessResult(matched=False, reason=result.reject_reason or "no_match")
 
     threshold = semantic_min_score()
     if result.product.semantic_score >= threshold:
@@ -62,7 +69,7 @@ def process_message(
     if not dedup.try_reserve(chat_id, author_id, result.product.product_id):
         logger.info("duplicate lead skipped chat=%s author=%s", chat_id, author_id)
         metrics.MESSAGES_TOTAL.labels(result="duplicate").inc()
-        return {"matched": False, "reason": "duplicate"}
+        return ProcessResult(matched=False, reason="duplicate")
 
     lead_payload = {
         "seller_id": seller_id,
@@ -91,11 +98,11 @@ def process_message(
     metrics.MESSAGES_TOTAL.labels(result="lead").inc()
     logger.info("lead %d created for seller %d", lead_id, seller_id)
 
-    return {
-        "matched": True,
-        "lead_id": lead_id,
-        "product_id": result.product.product_id,
-        "product_title": result.product.title,
-        "score": result.score,
-        "level": result.level,
-    }
+    return ProcessResult(
+        matched=True,
+        lead_id=lead_id,
+        product_id=result.product.product_id,
+        product_title=result.product.title,
+        score=result.score,
+        level=result.level,
+    )

@@ -7,16 +7,12 @@ PRODUCT_256_BLACK = {
     "id": 1,
     "title": "iPhone 16 Pro 256GB Black",
     "keywords": ["iphone 16 pro 256 black"],
-    "storage_gb": 256,
-    "color": "black",
 }
 
 PRODUCT_128_WHITE = {
     "id": 2,
     "title": "iPhone 16 Pro 128GB White",
     "keywords": ["iphone 16 pro 128 white"],
-    "storage_gb": 128,
-    "color": "white",
 }
 
 PRODUCT_GENERIC = {

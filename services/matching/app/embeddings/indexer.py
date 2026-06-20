@@ -55,8 +55,6 @@ def _catalog_hash(products: list[dict]) -> str:
                     "id": p["id"],
                     "title": p.get("title", ""),
                     "keywords": sorted(p.get("keywords") or []),
-                    "storage_gb": p.get("storage_gb"),
-                    "color": p.get("color"),
                 }
                 for p in products
             ],
@@ -94,14 +92,7 @@ def ensure_catalog_indexed(seller_id: int, products: list[dict]) -> None:
     texts = []
     for p in products:
         kw = " ".join(p.get("keywords") or [])
-        storage = p.get("storage_gb")
-        color = p.get("color")
-        extra = []
-        if storage is not None:
-            extra.append(f"{storage}gb")
-        if color:
-            extra.append(str(color))
-        raw = f"{p.get('title', '')} {kw} {' '.join(extra)}".strip()
+        raw = f"{p.get('title', '')} {kw}".strip()
         texts.append(normalize_text(raw))
 
     try:

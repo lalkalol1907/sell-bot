@@ -16,14 +16,27 @@ class TestMatchMessage:
     def test_sell_rejected(self):
         result = match_message("продаю айфон 16", [IPHONE_PRODUCT])
         assert not result.matched
+        assert result.reject_reason == "sell_intent"
 
-    def test_empty_text(self):
+    def test_discussion_precise(self):
+        result = match_message("у меня айфон 16 тормозит", [IPHONE_PRODUCT], sensitivity="precise")
+        assert not result.matched
+        assert result.reject_reason == "discussion"
+
+    def test_empty_text(self, reload_modules):
         result = match_message("", [IPHONE_PRODUCT])
         assert not result.matched
+        assert result.reject_reason == "empty"
 
     def test_no_products(self):
         result = match_message("куплю айфон 16", [])
         assert not result.matched
+
+    def test_no_product_after_intent_passes(self, reload_modules):
+        products = [{"id": 1, "title": "Samsung", "keywords": ["samsung galaxy"]}]
+        result = match_message("куплю iphone", products)
+        assert not result.matched
+        assert result.reject_reason == "no_product"
 
     def test_probable_with_aggressive_sensitivity(self):
         result = match_message("есть айфон 16?", [IPHONE_PRODUCT], sensitivity="aggressive")

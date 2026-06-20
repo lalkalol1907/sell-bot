@@ -41,6 +41,14 @@ def _get_morph():
     return _MORPH
 
 
+def _sanitize(text: str) -> str:
+    text = text.lower().strip()
+    text = EMOJI_RE.sub(" ", text)
+    text = unicodedata.normalize("NFKC", text)
+    text = re.sub(r"[^\w\sа-яё?]", " ", text, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def translit_expand(text: str) -> str:
     pairs = _translit_pairs()
     result = text
@@ -68,11 +76,7 @@ def _lemmatize_token(token: str) -> str:
 
 
 def normalize_text_v2(text: str, *, lemmatize: bool = True) -> str:
-    text = text.lower().strip()
-    text = EMOJI_RE.sub(" ", text)
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"[^\w\sа-яё?]", " ", text, flags=re.IGNORECASE)
-    text = re.sub(r"\s+", " ", text).strip()
+    text = _sanitize(text)
     text = translit_expand(text)
 
     if not lemmatize or not text:
@@ -90,12 +94,7 @@ def normalize_text_v2(text: str, *, lemmatize: bool = True) -> str:
 
 def normalize_keyword(text: str) -> str:
     """Normalize catalog keyword without translit expansion (avoids false negatives)."""
-    text = text.lower().strip()
-    text = EMOJI_RE.sub(" ", text)
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"[^\w\sа-яё?]", " ", text, flags=re.IGNORECASE)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return _sanitize(text)
 
 
 def keyword_in_text(keyword: str, normalized_text: str) -> bool:
@@ -106,16 +105,6 @@ def keyword_in_text(keyword: str, normalized_text: str) -> bool:
         return True
     parts = [p for p in kw.split() if len(p) > 1 or p.isdigit()]
     return bool(parts) and all(p in normalized_text for p in parts)
-
-
-def normalize_text_legacy(text: str) -> str:
-    """MVP normalizer without lemmatization."""
-    text = text.lower().strip()
-    text = EMOJI_RE.sub(" ", text)
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"[^\w\sа-яё?]", " ", text, flags=re.IGNORECASE)
-    text = re.sub(r"\s+", " ", text).strip()
-    return translit_expand(text)
 
 
 def normalize_text(text: str) -> str:
