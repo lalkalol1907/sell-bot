@@ -90,6 +90,17 @@ func TestBotAPIChatID(t *testing.T) {
 	}
 }
 
+func TestTruncateForLog(t *testing.T) {
+	if got := listener.TruncateForLog("hello", 10); got != "hello" {
+		t.Fatalf("got %q", got)
+	}
+	long := "куплю айфон 16 pro max с большим объёмом памяти"
+	got := listener.TruncateForLog(long, 20)
+	if len([]rune(got)) > 21 {
+		t.Fatalf("expected truncation, got %q", got)
+	}
+}
+
 func TestIsAuthError(t *testing.T) {
 	if !listener.IsAuthError(errors.New("AUTH_KEY_UNREGISTERED")) {
 		t.Fatal("expected auth error")

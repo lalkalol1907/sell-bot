@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { sellerApi, type Product } from "../api";
 
 const products = ref<Product[]>([]);
 const error = ref("");
 const title = ref("");
 const price = ref("");
-const currency = ref("RUB");
 const keywords = ref("");
 
 async function load() {
@@ -26,7 +25,7 @@ async function onCreate() {
     await sellerApi.createProduct({
       title: title.value,
       price: price.value,
-      currency: currency.value,
+      currency: "RUB",
       keywords: keywords.value
         .split(",")
         .map((k) => k.trim())
@@ -69,7 +68,6 @@ async function remove(id: number) {
       <form @submit.prevent="onCreate">
         <input v-model="title" placeholder="Название" required />
         <input v-model="price" placeholder="Цена" required />
-        <input v-model="currency" placeholder="Валюта" />
         <input v-model="keywords" placeholder="Keywords через запятую" />
         <button type="submit">Добавить</button>
       </form>
@@ -89,7 +87,7 @@ async function remove(id: number) {
         <tbody>
           <tr v-for="p in products" :key="p.id">
             <td>{{ p.title }}</td>
-            <td>{{ p.price }} {{ p.currency }}</td>
+            <td>{{ p.price }}</td>
             <td>{{ p.keywords.join(", ") || "—" }}</td>
             <td>{{ p.is_active ? "активен" : "выкл" }}</td>
             <td class="row">

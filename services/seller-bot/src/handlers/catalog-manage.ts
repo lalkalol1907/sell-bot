@@ -44,7 +44,7 @@ export async function handleCatalogMenu(ctx: BotContext, catalogClient: any, pro
     lines.push("Каталог пуст.");
   } else {
     for (const p of products) {
-      lines.push(`${p.is_active ? "✅" : "⏸"} ${p.title} — ${p.price} ${p.currency} (id: ${p.id})`);
+      lines.push(`${p.is_active ? "✅" : "⏸"} ${p.title} — ${p.price} (id: ${p.id})`);
     }
   }
 
@@ -114,13 +114,7 @@ export async function handleProductEditFlow(ctx: BotContext, catalogClient: any)
       await ctx.reply("Некорректная цена. Пример: 79990");
       return;
     }
-    ctx.session.productPrice = normalizePrice(text);
-    ctx.session.flow = "edit_product_currency";
-    await ctx.reply("Введите валюту (RUB / USD):");
-    return;
-  }
 
-  if (flow === "edit_product_currency") {
     const { updateProduct, listProducts } = await import("../grpc/client.js");
     const products = await listProducts(catalogClient, sellerId);
     const existing = products.find((p) => Number(p.id) === productId);
@@ -134,8 +128,8 @@ export async function handleProductEditFlow(ctx: BotContext, catalogClient: any)
       id: productId,
       seller_id: sellerId,
       title: ctx.session.productTitle!,
-      price: ctx.session.productPrice!,
-      currency: text.toUpperCase() || "RUB",
+      price: normalizePrice(text),
+      currency: existing.currency || "RUB",
       keywords: existing.keywords ?? [],
       is_active: existing.is_active,
     });

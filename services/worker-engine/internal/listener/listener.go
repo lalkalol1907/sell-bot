@@ -18,6 +18,7 @@ import (
 
 	"github.com/sellbot/worker-engine/internal/config"
 	"github.com/sellbot/worker-engine/internal/core"
+	"github.com/sellbot/worker-engine/internal/metrics"
 	"github.com/sellbot/worker-engine/internal/publisher"
 	"github.com/sellbot/worker-engine/internal/sessionstore"
 )
@@ -194,7 +195,7 @@ func (l *Listener) onMessage(ctx context.Context, rt Runtime, msg tg.MessageClas
 	title := rt.ChatTitles[chatID]
 	publishChatID := BotAPIChatID(m.PeerID)
 
-	return l.nats.PublishCaptured(publisher.CapturedMessage{
+	err := l.nats.PublishCaptured(publisher.CapturedMessage{
 		SellerID:       rt.OwnerSellerID,
 		WorkerID:       rt.WorkerID,
 		ChatID:         publishChatID,
@@ -204,6 +205,28 @@ func (l *Listener) onMessage(ctx context.Context, rt Runtime, msg tg.MessageClas
 		ChatTitle:      title,
 		RawText:        m.Message,
 	})
+	if err != nil {
+		log.Printf(
+			"worker %d: capture publish failed chat=%d msg=%d: %v",
+			rt.WorkerID, publishChatID, m.ID, err,
+		)
+		return err
+	}
+
+	metrics.MessagesCaptured.Inc()
+	log.Printf(
+		"worker %d: captured chat=%d msg=%d author=%d title=%q text=%q",
+		rt.WorkerID, publishChatID, m.ID, authorID, title, TruncateForLog(m.Message, 120),
+	)
+	return nil
+}
+
+func TruncateForLog(text string, maxRunes int) string {
+	runes := []rune(text)
+	if maxRunes <= 0 || len(runes) <= maxRunes {
+		return text
+	}
+	return string(runes[:maxRunes]) + "…"
 }
 
 func BotAPIChatID(peer tg.PeerClass) int64 {

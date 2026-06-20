@@ -54,15 +54,9 @@ export async function handleCatalogFlow(ctx: BotContext, catalogClient: any) {
       await ctx.reply("Некорректная цена. Пример: 79990");
       return;
     }
-    ctx.session.productPrice = normalizePrice(text);
-    ctx.session.flow = "add_product_currency";
-    await ctx.reply("Введите валюту (RUB / USD):");
-    return;
-  }
 
-  if (flow === "add_product_currency") {
     const sellerId = ctx.session.sellerId;
-    if (!sellerId || !ctx.session.productTitle || !ctx.session.productPrice) {
+    if (!sellerId || !ctx.session.productTitle) {
       await ctx.reply("Сессия сброшена. Нажмите /start");
       ctx.session.flow = undefined;
       return;
@@ -73,8 +67,8 @@ export async function handleCatalogFlow(ctx: BotContext, catalogClient: any) {
       catalogClient,
       sellerId,
       title,
-      ctx.session.productPrice,
-      text.toUpperCase() || "RUB",
+      normalizePrice(text),
+      "RUB",
       [],
     );
 
