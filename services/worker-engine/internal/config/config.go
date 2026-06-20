@@ -15,6 +15,7 @@ type Config struct {
 	NatsURL              string
 	WorkerSessionString  string
 	WorkerSessionPath    string
+	UpdatesStateDir      string
 	WorkerID             int64
 	OwnerSellerID        int64
 	DevInjectMessage     string
@@ -32,6 +33,7 @@ func Load() Config {
 		NatsURL:              envOr("NATS_URL", "nats://nats:4222"),
 		WorkerSessionString:  os.Getenv("WORKER_SESSION_STRING"),
 		WorkerSessionPath:    envOr("WORKER_SESSION_PATH", "/data/session.json"),
+		UpdatesStateDir:      envOr("UPDATES_STATE_DIR", "/data/updates-state"),
 		WorkerID:             envInt64("WORKER_ID", 1),
 		OwnerSellerID:        envInt64("OWNER_SELLER_ID", 1),
 		DevInjectMessage:     os.Getenv("DEV_INJECT_MESSAGE"),

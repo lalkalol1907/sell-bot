@@ -15,9 +15,11 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
+	"go.uber.org/zap"
 
 	"github.com/sellbot/worker-engine/internal/config"
 	"github.com/sellbot/worker-engine/internal/core"
+	"github.com/sellbot/worker-engine/internal/gapstore"
 	"github.com/sellbot/worker-engine/internal/metrics"
 	"github.com/sellbot/worker-engine/internal/publisher"
 	"github.com/sellbot/worker-engine/internal/sessionstore"
@@ -58,8 +60,20 @@ func (l *Listener) Run(ctx context.Context, rt Runtime) error {
 		return err
 	}
 
+	gapStore, err := gapstore.Open(l.cfg.UpdatesStateDir, rt.WorkerID)
+	if err != nil {
+		return fmt.Errorf("open updates state: %w", err)
+	}
+
+	var updateHandler telegram.UpdateHandler
 	client := telegram.NewClient(l.cfg.TgAPIID, l.cfg.TgAPIHash, telegram.Options{
 		SessionStorage: storage,
+		UpdateHandler: telegram.UpdateHandlerFunc(func(ctx context.Context, u tg.UpdatesClass) error {
+			if updateHandler == nil {
+				return nil
+			}
+			return updateHandler.Handle(ctx, u)
+		}),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -67,18 +81,18 @@ func (l *Listener) Run(ctx context.Context, rt Runtime) error {
 			log.Printf("worker %d: whitelist refresh failed: %v", rt.WorkerID, err)
 		}
 
-		if err := l.syncDialogs(ctx, client.API(), rt); err != nil {
-			log.Printf("worker %d: sync dialogs failed: %v", rt.WorkerID, err)
-		}
-
-		go l.dialogsSyncLoop(ctx, client.API(), rt)
-
-		go l.whitelistLoop(ctx, rt)
-
 		self, err := client.Self(ctx)
 		if err != nil {
 			return fmt.Errorf("self: %w", err)
 		}
+
+		if err := l.syncDialogs(ctx, client.API(), rt, gapStore, self.ID); err != nil {
+			log.Printf("worker %d: sync dialogs failed: %v", rt.WorkerID, err)
+		}
+
+		go l.dialogsSyncLoop(ctx, client.API(), rt, gapStore, self.ID)
+		go l.whitelistLoop(ctx, rt)
+
 		_ = l.core.UpdateWorkerStatus(ctx, rt.WorkerID, "active")
 
 		dispatcher := tg.NewUpdateDispatcher()
@@ -89,10 +103,31 @@ func (l *Listener) Run(ctx context.Context, rt Runtime) error {
 			return l.onMessage(ctx, rt, update.Message)
 		})
 
-		gap := updates.New(updates.Config{Handler: dispatcher})
+		gapLogger := gapsLogger(rt.WorkerID)
+		gap := updates.New(updates.Config{
+			Handler:      dispatcher,
+			Storage:      gapStore,
+			AccessHasher: gapStore,
+			Logger:       gapLogger,
+			OnChannelTooLong: func(channelID int64) {
+				log.Printf("worker %d: channel gap too long, channel_id=%d", rt.WorkerID, channelID)
+			},
+		})
+		updateHandler = gap
+
 		log.Printf("worker %d: MTProto listener started (account %d)", rt.WorkerID, self.ID)
 		return gap.Run(ctx, client.API(), self.ID, updates.AuthOptions{IsBot: self.Bot})
 	})
+}
+
+func gapsLogger(workerID int64) *zap.Logger {
+	cfg := zap.NewProductionConfig()
+	cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	logger, err := cfg.Build()
+	if err != nil {
+		return zap.NewNop().With(zap.Int64("worker_id", workerID))
+	}
+	return logger.With(zap.Int64("worker_id", workerID))
 }
 
 func (l *Listener) sessionStorage(rt Runtime) (session.Storage, error) {
@@ -128,7 +163,7 @@ func (l *Listener) shouldListen(chatID int64) bool {
 	return l.active[chatID]
 }
 
-func (l *Listener) dialogsSyncLoop(ctx context.Context, api *tg.Client, rt Runtime) {
+func (l *Listener) dialogsSyncLoop(ctx context.Context, api *tg.Client, rt Runtime, hasher updates.ChannelAccessHasher, accountID int64) {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
@@ -137,11 +172,11 @@ func (l *Listener) dialogsSyncLoop(ctx context.Context, api *tg.Client, rt Runti
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := l.syncDialogs(ctx, api, rt); err != nil {
+			if err := l.syncDialogs(ctx, api, rt, hasher, accountID); err != nil {
 				log.Printf("worker %d: periodic dialog sync failed: %v", rt.WorkerID, err)
 			}
 		case <-rt.SyncCh:
-			if err := l.syncDialogs(ctx, api, rt); err != nil {
+			if err := l.syncDialogs(ctx, api, rt, hasher, accountID); err != nil {
 				log.Printf("worker %d: requested dialog sync failed: %v", rt.WorkerID, err)
 			}
 		}

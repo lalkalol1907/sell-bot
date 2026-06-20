@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gotd/td/telegram/query/dialogs"
+	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
 
 	workerspb "github.com/sellbot/worker-engine/internal/gen/workers"
@@ -29,7 +30,21 @@ func chatFromElem(elem dialogs.Elem) (int64, string, string) {
 	}
 }
 
-func (l *Listener) syncDialogs(ctx context.Context, api *tg.Client, rt Runtime) error {
+func feedChannelAccessHash(ctx context.Context, hasher updates.ChannelAccessHasher, accountID int64, elem dialogs.Elem) {
+	if hasher == nil {
+		return
+	}
+	switch p := elem.Peer.(type) {
+	case *tg.InputPeerChannel:
+		if ch, ok := elem.Entities.Channel(p.ChannelID); ok {
+			if hash, ok := ch.GetAccessHash(); ok {
+				_ = hasher.SetChannelAccessHash(ctx, accountID, ch.ID, hash)
+			}
+		}
+	}
+}
+
+func (l *Listener) syncDialogs(ctx context.Context, api *tg.Client, rt Runtime, hasher updates.ChannelAccessHasher, accountID int64) error {
 	seen := make(map[int64]struct{})
 	batch := make([]*workerspb.MonitoredChat, 0, dialogsBatchSize)
 	var totalSynced int32
@@ -52,6 +67,8 @@ func (l *Listener) syncDialogs(ctx context.Context, api *tg.Client, rt Runtime) 
 		if elem.Deleted() {
 			return nil
 		}
+
+		feedChannelAccessHash(ctx, hasher, accountID, elem)
 
 		id, title, typ := chatFromElem(elem)
 		if id == 0 {
