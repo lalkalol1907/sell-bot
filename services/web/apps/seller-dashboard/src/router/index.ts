@@ -5,6 +5,7 @@ import CatalogPage from "../pages/CatalogPage.vue";
 import LeadsPage from "../pages/LeadsPage.vue";
 import LoginPage from "../pages/LoginPage.vue";
 import StatsPage from "../pages/StatsPage.vue";
+import TeamPage from "../pages/TeamPage.vue";
 import WorkersPage from "../pages/WorkersPage.vue";
 import WorkerChatsPage from "../pages/WorkerChatsPage.vue";
 
@@ -25,6 +26,7 @@ export const router = createRouter({
         { path: "", name: "stats", component: StatsPage },
         { path: "catalog", name: "catalog", component: CatalogPage },
         { path: "leads", name: "leads", component: LeadsPage },
+        { path: "team", name: "team", component: TeamPage },
         { path: "workers", name: "workers", component: WorkersPage },
         { path: "workers/:id/chats", name: "worker-chats", component: WorkerChatsPage },
       ],

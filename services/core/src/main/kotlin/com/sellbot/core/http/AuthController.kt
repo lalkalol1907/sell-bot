@@ -5,6 +5,7 @@ import com.sellbot.core.http.auth.JwtSession
 import com.sellbot.core.http.auth.TelegramAuth
 import com.sellbot.core.http.dto.toDto
 import com.sellbot.core.service.CatalogService
+import com.sellbot.core.service.TeamService
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val properties: SellbotHttpProperties,
     private val catalogService: CatalogService,
+    private val teamService: TeamService,
     private val jwtSession: JwtSession,
 ) {
 
@@ -33,13 +35,13 @@ class AuthController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(mapOf("error" to "invalid telegram auth"))
 
-        val seller = catalogService.getSellerByTgId(user.id)
+        val access = teamService.resolveDashboardAccess(user.id)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(mapOf("error" to "seller not found, run /start in bot first"))
 
-        val token = jwtSession.encode(seller.id!!, user.id)
+        val token = jwtSession.encode(access.seller.id!!, user.id)
         setJwtCookie(response, token)
-        return ResponseEntity.ok(seller.toDto())
+        return ResponseEntity.ok(access.seller.toDto(isOwner = access.isOwner))
     }
 
     @PostMapping("/logout")
@@ -51,7 +53,9 @@ class AuthController(
     @GetMapping("/me")
     fun me(request: jakarta.servlet.http.HttpServletRequest): ResponseEntity<Any> {
         return try {
-            ResponseEntity.ok(catalogService.getSeller(request.sellerId()).toDto())
+            val seller = catalogService.getSeller(request.sellerId())
+            val isOwner = teamService.isOwner(seller.id!!, request.tgUserId())
+            ResponseEntity.ok(seller.toDto(isOwner = isOwner))
         } catch (_: Exception) {
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "unauthorized"))
         }

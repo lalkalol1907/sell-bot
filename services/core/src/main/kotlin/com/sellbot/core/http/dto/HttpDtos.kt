@@ -8,7 +8,9 @@ import com.sellbot.core.domain.ProductEntity
 import com.sellbot.core.domain.SellerEntity
 import com.sellbot.core.domain.WorkerEntity
 import com.sellbot.core.http.grpc.LoginStep
+import com.sellbot.core.domain.SellerMemberEntity
 import com.sellbot.core.service.LeadStatsResult
+import com.sellbot.core.service.ProductLeadStats
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class SellerDto(
@@ -18,6 +20,17 @@ data class SellerDto(
     val fullName: String,
     val sensitivity: String,
     val plan: String,
+    val isOwner: Boolean = true,
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class TeamMemberDto(
+    val id: Long,
+    val username: String,
+    val fullName: String,
+    val status: String,
+    val tgUserId: Long?,
+    val joinedAt: String?,
 )
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
@@ -77,6 +90,14 @@ data class LeadStatsDto(
     val contacted: Int,
     val closed: Int,
     val spam: Int,
+    val byProduct: List<ProductLeadStatsDto> = emptyList(),
+)
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class ProductLeadStatsDto(
+    val productId: Long,
+    val productTitle: String,
+    val count: Int,
 )
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
@@ -89,13 +110,14 @@ data class LoginStepDto(
     val qrExpiresAt: Long,
 )
 
-fun SellerEntity.toDto() = SellerDto(
+fun SellerEntity.toDto(isOwner: Boolean = true) = SellerDto(
     id = id!!,
     tgUserId = tgUserId,
     username = username ?: "",
     fullName = fullName ?: "",
     sensitivity = sensitivity,
     plan = plan,
+    isOwner = isOwner,
 )
 
 fun ProductEntity.toDto() = ProductDto(
@@ -150,6 +172,22 @@ fun LeadStatsResult.toDto() = LeadStatsDto(
     contacted = contacted,
     closed = closed,
     spam = spam,
+    byProduct = byProduct.map { it.toDto() },
+)
+
+fun ProductLeadStats.toDto() = ProductLeadStatsDto(
+    productId = productId,
+    productTitle = productTitle,
+    count = count,
+)
+
+fun SellerMemberEntity.toDto() = TeamMemberDto(
+    id = id!!,
+    username = username,
+    fullName = fullName ?: "",
+    status = status,
+    tgUserId = tgUserId,
+    joinedAt = joinedAt?.toString(),
 )
 
 fun LoginStep.toDto() = LoginStepDto(

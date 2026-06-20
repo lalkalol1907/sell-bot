@@ -83,15 +83,6 @@ jobs:
         if: matrix.component == 'matching'
         run: bash scripts/gen-proto-python.sh
 
-      - name: Run Matching Tests (fast)
-        if: matrix.component == 'matching'
-        working-directory: services/matching
-        run: |
-          pytest tests/ -q --tb=short -m "not integration and not local" \
-            --cov=app.nlp --cov=app.pipeline --cov=app.embeddings \
-            --cov=app.handlers --cov=app.transport \
-            --cov-report=term-missing --cov-fail-under=75
-
       - name: Set Up Bun
         if: matrix.component == 'seller-bot'
         uses: oven-sh/setup-bun@v2

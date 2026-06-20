@@ -4,10 +4,12 @@ export type LeadCreatedEvent = {
   lead_id: number;
   seller_id: number;
   tg_user_id: number;
+  notify_tg_user_ids?: number[];
   product_title: string;
   raw_text: string;
   chat_title: string;
   author_username: string;
+  author_id: number;
   level: string;
   chat_id: number;
   message_id: number;
@@ -30,4 +32,9 @@ export function formatLeadNotification(event: LeadCreatedEvent): string {
 
 export function leadActionCallback(status: string, leadId: number): string {
   return `lead:${status}:${leadId}`;
+}
+
+export function authorContactUrl(authorId: number): string | null {
+  if (!authorId || authorId <= 0) return null;
+  return `tg://user?id=${authorId}`;
 }

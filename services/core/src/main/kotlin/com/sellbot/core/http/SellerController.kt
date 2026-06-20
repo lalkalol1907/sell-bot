@@ -6,6 +6,7 @@ import com.sellbot.core.http.redis.LoginHandoff.Companion.buildLoginHandoffUrl
 import com.sellbot.core.nats.NatsClient
 import com.sellbot.core.service.CatalogService
 import com.sellbot.core.service.LeadsService
+import com.sellbot.core.service.TeamService
 import com.sellbot.core.service.WorkersService
 import com.sellbot.core.service.WhitelistEntry
 import org.springframework.http.HttpStatus
@@ -27,6 +28,7 @@ class SellerController(
     private val catalogService: CatalogService,
     private val leadsService: LeadsService,
     private val workersService: WorkersService,
+    private val teamService: TeamService,
     private val natsClient: NatsClient,
 ) {
 
@@ -206,6 +208,44 @@ class SellerController(
             ResponseEntity.ok(mapOf("id" to seller.id, "sensitivity" to seller.sensitivity))
         } catch (e: Exception) {
             ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "invalid settings")))
+        }
+    }
+
+    @GetMapping("/team")
+    fun listTeam(request: jakarta.servlet.http.HttpServletRequest): Map<String, Any> {
+        val members = teamService.listMembers(request.sellerId()).map { it.toDto() }
+        val isOwner = teamService.isOwner(request.sellerId(), request.tgUserId())
+        return mapOf("members" to members, "is_owner" to isOwner)
+    }
+
+    @PostMapping("/team")
+    fun inviteTeamMember(
+        request: jakarta.servlet.http.HttpServletRequest,
+        @RequestBody body: Map<String, Any?>,
+    ): ResponseEntity<Any> {
+        val username = body["username"]?.toString().orEmpty()
+        return try {
+            val member = teamService.inviteMember(request.sellerId(), request.tgUserId(), username)
+            ResponseEntity.status(HttpStatus.CREATED).body(member.toDto())
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "invalid invite")))
+        }
+    }
+
+    @DeleteMapping("/team/{id}")
+    fun removeTeamMember(
+        request: jakarta.servlet.http.HttpServletRequest,
+        @PathVariable id: Long,
+    ): ResponseEntity<Any> {
+        return try {
+            val removed = teamService.removeMember(request.sellerId(), request.tgUserId(), id)
+            if (removed) {
+                ResponseEntity.ok(mapOf("success" to true))
+            } else {
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "member not found"))
+            }
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("error" to (e.message ?: "forbidden")))
         }
     }
 }

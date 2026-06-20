@@ -6,6 +6,7 @@ import com.sellbot.core.http.auth.TelegramAuth
 import com.sellbot.core.http.auth.TelegramUser
 import com.sellbot.core.http.redis.LoginHandoff
 import com.sellbot.core.service.CatalogService
+import com.sellbot.core.service.TeamService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
@@ -49,6 +50,7 @@ class SellerAuthInterceptor(
 class LoginAuthInterceptor(
     private val properties: SellbotHttpProperties,
     private val catalogService: CatalogService,
+    private val teamService: TeamService,
     private val loginHandoff: LoginHandoff,
     private val objectMapper: ObjectMapper,
 ) : HandlerInterceptor {
@@ -59,13 +61,13 @@ class LoginAuthInterceptor(
             ?: ""
         val initUser = TelegramAuth.validateInitData(initData, properties.botToken)
         if (initUser != null) {
-            val seller = catalogService.getSellerByTgId(initUser.id)
-            if (seller == null) {
+            val access = teamService.resolveDashboardAccess(initUser.id)
+            if (access == null) {
                 writeJsonError(response, HttpStatus.UNAUTHORIZED, "seller not found, run /start in bot first")
                 return false
             }
             request.setAttribute(HttpSessionAttributes.INIT_USER, initUser)
-            request.setAttribute(HttpSessionAttributes.SELLER_ID, seller.id!!)
+            request.setAttribute(HttpSessionAttributes.SELLER_ID, access.seller.id!!)
             request.setAttribute(HttpSessionAttributes.TG_USER_ID, initUser.id)
             return true
         }

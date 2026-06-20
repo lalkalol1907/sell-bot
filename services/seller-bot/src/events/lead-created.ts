@@ -9,7 +9,11 @@ import {
 } from "nats";
 import type { Bot } from "grammy";
 import type { BotContext } from "../types.js";
-import { formatLeadNotification, type LeadCreatedEvent } from "../utils/lead-notification.js";
+import {
+  formatLeadNotification,
+  authorContactUrl,
+  type LeadCreatedEvent,
+} from "../utils/lead-notification.js";
 import { incLeadsDelivered } from "../metrics.js";
 
 const sc = StringCodec();
@@ -18,12 +22,27 @@ const CONSUMER_NAME = "seller-bot-leads";
 const QUEUE_GROUP = "seller-bot-leads";
 const SUBJECT = "lead.created";
 
-function leadKeyboard(leadId: number) {
-  return new InlineKeyboard()
+function leadKeyboard(leadId: number, authorId: number) {
+  const kb = new InlineKeyboard();
+  const authorUrl = authorContactUrl(authorId);
+  if (authorUrl) {
+    kb.url("✉️ Написать автору", authorUrl).row();
+  }
+  return kb
     .text("В работе", `lead:contacted:${leadId}`)
     .text("Закрыть", `lead:closed:${leadId}`)
     .row()
     .text("Спам", `lead:spam:${leadId}`);
+}
+
+function notifyRecipients(event: LeadCreatedEvent): number[] {
+  if (event.notify_tg_user_ids?.length) {
+    return event.notify_tg_user_ids.filter((id) => id > 0);
+  }
+  if (event.tg_user_id > 0) {
+    return [event.tg_user_id];
+  }
+  return [];
 }
 
 async function ensureStream(jsm: JetStreamManager) {
@@ -66,17 +85,19 @@ export async function subscribeLeadCreated(bot: Bot<BotContext>, natsUrl: string
     for await (const msg of messages) {
       try {
         const event = JSON.parse(sc.decode(msg.data)) as LeadCreatedEvent;
-        const tgUserId = event.tg_user_id;
-        if (!tgUserId) {
-          console.warn("[lead.created] missing tg_user_id", event);
+        const recipients = notifyRecipients(event);
+        if (recipients.length === 0) {
+          console.warn("[lead.created] missing notify recipients", event);
           msg.ack();
           continue;
         }
 
         const text = formatLeadNotification(event);
-        await bot.api.sendMessage(tgUserId, text, {
-          reply_markup: leadKeyboard(event.lead_id),
-        });
+        for (const tgUserId of recipients) {
+          await bot.api.sendMessage(tgUserId, text, {
+            reply_markup: leadKeyboard(event.lead_id, event.author_id),
+          });
+        }
         incLeadsDelivered();
         msg.ack();
       } catch (err) {

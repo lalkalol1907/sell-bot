@@ -28,12 +28,19 @@ data class CreateLeadInput(
     val chatTitle: String = "",
 )
 
+data class ProductLeadStats(
+    val productId: Long,
+    val productTitle: String,
+    val count: Int,
+)
+
 data class LeadStatsResult(
     val total: Int,
     val newCount: Int,
     val contacted: Int,
     val closed: Int,
     val spam: Int,
+    val byProduct: List<ProductLeadStats> = emptyList(),
 )
 
 @Service
@@ -101,12 +108,20 @@ class LeadsService(
 
     fun getStats(sellerId: Long, days: Int): LeadStatsResult {
         val since = Instant.now().minus(days.toLong(), ChronoUnit.DAYS)
+        val byProduct = leadRepository.countLeadsByProductSince(sellerId, since).map { row ->
+            ProductLeadStats(
+                productId = (row[0] as Number).toLong(),
+                productTitle = row[1] as String,
+                count = (row[2] as Number).toInt(),
+            )
+        }
         return LeadStatsResult(
             total = leadRepository.countBySellerSince(sellerId, since).toInt(),
             newCount = leadRepository.countBySellerStatusSince(sellerId, "new", since).toInt(),
             contacted = leadRepository.countBySellerStatusSince(sellerId, "contacted", since).toInt(),
             closed = leadRepository.countBySellerStatusSince(sellerId, "closed", since).toInt(),
             spam = leadRepository.countBySellerStatusSince(sellerId, "spam", since).toInt(),
+            byProduct = byProduct,
         )
     }
 }

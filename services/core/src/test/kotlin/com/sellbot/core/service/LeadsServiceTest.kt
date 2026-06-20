@@ -118,6 +118,9 @@ class LeadsServiceTest {
         whenever(leadRepository.countBySellerStatusSince(eq(1L), eq("contacted"), any())).thenReturn(3L)
         whenever(leadRepository.countBySellerStatusSince(eq(1L), eq("closed"), any())).thenReturn(2L)
         whenever(leadRepository.countBySellerStatusSince(eq(1L), eq("spam"), any())).thenReturn(1L)
+        whenever(leadRepository.countLeadsByProductSince(eq(1L), any())).thenReturn(
+            listOf(arrayOf<Any>(1L, "iPhone 16", 3L)),
+        )
 
         val stats = leadsService.getStats(1L, days = 30)
 
@@ -126,5 +129,8 @@ class LeadsServiceTest {
         assertEquals(3, stats.contacted)
         assertEquals(2, stats.closed)
         assertEquals(1, stats.spam)
+        assertEquals(1, stats.byProduct.size)
+        assertEquals("iPhone 16", stats.byProduct[0].productTitle)
+        assertEquals(3, stats.byProduct[0].count)
     }
 }

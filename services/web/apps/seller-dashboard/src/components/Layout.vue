@@ -15,6 +15,7 @@ const { seller, logout } = useAuth();
         <RouterLink to="/" active-class="active">Статистика</RouterLink>
         <RouterLink to="/catalog" active-class="active">Каталог</RouterLink>
         <RouterLink to="/leads" active-class="active">Лиды</RouterLink>
+        <RouterLink to="/team" active-class="active">Команда</RouterLink>
         <RouterLink to="/workers" active-class="active">Воркеры</RouterLink>
       </nav>
       <div class="sidebar-footer">

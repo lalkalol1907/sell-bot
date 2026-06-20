@@ -25,6 +25,9 @@ class NotificationServiceTest {
     @Mock
     lateinit var notificationOutboxRepository: NotificationOutboxRepository
 
+    @Mock
+    lateinit var teamService: TeamService
+
     private val objectMapper: ObjectMapper = jacksonObjectMapper()
     private lateinit var notificationService: NotificationService
 
@@ -33,6 +36,7 @@ class NotificationServiceTest {
         notificationService = NotificationService(
             notificationRepository,
             notificationOutboxRepository,
+            teamService,
             objectMapper,
         )
     }

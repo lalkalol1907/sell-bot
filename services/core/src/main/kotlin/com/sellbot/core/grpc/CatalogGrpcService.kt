@@ -3,6 +3,7 @@ package com.sellbot.core.grpc
 import com.sellbot.core.domain.ProductEntity
 import com.sellbot.core.domain.SellerEntity
 import com.sellbot.core.service.CatalogService
+import com.sellbot.core.service.TeamService
 import com.sellbot.proto.catalog.CatalogServiceGrpc
 import com.sellbot.proto.catalog.CreateProductRequest
 import com.sellbot.proto.catalog.CreateSellerRequest
@@ -24,16 +25,17 @@ import java.math.BigDecimal
 @GrpcService
 class CatalogGrpcService(
     private val catalogService: CatalogService,
+    private val teamService: TeamService,
 ) : CatalogServiceGrpc.CatalogServiceImplBase() {
 
     override fun createSeller(request: CreateSellerRequest, responseObserver: StreamObserver<Seller>) {
         try {
-            val seller = catalogService.createOrGetSeller(
+            val access = teamService.resolveBotSession(
                 tgUserId = request.tgUserId,
                 username = request.username.ifBlank { null },
                 fullName = request.fullName.ifBlank { null },
             )
-            responseObserver.onNext(seller.toProto(emptyList()))
+            responseObserver.onNext(access.seller.toProto(catalogService.getSpamPhrases(access.seller.id!!)))
             responseObserver.onCompleted()
         } catch (e: Exception) {
             responseObserver.onError(Status.INTERNAL.withDescription(e.message).asRuntimeException())

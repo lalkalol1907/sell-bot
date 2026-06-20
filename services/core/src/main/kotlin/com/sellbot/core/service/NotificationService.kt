@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 class NotificationService(
     private val notificationRepository: NotificationRepository,
     private val notificationOutboxRepository: NotificationOutboxRepository,
+    private val teamService: TeamService,
     private val objectMapper: ObjectMapper,
 ) {
     @Transactional
@@ -22,10 +23,12 @@ class NotificationService(
         productTitle: String,
         chatTitle: String,
     ): NotificationEntity {
+        val notifyTgUserIds = teamService.listNotifyTgUserIds(seller)
         val payload = mapOf(
             "lead_id" to lead.id,
             "seller_id" to seller.id,
             "tg_user_id" to seller.tgUserId,
+            "notify_tg_user_ids" to notifyTgUserIds,
             "product_id" to (lead.product?.id ?: 0),
             "product_title" to productTitle,
             "worker_id" to (lead.worker?.id ?: 0),

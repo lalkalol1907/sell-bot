@@ -27,4 +27,15 @@ interface LeadRepository : JpaRepository<LeadEntity, Long> {
         """
     )
     fun countBySellerStatusSince(sellerId: Long, status: String, since: Instant): Long
+
+    @Query(
+        """
+        SELECT l.product.id, l.product.title, COUNT(l)
+        FROM LeadEntity l
+        WHERE l.seller.id = :sellerId AND l.createdAt >= :since AND l.product IS NOT NULL
+        GROUP BY l.product.id, l.product.title
+        ORDER BY COUNT(l) DESC
+        """
+    )
+    fun countLeadsByProductSince(sellerId: Long, since: Instant): List<Array<Any>>
 }

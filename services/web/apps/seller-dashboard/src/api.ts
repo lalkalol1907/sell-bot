@@ -7,6 +7,7 @@ export type Seller = {
   full_name: string;
   sensitivity: string;
   plan: string;
+  is_owner: boolean;
 };
 
 export type Product = {
@@ -25,8 +26,24 @@ export type Lead = {
   level: string;
   status: string;
   product_id: number;
+  author_id: number;
   author_username: string;
   score: number;
+};
+
+export type ProductLeadStat = {
+  product_id: number;
+  product_title: string;
+  count: number;
+};
+
+export type TeamMember = {
+  id: number;
+  username: string;
+  full_name: string;
+  status: string;
+  tg_user_id: number | null;
+  joined_at: string | null;
 };
 
 export type Worker = {
@@ -50,6 +67,7 @@ export type Stats = {
   contacted: number;
   closed: number;
   spam: number;
+  by_product: ProductLeadStat[];
 };
 
 const { api } = createApiClient({ credentials: "include" });
@@ -110,4 +128,12 @@ export const sellerApi = {
     }),
   createLoginHandoff: () =>
     api<{ token: string; url: string }>("/api/v1/login/handoff", { method: "POST" }),
+  team: () => api<{ members: TeamMember[]; is_owner: boolean }>("/api/v1/seller/team"),
+  inviteTeamMember: (username: string) =>
+    api<TeamMember>("/api/v1/seller/team", {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    }),
+  removeTeamMember: (id: number) =>
+    api<{ success: boolean }>(`/api/v1/seller/team/${id}`, { method: "DELETE" }),
 };

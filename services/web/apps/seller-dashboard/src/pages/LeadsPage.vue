@@ -19,6 +19,11 @@ const statusBadges: Record<string, string> = {
 
 const statuses = ["", "new", "contacted", "closed", "spam"];
 
+function authorUrl(authorId: number): string | null {
+  if (!authorId || authorId <= 0) return null;
+  return `tg://user?id=${authorId}`;
+}
+
 const leads = ref<Lead[]>([]);
 const filter = ref("");
 const error = ref("");
@@ -76,6 +81,7 @@ async function setStatus(id: number, status: string) {
               <th>Уровень</th>
               <th>Статус</th>
               <th>Автор</th>
+              <th>Контакт</th>
               <th />
             </tr>
           </thead>
@@ -88,7 +94,17 @@ async function setStatus(id: number, status: string) {
                   {{ statusLabels[lead.status] ?? lead.status }}
                 </span>
               </td>
-              <td>{{ lead.author_username || "—" }}</td>
+              <td>{{ lead.author_username ? `@${lead.author_username}` : "—" }}</td>
+              <td>
+                <a
+                  v-if="authorUrl(lead.author_id)"
+                  class="author-link"
+                  :href="authorUrl(lead.author_id)!"
+                >
+                  Написать
+                </a>
+                <span v-else>—</span>
+              </td>
               <td class="row">
                 <button @click="setStatus(lead.id, 'contacted')">В работе</button>
                 <button class="secondary" @click="setStatus(lead.id, 'closed')">Закрыть</button>
@@ -105,5 +121,15 @@ async function setStatus(id: number, status: string) {
 <style scoped>
 .lead-text {
   max-width: 320px;
+}
+
+.author-link {
+  color: var(--color-primary, #2563eb);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.author-link:hover {
+  text-decoration: underline;
 }
 </style>

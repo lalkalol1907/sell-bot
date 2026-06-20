@@ -26,10 +26,14 @@ export async function handleStart(ctx: BotContext, catalogClient: any) {
 
   ctx.session.sellerId = Number(seller.id);
 
-  await ctx.reply(
-    `Привет, ${from.first_name}! Вы зарегистрированы как продавец.\n\nВыберите раздел:`,
-    { reply_markup: mainMenu() },
-  );
+  const isOwner = Number(seller.tg_user_id) === from.id;
+  const greeting = isOwner
+    ? `Привет, ${from.first_name}! Вы владелец аккаунта.`
+    : `Привет, ${from.first_name}! Вы подключены к команде «${seller.full_name || seller.username || "продавца"}».`;
+
+  await ctx.reply(`${greeting}\n\nВыберите раздел:`, {
+    reply_markup: mainMenu(),
+  });
 }
 
 export async function handleCatalogAdd(ctx: BotContext) {

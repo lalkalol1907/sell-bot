@@ -54,10 +54,33 @@ onMounted(() => {
         <span>Спам</span>
       </div>
     </div>
+
+    <div v-if="stats?.by_product?.length" class="card stats-products">
+      <h3>Лиды по товарам</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Товар</th>
+              <th>Лидов</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in stats.by_product" :key="row.product_id">
+              <td>{{ row.product_title }}</td>
+              <td>{{ row.count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.stats-products {
+  margin-top: 20px;
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
