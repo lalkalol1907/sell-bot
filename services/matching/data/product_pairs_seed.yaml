@@ -1,0 +1,236 @@
+variant_pair_messages:
+- есть у кого 16 про на 256?
+- ищу 16 про 512 natural titanium
+- куплю iphone 16 pro 128 белый
+- куплю iphone 16 pro 256
+- куплю iphone 16 pro 256 черный
+- нужен galaxy s24 256 синий
+- подскажите шестнадцатый про 256
+- хочу ipad air 256
+pairs:
+- message: куплю айфон 16
+  product_title: iPhone 16
+  match: 1
+- message: ищу iphone 16 pro
+  product_title: iPhone 16 Pro
+  match: 1
+- message: нужен samsung s24
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: хочу macbook pro
+  product_title: MacBook Pro M3
+  match: 1
+- message: беру airpods pro
+  product_title: AirPods Pro 2
+  match: 1
+- message: где достать шестнадцатый про?
+  product_title: iPhone 16 Pro
+  match: 1
+- message: ищу шестнадцатую прошку
+  product_title: iPhone 16 Pro
+  match: 1
+- message: где взять галакси эс 24
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: ищу макбук на m3
+  product_title: MacBook Pro M3
+  match: 1
+- message: нужны беспроводные эйрподсы про
+  product_title: AirPods Pro 2
+  match: 1
+- message: где найти плейстейшн пять
+  product_title: PlayStation 5
+  match: 1
+- message: ищу планшет эйр от эпл
+  product_title: iPad Air
+  match: 1
+- message: достать пятнадцатую модель
+  product_title: iPhone 15
+  match: 1
+- message: есть у кого 16 про на 256?
+  product_title: iPhone 16 Pro 256GB
+  match: 1
+  storage_gb: 256
+- message: подскажите шестнадцатый про 256
+  product_title: iPhone 16 Pro 256GB
+  match: 1
+  storage_gb: 256
+- message: куплю iphone 16 pro 256 черный
+  product_title: iPhone 16 Pro 256GB Black
+  match: 1
+  storage_gb: 256
+  color: black
+- message: куплю iphone 16 pro 128 белый
+  product_title: iPhone 16 Pro 128GB White
+  match: 1
+  storage_gb: 128
+  color: white
+- message: нужен galaxy s24 256 синий
+  product_title: Samsung Galaxy S24 256GB Blue
+  match: 1
+  storage_gb: 256
+  color: blue
+- message: хочу ipad air 256
+  product_title: iPad Air 256GB
+  match: 1
+  storage_gb: 256
+- message: ищу 16 про 512 natural titanium
+  product_title: iPhone 16 Pro 512GB Natural Titanium
+  match: 1
+  storage_gb: 512
+  color: natural
+- message: есть у кого 16 про на 256?
+  product_title: iPhone 16 Pro
+  match: 0
+- message: куплю iphone 16 pro 256
+  product_title: iPhone 16 Pro 128GB White
+  match: 0
+  storage_gb: 128
+  color: white
+- message: куплю iphone 16 pro 256 черный
+  product_title: iPhone 16 Pro
+  match: 0
+- message: куплю iphone 16 pro 256 черный
+  product_title: iPhone 16 Pro 128GB White
+  match: 0
+  storage_gb: 128
+  color: white
+- message: нужен galaxy s24 256 синий
+  product_title: Samsung Galaxy S24
+  match: 0
+- message: хочу ipad air 256
+  product_title: iPad Air
+  match: 0
+- message: ищу 16 про 512 natural titanium
+  product_title: iPhone 16 Pro 256GB
+  match: 0
+  storage_gb: 256
+- message: погода сегодня отличная
+  product_title: iPhone 16
+  match: 0
+- message: продаю айфон 16
+  product_title: iPhone 16
+  match: 0
+- message: у меня айфон тормозит
+  product_title: iPhone 16
+  match: 0
+- message: куплю ps5
+  product_title: PlayStation 5
+  match: 1
+- message: нужен ipad air
+  product_title: iPad Air
+  match: 1
+- message: ищу galaxy s24
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: куплю макбук про m3
+  product_title: MacBook Pro M3
+  match: 1
+- message: где купить эйрподс
+  product_title: AirPods Pro 2
+  match: 1
+- message: хочу пятнадцатый айфон
+  product_title: iPhone 15
+  match: 1
+- message: нужен ноутбук про m3
+  product_title: MacBook Pro M3
+  match: 1
+- message: ищу наушники эйрподс
+  product_title: AirPods Pro 2
+  match: 1
+- message: где купить эс двадцать четыре
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: привет всем
+  product_title: iPhone 16
+  match: 0
+- message: матч вчера
+  product_title: Samsung Galaxy S24
+  match: 0
+- message: продам macbook
+  product_title: MacBook Pro M3
+  match: 0
+- message: тормозит macbook pro
+  product_title: MacBook Pro M3
+  match: 0
+- message: куплю iphone шестнадцатый
+  product_title: iPhone 16
+  match: 1
+- message: нужен galaxy
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: ищу ps5 slim
+  product_title: PlayStation 5
+  match: 1
+- message: достать airpods
+  product_title: AirPods Pro 2
+  match: 1
+- message: помогите с айпадом
+  product_title: iPad Air
+  match: 1
+- message: сколько стоит iphone 16
+  product_title: iPhone 16
+  match: 1
+- message: почём айфон 16 про
+  product_title: iPhone 16 Pro
+  match: 1
+- message: заказать samsung galaxy
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: интересует macbook
+  product_title: MacBook Pro M3
+  match: 1
+- message: возьму ps5
+  product_title: PlayStation 5
+  match: 1
+- message: приобрету ipad
+  product_title: iPad Air
+  match: 1
+- message: кто знает где ps5
+  product_title: PlayStation 5
+  match: 1
+- message: срочно нужен самсунг
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: есть macbook pro?
+  product_title: MacBook Pro M3
+  match: 1
+- message: где найти ps5
+  product_title: PlayStation 5
+  match: 1
+- message: есть айпад эйр
+  product_title: iPad Air
+  match: 1
+- message: у кого есть 16 про
+  product_title: iPhone 16 Pro
+  match: 1
+- message: помогите найти iphone 15
+  product_title: iPhone 15
+  match: 1
+- message: можно ли найти s24
+  product_title: Samsung Galaxy S24
+  match: 1
+- message: есть у кого airpods
+  product_title: AirPods Pro 2
+  match: 1
+- message: где достать прошку 16
+  product_title: iPhone 16 Pro
+  match: 1
+- message: есть кто продаёт шестнадцатый нет ищу купить
+  product_title: iPhone 16
+  match: 1
+- message: нужна шестнадцатая модель про
+  product_title: iPhone 16 Pro
+  match: 1
+- message: ищу б/у macbook
+  product_title: MacBook Pro M3
+  match: 1
+- message: нужен ipad для рисования
+  product_title: iPad Air
+  match: 1
+- message: беру ps5 с дисководом
+  product_title: PlayStation 5
+  match: 1
+- message: интересует galaxy s24 ultra
+  product_title: Samsung Galaxy S24
+  match: 1

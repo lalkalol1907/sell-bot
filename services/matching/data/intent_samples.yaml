@@ -1,0 +1,856 @@
+buy:
+- куплю айфон 16
+- ищу iphone 16 pro
+- нужен samsung s24
+- хочу macbook pro
+- беру airpods pro
+- возьму ps5
+- приобрету ipad air
+- сколько стоит iphone 16?
+- почём айфон 16 про
+- заказать galaxy s24
+- интересует macbook m3
+- есть у кого 16 про на 256?
+- где достать шестнадцатый про?
+- подскажите где взять s24
+- есть macbook pro m3?
+- достать airpods pro можно?
+- где найти ps5?
+- есть айпад эйр?
+- у кого есть 16 про 256гб
+- помогите найти iphone 15
+- срочно нужен самсунг s24
+- где купить эйрподс?
+- кто знает где ps5 взять
+- подскажите по айпад эйр
+- где достать прошку 16?
+- можно ли найти s24 ultra
+- ищу ps5 slim
+- помогите с айпадом эйр
+- нужна прошка 16 про
+- хочу айпад эйр 256
+- есть айфон 16?
+- где купить iphone 16 pro max
+- ищу б/у macbook pro
+- нужен ipad для рисования
+- беру ps5 с дисководом
+- куплю эйрподс про 2
+- интересует galaxy s24 ultra
+- почем айфон 15
+- сколько просят за ps5
+- кто продаст мне айфон 16
+sell:
+- продаю айфон 16
+- продам iphone 16 pro
+- отдам samsung s24
+- продаю macbook pro m3
+- продам airpods pro 2
+- отдаю ps5
+- продаю ipad air
+- в наличии айфон 15
+- наличии iphone 16 про
+- оптом samsung s24
+- реализую macbook pro
+- продажа airpods pro
+- продам свой айфон 16
+- отдам айпад эйр
+- продаю ps5 slim
+- сдаю macbook в аренду
+- продам galaxy s24 ultra
+- отдаю iphone 16 недорого
+- продаю новый ipad
+- в продаже airpods
+- продам б/у ps5
+- реализую айфон 16 про
+- продаю срочно macbook
+- отдам samsung недорого
+- продажа iphone 15
+- продаю ps5 с играми
+- отдаю airpods pro
+- продам ipad air m2
+- в наличии galaxy s24
+- продаю macbook air
+discussion:
+- у меня айфон 16 тормозит после обновления
+- iphone 16 pro глючит экран
+- samsung s24 батарея садится быстро
+- macbook pro m3 перегревается
+- airpods pro шумят в левом ухе
+- ps5 не включается после скачка
+- ipad air разбился экран
+- айфон 15 не работает камера
+- после обновления iphone 16 pro тормозит
+- какой чехол на samsung s24 лучше
+- совет по macbook pro m3
+- настроил airpods pro как вам?
+- рекомендуете ps5 или xbox
+- плёнка на ipad air какая
+- у меня 16 про проблема с батареей
+- айфон 16 греется при игре
+- macbook не заряжается
+- airpods отключаются сами
+- ps5 шумит вентилятор
+- ipad тормозит в safari
+- экран iphone 16 мерцает
+- samsung s24 не ловит сеть
+- macbook pro тормозит в фотошопе
+- airpods pro не коннектятся
+- ps5 вылетает из игр
+- ipad air не включается
+- айфон после падения треснул
+- galaxy s24 глючит камера
+- макбук батарея вздулась
+- наушники эйрподс тихие
+- плейстейшн не читает диск
+- планшет айпад зависает
+- айфон 16 не ловит gps
+- samsung тормозит меню
+- macbook fan noise
+- airpods left bud dead
+- ps5 hdmi no signal
+- ipad pencil lag
+- iphone 16 overheating
+- samsung s24 green screen
+- macbook keyboard broken
+- airpods case not charging
+- ps5 controller drift
+- ipad screen ghosting
+- айфон тормозит
+- макбук глючит
+- ps5 сломался
+- айпад не работает
+- samsung глючит
+- airpods сломались
+none:
+- погода сегодня отличная
+- кто смотрел вчера матч
+- привет всем в чате
+- как дела у всех
+- спасибо за помощь ребят
+- завтра встречаемся в 18
+- киньте мемы
+- какой фильм посоветуете
+- работаю удалённо уже год
+- кто идёт на концерт
+- доброе утро
+- всем хорошего дня
+- как настроение
+- что нового
+- поехали в горы
+- кто в теннис
+- рецепт борща
+- курс доллара
+- новости города
+- парковка занята
+- пробки на мкад
+- день рождения у кости
+- собрание в пятницу
+- отпуск в июле
+- зарплата пришла
+- кот заболел
+- соседи шумят
+- ремонт в подъезде
+- вода отключат
+- свет вырубили
+- поздравляю с праздником
+- удачи на экзамене
+- кто в кино
+- обед в кафе
+- такси опоздало
+- погода испортится
+- снег идёт
+- жара стоит
+- ветер сильный
+- дождь весь день
+- просто текст
+- ничего особенного
+- ок понял
+- согласен
+- не согласен
+- может быть
+- посмотрим
+- не знаю
+- хз
+- лол
+- ахах
+- )))
+- ++
+- респект
+- красава
+- молодец
+- отлично
+- супер
+- класс
+- норм
+- окей
+- давай
+- погнали
+- го
+- бб
+- пока
+- спокойной ночи
+- доброй ночи
+- добрый вечер
+- привет
+- здарова
+- йо
+- хай
+- hello
+- hi everyone
+- thanks
+- thank you
+- welcome
+- see you
+- good night
+- random chat message
+- offtopic discussion
+- general question
+- no product mention
+- plain greeting
+- small talk
+- weather chat
+- sports talk
+- movie talk
+- food talk
+- travel plans
+- work update
+- study group
+- party invite
+- birthday wish
+- congrats message
+- funny story
+- joke of the day
+- link share
+- photo share
+- voice message note
+- sticker only context
+- emoji reaction
+- poll question
+- vote please
+- meeting reminder
+- calendar event
+- deadline tomorrow
+- report done
+- task completed
+- need advice general
+- life question
+- relationship talk
+- health general
+- fitness plan
+- diet tips
+- book recommendation
+- music playlist
+- game unrelated
+- pc build talk
+- coding help
+- math homework
+- language learning
+- vacation photos
+- pet photos
+- garden tips
+- car repair unrelated
+- apartment rent
+- job offer
+- interview prep
+- freelance gig
+- tax question
+- bank issue
+- delivery delay
+- order status
+- support ticket
+- feedback request
+- survey link
+- community rules
+- moderator note
+- pinned message
+- channel announcement
+- group rules
+- welcome new members
+- introduce yourself
+- who are you
+- where from
+- how old
+- what do you do
+- hobbies chat
+- weekend plans
+- monday mood
+- friday vibes
+- coffee time
+- lunch break
+- traffic rant
+- noise complaint
+- neighbor story
+- family news
+- baby born
+- wedding news
+- graduation day
+- new job
+- quit job
+- moving house
+- lost keys
+- found cat
+- dog walk
+- gym today
+- yoga class
+- running club
+- bike ride
+- hike photos
+- beach day
+- mountain trip
+- city walk
+- museum visit
+- theater tonight
+- concert was great
+- festival tickets
+- hotel booking
+- flight delayed
+- passport issue
+- visa question
+- border wait
+- customs check
+- lost luggage
+- taxi fare
+- metro strike
+- bus late
+- train schedule
+- parking fine
+- speed camera
+- insurance claim
+- doctor appointment
+- dentist fear
+- pharmacy closed
+- medicine question
+- allergy season
+- flu going around
+- covid test
+- vaccine slot
+- mask mandate
+- remote work
+- office return
+- meeting zoom
+- camera off
+- mic muted
+- screen share
+- ppt ready
+- deadline extended
+- boss angry
+- colleague help
+- promotion news
+- bonus rumor
+- salary talk
+- startup idea
+- investor pitch
+- product launch unrelated
+- marketing plan
+- seo tips
+- ads budget
+- analytics report
+- user growth
+- churn rate
+- retention metric
+- ab test
+- feature flag
+- bug report unrelated
+- deploy tonight
+- rollback plan
+- on call
+- incident resolved
+- postmortem doc
+- sprint planning
+- retro meeting
+- standup notes
+- ticket groom
+- backlog cleanup
+- tech debt
+- refactor week
+- library upgrade
+- dependency bump
+- security patch
+- pen test
+- gdpr question
+- privacy policy
+- terms update
+- cookie banner
+- newsletter unsub
+- email bounce
+- smtp config
+- dns issue
+- ssl expiry
+- domain renew
+- hosting bill
+- cloud cost
+- server down unrelated
+- uptime ok
+- latency spike
+- cache miss
+- db migration
+- backup done
+- restore test
+- log volume
+- metric cardinality
+- alert fatigue
+- pager duty
+- on vacation
+- handover doc
+- readme typo
+- doc update
+- wiki page
+- faq entry
+- support macro
+- chatbot test
+- nlp unrelated
+- ai hype
+- llm question general
+- gpu shortage
+- cuda install
+- python version
+- java gc
+- kotlin coroutines
+- go channels
+- rust borrow
+- typescript types
+- react hooks
+- vue composition
+- angular change
+- css grid
+- html semantic
+- accessibility audit
+- lighthouse score
+- core web vitals
+- mobile first
+- dark mode
+- design system
+- figma link
+- brand colors
+- logo draft
+- font choice
+- icon set
+- illustration style
+- photo shoot
+- video edit
+- podcast episode
+- youtube algo
+- tiktok trend
+- instagram reel
+- telegram channel promo
+- bot api limits
+- webhook retry
+- rate limit hit
+- 429 error
+- 500 error
+- 404 joke
+- null pointer meme
+- stack overflow
+- copy paste
+- code review
+- lg tm
+- ship it
+- works on my machine
+- todo later
+- fixme note
+- hackathon demo
+- side project
+- open source star
+- github sponsor
+- merge conflict
+- rebase pain
+- cherry pick
+- hotfix branch
+- release notes
+- changelog entry
+- semver bump
+- breaking change
+- deprecation warn
+- migration guide
+- tutorial draft
+- workshop slides
+- conference talk
+- meetup invite
+- hacknight pizza
+- beer o clock
+- coffee machine broken
+- office plant
+- standing desk
+- ergonomic chair
+- monitor arm
+- keyboard switch
+- mech keyboard
+- trackpad vs mouse
+- dual monitor
+- ultrawide dream
+- cable management
+- usb c hub
+- dongle life
+- battery swollen
+- fan loud
+- thermal paste
+- clean dust
+- repaste gpu
+- mining rig joke
+- crypto crash
+- nft dead
+- web3 skeptic
+- blockchain use case
+- smart contract bug
+- wallet lost
+- seed phrase
+- 2fa code
+- password manager
+- phishing alert
+- spam email
+- newsletter promo
+- black friday
+- cyber monday
+- sale alert unrelated
+- coupon code
+- cashback offer
+- loyalty points
+- gift card
+- wrapping paper
+- holiday plans
+- new year party
+- christmas tree
+- easter eggs
+- halloween costume
+- valentine gift
+- mother day
+- father day
+- women day
+- men day
+- teacher day
+- programmer day
+- sysadmin day
+- cat day
+- dog day
+- pizza day
+- coffee day
+- beer day
+- nap time
+- sleep deficit
+- alarm snooze
+- dream weird
+- nightmare story
+- lucid dream
+- meditation app
+- mindfulness
+- therapy talk
+- burnout signs
+- imposter syndrome
+- motivation low
+- productivity hack
+- pomodoro timer
+- todo app
+- notion template
+- obsidian vault
+- zettelkasten
+- second brain
+- inbox zero
+- email backlog
+- calendar full
+- meeting overload
+- no meeting friday
+- deep work
+- focus music
+- lofi beats
+- white noise
+- rain sounds
+- asmr video
+- podcast rec
+- audiobook
+- kindle deal
+- library card
+- book club
+- reading list
+- author signing
+- poetry night
+- open mic
+- karaoke bar
+- dance class
+- piano lesson
+- guitar chord
+- drum practice
+- violin scratch
+- art gallery
+- museum free day
+- street art
+- graffiti tag
+- photography walk
+- golden hour
+- blue hour
+- long exposure
+- film camera
+- darkroom print
+- polaroid stash
+- vintage lens
+- drone rules
+- fpv crash
+- rc car race
+- model train
+- lego build
+- board game night
+- dnd session
+- mtg draft
+- chess puzzle
+- go game
+- shogi move
+- poker night
+- casino trip
+- lottery ticket
+- bet lost
+- fantasy league
+- football score
+- basketball finals
+- hockey overtime
+- tennis match
+- formula one
+- motogp race
+- cycling tour
+- marathon prep
+- triathlon swim
+- swimming pool
+- ice rink
+- ski trip
+- snowboard bail
+- surf lesson
+- kayak river
+- climbing gym
+- boulder problem
+- rope course
+- zip line
+- paragliding
+- skydiving fear
+- balloon ride
+- helicopter tour
+- cruise ship
+- ferry delay
+- subway map
+- tram strike
+- scooter rental
+- ebike battery
+- skateboard trick
+- rollerblade
+- parkour fail
+- gym bro
+- crossfit wod
+- powerlifting pr
+- bodybuilding cut
+- calories count
+- protein shake
+- meal prep
+- vegan recipe
+- keto debate
+- gluten free
+- lactose intolerant
+- food delivery
+- restaurant rec
+- sushi spot
+- pizza topping
+- burger review
+- taco tuesday
+- bbq weekend
+- wine tasting
+- beer craft
+- whiskey neat
+- cocktail recipe
+- tea ceremony
+- coffee roast
+- espresso pull
+- latte art
+- cafe wifi
+- coworking space
+- nomad life
+- visa run
+- border cross
+- language barrier
+- translation help
+- local sim
+- roaming charges
+- airport lounge
+- priority pass
+- mileage run
+- points hack
+- hotel points
+- airbnb review
+- hostel bunk
+- camping gear
+- tent leak
+- sleeping bag
+- headlamp dead
+- mosquito bite
+- sunburn bad
+- altitude sick
+- jet lag
+- time zone
+- dst change
+- clock skew
+- ntp sync
+- leap second
+- unix timestamp
+- iso date
+- timezone db
+- locale bug
+- unicode joke
+- utf8 mb4
+- emoji skin tone
+- sticker pack
+- gif reaction
+- meme template
+- viral trend
+- influencer drama
+- cancel culture
+- hot take
+- unpopular opinion
+- change my mind
+- ask me anything
+- daily thread
+- weekly roundup
+- monthly stats
+- year in review
+- resolution list
+- habit tracker
+- streak lost
+- gamification
+- leaderboard
+- badge earned
+- level up
+- xp farm
+- quest log
+- npc dialogue
+- boss fight
+- raid night
+- guild recruit
+- clan war
+- pvp toxic
+- pve grind
+- loot box
+- gacha pull
+- pay to win
+- free to play
+- early access
+- beta key
+- patch notes game
+- nerf bat
+- buff please
+- meta shift
+- tier list
+- speedrun wr
+- glitch found
+- easter egg game
+- mod install
+- shader pack
+- texture pack
+- server whitelist
+- minecraft build
+- redstone clock
+- creeper hiss
+- diamond find
+- nether portal
+- end dragon
+- steam sale
+- epic free game
+- game pass
+- ps plus
+- nintendo direct
+- zelda hype
+- mario kart
+- animal crossing
+- pokemon go
+- genshin pull
+- honkai star
+- valorant rank
+- cs2 smoke
+- dota meta
+- lol patch
+- overwatch hero
+- fortnite dance
+- apex ping
+- pubg chicken
+- warzone drop
+- elden ring
+- dark souls
+- bloodborne ps
+- sekiro parry
+- fromsoft patch
+- jrpg grind
+- visual novel
+- dating sim
+- vn route
+- otome game
+- indie gem
+- game jam
+- itch io
+- demo day
+- wishlist steam
+- backlog shame
+- pile of shame
+- one more turn
+- just one game
+- sleep is for weak
+variant_buy:
+- куплю iphone 16 pro 256
+- ищу айфон 16 про 256гб черный
+- нужен 16 про на 256 black titanium
+- беру iphone 16 pro 128 белый
+- хочу galaxy s24 256 синий
+- куплю ipad air 256
+- есть у кого 16 про 256 черный?
+- где взять iphone 16 pro 512 white
+- подскажите 16 про 256gb desert titanium
+- срочно нужен айфон 16 pro 256
+- ищу macbook pro 512
+- куплю ps5 с диском 1tb
+- нужен samsung s24 ultra 512 черный
+- возьму airpods pro white
+- интересует iphone 15 128 pink
+- почём 16 про 256 natural titanium
+- кто продаст 16 pro 256gb?
+- достать iphone 16 pro max 256
+- куплю макбук 1тб
+- нужна прошка 256 черная
+variant_sell:
+- продам iphone 16 pro 256 black
+- продаю 16 про 128gb white
+- отдам samsung s24 256 синий
+- продам ipad air 256
+- в наличии iphone 16 pro 512 natural
+- продам galaxy s24 ultra 1tb черный
+- отдаю ps5 white edition
+- реализую macbook pro 512
+- продажа airpods pro white
+- продам айфон 15 128 pink
+variant_discussion:
+- у меня iphone 16 pro 256 тормозит
+- черный айфон 16 глючит после обновления
+- white titanium 16 pro батарея садится
+- мой samsung s24 512 перегревается
+- ipad air 256 разбился экран
+- какой чехол на 16 pro 256 black
+- стоит ли брать 128 или 256 для фото
+- natural titanium царапается у кого было
+- 512gb хватает ли для игр на ps5
+- синий s24 не ловит сеть
+- белый iphone 16 pro камера мажет
+- desert titanium выцветает на солнце
+- у меня 256гб закончились что делать
+- pink iphone 15 тормозит в ios 18
+- macbook 1tb диск забит чем чистить
+variant_none_color:
+- black friday скоро
+- red team победила
+- white paper опубликовали
+- green day концерт
+- blue screen of death на пк
+- golden hour для фото заката
+- silver medal вчера
+- orange season 2 вышел
+- pink floyd слушаю
+- natural selection в биологии
+eval_slices:
+  buy: 12
+  sell: 12
+  discussion: 12
+  none: 12
+  variant_buy: 8
+  variant_sell: 8
+  variant_discussion: 8
+  variant_none_color: 8

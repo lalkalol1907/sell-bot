@@ -77,7 +77,7 @@ jobs:
         if: matrix.component == 'matching'
         working-directory: services/matching
         run: |
-          pytest tests/test_intent_dataset.py tests/test_product_pairs_dataset.py tests/test_recognition_golden.py -q -m "not integration"
+          pytest tests/test_intent_dataset.py tests/test_product_pairs_dataset.py tests/test_recognition_golden.py -q -m "not integration and not local"
 
       - name: Generate Python Protos
         if: matrix.component == 'matching'
@@ -87,7 +87,7 @@ jobs:
         if: matrix.component == 'matching'
         working-directory: services/matching
         run: |
-          pytest tests/ -q --tb=short -m "not integration" \
+          pytest tests/ -q --tb=short -m "not integration and not local" \
             --cov=app.nlp --cov=app.pipeline --cov=app.embeddings \
             --cov=app.handlers --cov=app.transport \
             --cov-report=term-missing --cov-fail-under=75

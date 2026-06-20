@@ -1,0 +1,363 @@
+# Локальный датасет для ручной проверки матчинга на реальных сценариях.
+# Не гоняется в CI — только pytest -m local или scripts/eval_local_scenarios.py
+#
+# Формат каталога: как в базе продавца (модель + RAM/накопитель + цвет).
+# Позитивные кейсы: вариативные написания с полным совпадением модели/памяти/цвета.
+# Негативные кейсы: неполные запросы, опечатки, частичные совпадения.
+
+catalog:
+  # --- iPhone (строгие варианты) ---
+  - id: 101
+    title: iPhone 16 Pro Max 8/128 Desert
+    keywords:
+      - iphone 16 pro max 8 128 desert
+      - айфон 16 про макс 8 128 десерт
+      - 16 про макс 8 128 desert
+      - 16 про макс 128 десерт
+      - pro max 8 128 desert titanium
+      - про макс 8 128 пустынный титан
+
+  - id: 102
+    title: iPhone 16 Pro Max 8/256 Natural
+    keywords:
+      - iphone 16 pro max 8 256 natural
+      - айфон 16 про макс 8 256 натуральный
+      - 16 про макс 8 256 natural titanium
+      - 16 про макс 256 натуральный титан
+
+  - id: 103
+    title: iPhone 16 Pro Max 8/128 Black
+    keywords:
+      - iphone 16 pro max 8 128 black
+      - айфон 16 про макс 8 128 черный
+      - 16 про макс 8 128 black titanium
+      - 16 про макс 128 черный титан
+
+  - id: 104
+    title: iPhone 16 Pro 8/128 Black
+    keywords:
+      - iphone 16 pro 8 128 black
+      - айфон 16 про 8 128 черный
+      - 16 про 8 128 черный
+      - 16 про 128 black titanium
+
+  - id: 105
+    title: iPhone 16 8/128 White
+    keywords:
+      - iphone 16 8 128 white
+      - айфон 16 8 128 белый
+      - шестнадцатый 8 128 белый
+
+  # --- MacBook ---
+  - id: 201
+    title: MacBook Pro 14 M3 18/512 Space Black
+    keywords:
+      - macbook pro 14 m3 18 512 space black
+      - макбук про 14 m3 18 512 space black
+      - macbook pro 14 18 512 черный
+      - макбук про 14 m3 512 space black
+
+  - id: 202
+    title: MacBook Air 15 M3 8/256 Midnight
+    keywords:
+      - macbook air 15 m3 8 256 midnight
+      - макбук эйр 15 m3 8 256 midnight
+      - macbook air 15 8 256 полночь
+      - макбук эйр 15 256 midnight
+
+  - id: 203
+    title: MacBook Pro 16 M3 Pro 36/1TB Silver
+    keywords:
+      - macbook pro 16 m3 pro 36 1tb silver
+      - макбук про 16 m3 pro 36 1024 silver
+      - macbook pro 16 36 1tb серебристый
+      - макбук про 16 m3 pro 1tb silver
+
+  # --- Наушники ---
+  - id: 301
+    title: AirPods Pro 2 USB-C White
+    keywords:
+      - airpods pro 2 usb-c white
+      - эйрподс про 2 usb-c белый
+      - airpods pro 2 type-c white
+      - эйрподсы про 2 type c белые
+
+  - id: 302
+    title: AirPods Max Midnight
+    keywords:
+      - airpods max midnight
+      - эйрподс макс midnight
+      - airpods max полночь
+      - эйрподсы макс midnight
+
+  - id: 303
+    title: Sony WH-1000XM5 Black
+    keywords:
+      - sony wh-1000xm5 black
+      - сони wh1000xm5 черный
+      - sony xm5 black
+      - сони xm5 черные
+
+  # --- Умные колонки ---
+  - id: 401
+    title: HomePod mini White
+    keywords:
+      - homepod mini white
+      - хоумпод mini белый
+      - homepod mini белая
+      - хоумпод мини white
+
+  - id: 402
+    title: Yandex Station 2 Black
+    keywords:
+      - yandex station 2 black
+      - яндекс станция 2 черная
+      - yandex station 2 черный
+      - станция 2 черная
+
+  - id: 403
+    title: Apple HomePod 2 Midnight
+    keywords:
+      - apple homepod 2 midnight
+      - homepod 2 midnight
+      - хоумпод 2 полночь
+      - homepod 2 полночь
+
+scenarios:
+  # === iPhone 16 Pro Max Desert — позитив (вариативные написания) ===
+  - id: iphone_pmax_desert_ru_spaces
+    text: куплю айфон 16 про макс 8 128 десерт
+    expect:
+      matched: true
+      product_id: 101
+      intent_class: buy
+
+  - id: iphone_pmax_desert_en_slash
+    text: ищу iphone 16 pro max 8/128 desert
+    expect:
+      matched: true
+      product_id: 101
+      intent_class: buy
+
+  - id: iphone_pmax_desert_short_model
+    text: нужен 16 про макс 128 десерт
+    expect:
+      matched: true
+      product_id: 101
+      intent_class: buy
+
+  - id: iphone_pmax_desert_titanium_ru
+    text: хочу про макс 8 128 пустынный титан
+    expect:
+      matched: true
+      product_id: 101
+      intent_class: buy
+
+  - id: iphone_pmax_desert_mixed_case
+    text: беру IPhone 16 Pro Max 8 128 Desert
+    expect:
+      matched: true
+      product_id: 101
+      intent_class: buy
+
+  # === iPhone 16 Pro Max Natural ===
+  - id: iphone_pmax_natural_ru
+    text: куплю айфон 16 про макс 8 256 натуральный
+    expect:
+      matched: true
+      product_id: 102
+      intent_class: buy
+
+  - id: iphone_pmax_natural_en
+    text: ищу iphone 16 pro max 8 256 natural titanium
+    expect:
+      matched: true
+      product_id: 102
+      intent_class: buy
+
+  # === iPhone 16 Pro Max Black (другой цвет, та же память) ===
+  - id: iphone_pmax_black_ru
+    text: куплю айфон 16 про макс 8 128 черный
+    expect:
+      matched: true
+      product_id: 103
+      intent_class: buy
+
+  - id: iphone_pmax_black_titanium
+    text: нужен 16 про макс 128 black titanium
+    expect:
+      matched: true
+      product_id: 103
+      intent_class: buy
+
+  # === iPhone 16 Pro (не Pro Max) ===
+  - id: iphone_pro_black_ru
+    text: куплю айфон 16 про 8 128 черный
+    expect:
+      matched: true
+      product_id: 104
+      intent_class: buy
+
+  # === MacBook ===
+  - id: macbook_pro_14_space_black
+    text: ищу macbook pro 14 m3 18 512 space black
+    expect:
+      matched: true
+      product_id: 201
+      intent_class: buy
+
+  - id: macbook_pro_14_ru
+    text: куплю макбук про 14 m3 512 space black
+    expect:
+      matched: true
+      product_id: 201
+      intent_class: buy
+
+  - id: macbook_air_15_midnight
+    text: нужен macbook air 15 m3 8 256 midnight
+    expect:
+      matched: true
+      product_id: 202
+      intent_class: buy
+
+  - id: macbook_air_15_ru
+    text: хочу макбук эйр 15 256 полночь
+    expect:
+      matched: true
+      product_id: 202
+      intent_class: buy
+
+  - id: macbook_pro_16_silver
+    text: куплю macbook pro 16 m3 pro 36 1tb silver
+    expect:
+      matched: true
+      product_id: 203
+      intent_class: buy
+
+  # === Наушники ===
+  - id: airpods_pro2_white
+    text: куплю airpods pro 2 usb-c белый
+    expect:
+      matched: true
+      product_id: 301
+      intent_class: buy
+
+  - id: airpods_max_midnight
+    text: ищу эйрподсы макс midnight
+    expect:
+      matched: true
+      product_id: 302
+      intent_class: buy
+
+  - id: sony_xm5_black
+    text: куплю sony wh-1000xm5 black
+    expect:
+      matched: true
+      product_id: 303
+      intent_class: buy
+
+  # === Умные колонки ===
+  - id: homepod_mini_white
+    text: куплю homepod mini white
+    expect:
+      matched: true
+      product_id: 401
+      intent_class: buy
+
+  - id: yandex_station_black
+    text: ищу яндекс станция 2 черная
+    expect:
+      matched: true
+      product_id: 402
+      intent_class: buy
+
+  - id: homepod_2_midnight
+    text: хочу homepod 2 полночь
+    expect:
+      matched: true
+      product_id: 403
+      intent_class: buy
+
+  # === Негатив: неполная модель / память / цвет ===
+  - id: neg_iphone_16_only
+    text: куплю iphone 16
+    expect:
+      matched: false
+
+  - id: neg_iphone_16_ru_only
+    text: ищу айфон 16
+    expect:
+      matched: false
+
+  - id: neg_typo_desert_no_specs
+    text: куплю iphine 16 desert
+    expect:
+      matched: false
+
+  - id: neg_desert_no_model_specs
+    text: нужен desert titanium 128
+    expect:
+      matched: false
+
+  - id: neg_pro_max_no_storage_color
+    text: куплю айфон 16 про макс
+    expect:
+      matched: false
+
+  - id: neg_pro_max_storage_no_color
+    text: ищу 16 про макс 8 128
+    expect:
+      matched: false
+
+  - id: neg_wrong_color_for_desert
+    text: куплю айфон 16 про макс 8 128 десерт черный
+    expect:
+      matched: false
+
+  - id: neg_wrong_storage_desert
+    text: куплю айфон 16 про макс 8 256 десерт
+    expect:
+      matched: false
+
+  - id: neg_pro_not_pro_max_desert
+    text: куплю айфон 16 про 8 128 десерт
+    expect:
+      matched: false
+
+  # === Негатив: слишком общие запросы по другим категориям ===
+  - id: neg_macbook_generic
+    text: куплю macbook pro
+    expect:
+      matched: false
+
+  - id: neg_airpods_generic
+    text: ищу airpods
+    expect:
+      matched: false
+
+  - id: neg_homepod_generic
+    text: нужен homepod
+    expect:
+      matched: false
+
+  - id: neg_wrong_macbook_specs
+    text: куплю macbook air 15 m3 8 512 midnight
+    expect:
+      matched: false
+
+  - id: neg_wrong_airpods_color
+    text: куплю airpods pro 2 usb-c черный
+    expect:
+      matched: false
+
+  # === Негатив: не покупка ===
+  - id: neg_discussion_iphone
+    text: у меня айфон 16 про макс 8 128 десерт тормозит
+    expect:
+      matched: false
+      intent_class: discussion
+
+  - id: neg_sell_iphone
+    text: продаю iphone 16 pro max 8 128 desert
+    expect:
+      matched: false

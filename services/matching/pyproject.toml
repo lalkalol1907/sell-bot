@@ -47,6 +47,7 @@ include = ["app*"]
 [tool.pytest.ini_options]
 markers = [
     "integration: optional tests (Qdrant, encoder, intent training, semantic golden suite)",
+    "local: manual local scenario dataset (not run in CI)",
 ]
 
 [tool.coverage.run]

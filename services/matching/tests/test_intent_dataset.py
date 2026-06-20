@@ -10,7 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_generate_intent_datasets():
+    from app.training.datasets import load_intent_samples
+
+    before = sum(len(v) for k, v in load_intent_samples().items() if k != "eval_slices")
     generate_datasets()
+    after = sum(len(v) for k, v in load_intent_samples().items() if k != "eval_slices")
+    assert before == after
     train = ROOT / "data" / "intent_train.jsonl"
     eval_path = ROOT / "data" / "intent_eval.jsonl"
     pairs = ROOT / "data" / "product_pairs_eval.jsonl"

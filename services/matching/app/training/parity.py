@@ -5,36 +5,27 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 
-SAMPLE_TEXTS = [
-    "куплю айфон 16",
-    "ищу iphone 16 pro",
-    "где достать шестнадцатый про?",
-    "нужен samsung s24",
-    "продаю macbook pro",
-    "у меня айфон тормозит",
-    "где взять галакси эс 24",
-    "ищу шестнадцатую прошку",
-    "есть у кого 16 про на 256?",
-    "подскажите шестнадцатый про 256",
-    "куплю iphone 16 pro 256 черный",
-    "нужен galaxy s24 256 синий",
-    "достать пятнадцатую модель",
-    "где купить эс двадцать четыре",
-    "ищу макбук на m3",
-    "нужны беспроводные эйрподсы про",
-    "где найти плейстейшн пять",
-    "ищу планшет эйр от эпл",
-    "есть кто продаёт шестнадцатый? нет, ищу купить",
-    "привет всем",
-]
+from app.paths import data_dir
 
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 MODEL_HINT = "paraphrase-multilingual-minilm-l12-v2"
 ONNX_FILENAMES = ("model.onnx", "model_optimized.onnx")
+PARITY_SAMPLES_PATH = data_dir() / "embedding_parity_samples.txt"
+
+
+@lru_cache(maxsize=1)
+def load_sample_texts(path: str | None = None) -> tuple[str, ...]:
+    sample_path = Path(path) if path else PARITY_SAMPLES_PATH
+    lines = sample_path.read_text(encoding="utf-8").splitlines()
+    return tuple(line.strip() for line in lines if line.strip())
+
+
+SAMPLE_TEXTS = load_sample_texts()
 
 
 def _cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -69,8 +60,9 @@ def _encode_fastembed(texts: list[str], model_dir: str) -> list[np.ndarray]:
 
 def check_parity(model_dir: str | Path, *, max_drift: float = 0.02) -> dict:
     model_dir = str(model_dir)
-    st_vectors = _encode_sentence_transformers(SAMPLE_TEXTS)
-    onnx_vectors = _encode_fastembed(SAMPLE_TEXTS, model_dir)
+    texts = list(load_sample_texts())
+    st_vectors = _encode_sentence_transformers(texts)
+    onnx_vectors = _encode_fastembed(texts, model_dir)
 
     drifts = [_cosine(a, b) for a, b in zip(st_vectors, onnx_vectors, strict=True)]
     worst = min(drifts)
